@@ -1,4 +1,4 @@
-/*	This file main.cpp is part of scallop.
+/*	This file Setup.cpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,16 +17,14 @@
  *      Author: Andreas Linscheid
  */
 
-#include "scallop/input/input.h"
+#include "scallop/input/Setup.h"
 
-using namespace scallop;
+namespace scallop {
+namespace input {
 
-int main(int argc, char *argv[]) {
+Setup::Setup(int argc, char *argv[]) {
 
-	//read the input file or stdin
-	input::setup(argc,argv);
+}
 
-	return 0;
-};
-
-
+} /* namespace input */
+} /* namespace scallop */
