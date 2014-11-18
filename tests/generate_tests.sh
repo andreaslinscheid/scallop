@@ -20,7 +20,7 @@
 #
 newline=$'\n'
 tab=$'\t'
-testFolders=`find ../scallop/ -type d | grep -P "test$"`
+testFolders=`find ../scallop/ -type d | grep -P "\/test$"`
 includes=""
 executionLines=""
 for i  in $testFolders; do
@@ -28,7 +28,7 @@ for i  in $testFolders; do
 	module=${moduleRelPath##"../scallop/"}
 	if [[ -f "$i/Test.h" ]]; then
 		include=`echo -e "#include \"scallop/$module/test/Test.h\""`
-		declaretion=`echo -e "scallop::$module::RunTest $module""_test;"`	
+		declaretion=`echo -e "scallop::$module::test::Test $module""_test;"`	
 		execution=`echo -e "$module""_test.run_test();"`
 		#
 		#	add the lines to the respective collection

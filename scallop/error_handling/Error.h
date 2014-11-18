@@ -61,7 +61,7 @@ public:
 	/**
 	 * In debug mode install a signal handler on a segmentation fault causing a stack trace to be generated.
 	 */
-	void generate_stacktrace_on_segfault();
+	static void generate_stacktrace_on_segfault();
 
 private:
 	//generate a stack trace for debugging. Works with glibc, though may not be portable.

@@ -6,7 +6,7 @@ endif
 
 # The source files: We fetch them from the source tree. We exclude the .../test/tests.cpp files
 # since they contain small subprograms that excecute the tests in the given module individually.
-SOURCE_FILES := $(shell find -L . -type f | grep .*\.cpp | grep -v ".*\/test\/tests.cpp"|grep -v .*scallop/main.cpp )
+SOURCE_FILES := $(shell find -L . -type f | grep "scallop/" | grep .*\.cpp | grep -v ".*\/test\/tests.cpp" )
 
 # Build a Dependency list and an Object list, by replacing the .cpp
 # extension to .d for dependency files, and .o for object files.
@@ -14,7 +14,7 @@ DEP = $(patsubst %.cpp, deps.$(CFG)/%.d, ${SOURCE_FILES})
 OBJ = $(patsubst %.cpp, objs.$(CFG)/%.o, ${SOURCE_FILES})
 
 # The final binary
-TARGET=tests.x
+TARGET=scallop.x
 
 # What compiler to use for generating dependencies: 
 # it will be invoked with -MM -MP
@@ -25,12 +25,12 @@ INCLUDES = -I./
 
 # Separate compile options per configuration
 ifeq ($(CFG),debug)
--include ../make.sys.debug
+-include ./make.sys.debug
 else
--include ../make.sys.release
+-include ./make.sys.release
 endif
 # A common link flag for all configurations, assables the
--include ../make.sys.common
+-include ./make.sys.common
 
 all:	inform bin.$(CFG)/${TARGET} 
 

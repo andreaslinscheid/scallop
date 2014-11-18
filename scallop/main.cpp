@@ -24,7 +24,7 @@ using namespace scallop;
 int main(int argc, char *argv[]) {
 
 	//read the input file or stdin
-	input::setup(argc,argv);
+	input::Setup(argc,argv);
 
 	return 0;
 };

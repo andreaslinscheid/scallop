@@ -1,0 +1,25 @@
+# object/lib/dependency files
+*.[oad]
+#pictures
+*.gif
+#data files
+*.dat
+#documents
+*.pdf
+# binaries
+*.x
+#vim swap files
+*.swp
+*~
+*.gz
+#hidden files except gitignore itself and htaccess
+.*
+!.gitignore
+!.htaccess
+#the lapacke dir
+lapack*/
+# TeX temps
+doc/
+
+make.sys*
+

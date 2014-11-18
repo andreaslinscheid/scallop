@@ -1,4 +1,4 @@
-/*	This file Setup.h is part of scallop.
+/*	This file InputFile.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,40 +13,39 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 14, 2014
+ *  Created on: Nov 16, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_INPUT_SETUP_H_
-#define SCALLOP_INPUT_SETUP_H_
+#ifndef SCALLOP_INPUT_INPUTFILE_H_
+#define SCALLOP_INPUT_INPUTFILE_H_
 
-#include "scallop/input/InputFile.h"
 #include <string>
 #include <map>
 
 namespace scallop {
 namespace input {
 
-/**
- * Perform the initial startup of the code.
- */
-class Setup {
+class InputFile {
 public:
-
 	/**
-	 * Create the initial startup.
+	 * Inspect the stored key/value pairs.
 	 *
-	 * @param argc The number of arguments taken from the input.
-	 * @param argv The array of size argc with c-stype char arrays.
+	 * @param key String with the key name.
+	 * @return	The value string, or an empty string if there is no such key.
 	 */
-	Setup(int argc, char *argv[]);
+	std::string get_input_config_value( std::string const& key ) const;
 
-	InputFile const& get_parsed_input_file() const;
+	void read_input_file(std::string const& fileName, std::string &infileContent) const;
+
+	void parse_input(std::string const&input);
+
+	void trim_string(std::string & str, std::string const& whitespace = " \t") const;
 private:
-	InputFile _inputFile;
 
+	std::map<std::string,std::string> _inputFileKeyValue;
 };
 
 } /* namespace input */
 } /* namespace scallop */
-#endif /* SCALLOP_INPUT_SETUP_H_ */
+#endif /* SCALLOP_INPUT_INPUTFILE_H_ */
