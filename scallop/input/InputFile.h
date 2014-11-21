@@ -21,6 +21,7 @@
 #define SCALLOP_INPUT_INPUTFILE_H_
 
 #include <string>
+#include <vector>
 #include <map>
 
 namespace scallop {
@@ -36,6 +37,8 @@ public:
 	 */
 	std::string get_input_config_value( std::string const& key ) const;
 
+	std::vector<std::string> get_list_unread_input_parameters() const;
+
 	void read_input_file(std::string const& fileName, std::string &infileContent) const;
 
 	void parse_input(std::string const&input);
@@ -44,6 +47,8 @@ public:
 private:
 
 	std::map<std::string,std::string> _inputFileKeyValue;
+
+	mutable std::map<std::string,bool> _keyWasRead;
 };
 
 } /* namespace input */

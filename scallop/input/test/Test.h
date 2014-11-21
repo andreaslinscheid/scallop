@@ -31,7 +31,7 @@ public:
 	void run_test();
 private:
 	void create_test_input_file(std::string const& fileName);
-	void test_input_file_paring();
+	void test_input_file_parsing();
 };
 
 } /* namespace test */

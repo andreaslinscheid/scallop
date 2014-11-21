@@ -29,9 +29,10 @@ namespace test {
 
 class InputBaseTest : public InputBase<InputBaseTest> {
 
-	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(sizetTest,
-			"Tests the reading of a type of size_t.\n",
-			zero,0,size_t);
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(sizetTest,"Tests the reading of a type of size_t.\\\n","zero",0,size_t);
+
+
+	INPUTBASE_INPUT_OPTION_MACRO(doubleTest,"Tests the reading of a type of double.\n",double);
 
 //	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(boolTest,
 //			"Tests the reading of a type of type bool.\n"

@@ -105,14 +105,24 @@ void InputFile::parse_input(std::string const & input) {
 			}
 
 		}
+
+		std::pair<std::string,bool> keyReadThisValue;
+		keyReadThisValue.first = elmentPair.first;
+		keyReadThisValue.second = false; //has not yet been read
+		_keyWasRead.insert(keyReadThisValue);
 	}
 }
 
 std::string InputFile::get_input_config_value( std::string const& key ) const {
 	std::string result;
 	auto it = _inputFileKeyValue.find(key);
-	if ( it != _inputFileKeyValue.end() )
+	if ( it != _inputFileKeyValue.end() ){
 		result = (*it).second;
+
+		//keeping track of the read input options. Note that _keyWasRead is mutable
+		_keyWasRead[key] = true;
+	}
+
 	return result;
 }
 
@@ -130,6 +140,15 @@ void InputFile::trim_string(std::string & str,
     std::swap(tempStr,str);
 }
 
+
+std::vector<std::string> InputFile::get_list_unread_input_parameters() const {
+	std::vector<std::string> result;
+	for ( auto &element : _keyWasRead ) {
+		if ( not element.second )
+			result.push_back(element.first);
+	}
+	return result;
+}
 
 } /* namespace input */
 } /* namespace scallop */

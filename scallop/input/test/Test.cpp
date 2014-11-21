@@ -17,7 +17,7 @@
  *      Author: Andreas Linscheid
  */
 
-#include "Test.h"
+#include "scallop/input/test/Test.h"
 #include "scallop/input/input.h"
 #include "scallop/output/TextFile.h"
 #include "scallop/input/test/InputBaseTest.h"
@@ -28,20 +28,23 @@ namespace test {
 
 void Test::run_test() {
 
-	test_input_file_paring();
+	test_input_file_parsing();
 }
 
-void Test::test_input_file_paring() {
+void Test::test_input_file_parsing() {
+
+	std::string tmpFolder = "/tmp/";
 
 	//create an example input file
-	std::string const testInputFileName = "testin.dat";
+	std::string const testInputFileName = tmpFolder+"testin.dat";
 	create_test_input_file(testInputFileName);
 
 	//do as if this file was given as a option during program start.
 	char ** argv;
 	argv = new char* [2];
-	argv[1] = new char [testInputFileName.size()];
+	argv[1] = new char [testInputFileName.size()+1];
 	std::copy(testInputFileName.c_str(),testInputFileName.c_str()+testInputFileName.size(),argv[1]);
+	argv[1][testInputFileName.size()] = '\0';
 
 	//test the startup routines and parse the test input file
 	Setup setup(2,argv);
@@ -50,13 +53,19 @@ void Test::test_input_file_paring() {
 	InputBaseTest inputFileTest;
 	inputFileTest.parse_all_registered_variables( setup.get_parsed_input_file() );
 
-	std::string const testManualName = "manualTest.txt";
+	std::string const testManualName = tmpFolder + "manualTest.txt";
 	inputFileTest.build_input_manual(testManualName);
+
+	std::vector<std::string> unreadOptions =
+			setup.get_parsed_input_file().get_list_unread_input_parameters();
+	std::cout << "WARNING, the following input parameters were not read: " <<std::endl;
+	for ( auto &opt  : unreadOptions )
+		std::cout << opt << std::endl;
 }
 
 void Test::create_test_input_file(std::string const& fileName){
 	std::string const inputFileContent = "#Testfile with a comment as header line\n"
-			"#\t a tab and some test input data:"
+			"#\t a tab and some test input data:\n"
 			"sizeTest=42\ndoubleTest=3.4\n";
 
 	output::TextFile textFile;

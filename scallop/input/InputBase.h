@@ -55,7 +55,7 @@ public:
 
 	void parse_all_registered_variables(InputFile const& inputFile);
 
-	void register_variable_parsing( void(derived::* function )(InputFile const&) );
+	void register_variable_parsing( void( derived:: * function )(InputFile const&) );
 private:
 
 	std::vector< void(derived::*)(InputFile const&) > _mebrFctnPtrToVariableParsing;
@@ -77,42 +77,64 @@ public:                                                                         
 	};                                                                                  	\
 private:																					\
 	typeQ _##quantityName;																	\
-	void parse_variable_##quantityName(InputFile const& inputFile) {													\
+	void parse_variable_##quantityName(InputFile const& inputFile) {						\
 		typeQ defaultValue = defaultValueStatement;											\
 		std::string valueInInputFile = inputFile.get_input_config_value(#quantityName);		\
 		this->get_option(valueInInputFile,defaultValue, _##quantityName);					\
 	}																						\
 	void * perform_##quantityName##_processing() {											\
 		this->add_option_to_manual( std::string()+											\
-				"\n==========================================\n"							\
-				"Variable "+#quantityName+" of type "+#typeQ									\
-					+"\nThe default is "+#defaultValueText+"\n"								\
-				"Description:\n"+#description+" \n"                                      	\
-				"==========================================\n\n");                     		\
-		this->register_variable_parsing(&std::remove_pointer<decltype(this)>::type ::parse_variable_##quantityName);					\
+		  "\n========================================================================\n"	\
+			"||Variable :             || "+#quantityName+"\n"								\
+			"||-----------------------||---------------------------------------------\n"	\
+			"||Type is :              || "+#typeQ+"\n"										\
+			"||-----------------------||---------------------------------------------\n"	\
+			"||The default value is : || "+defaultValueText+"\n"							\
+			"========================================================================\n"	\
+			"|Description:|\n"																\
+			"--------------\n"																\
+			""+description+"\n"                                      						\
+			"========================================================================\n\n");\
+		this->register_variable_parsing(													\
+			&std::remove_pointer<decltype(this)>::type ::parse_variable_##quantityName);	\
 		return 0;																			\
 	};																						\
 	void * call_##quantityName##_processing													\
 				= this->perform_##quantityName##_processing()								\
 
-#define INPUTBASE_INPUT_OPTION_MACRO(quantityName,description,type)							\
+
+#define INPUTBASE_INPUT_OPTION_MACRO(quantityName,description,typeQ)						\
 public:                                                                                 	\
-	type const& get_##quantityName() const {                                            	\
+	typeQ const& get_##quantityName() const {                                            	\
 		return _##quantityName;                                                         	\
 	};                                                                                  	\
 private:																					\
-	type _##quantityName;																	\
-	void * add_##quantityName##_description() {												\
-			this->add_option_to_manual( std::string()+										\
-				"\n==========================================\n"							\
-				"Variable "+#quantityName+" of type "+#type									\
-					+"\nThis variable is REQUIRED on input!\n"								\
-				"Description:\n"+#description+" \n"                                      	\
-				"==========================================\n\n");                     		\
+	typeQ _##quantityName;																	\
+	void parse_variable_##quantityName(InputFile const& inputFile) {						\
+		std::string valueInInputFile = inputFile.get_input_config_value(#quantityName);		\
+		this->get_option(valueInInputFile,_##quantityName);									\
+	}																						\
+	void * perform_##quantityName##_processing() {											\
+		this->add_option_to_manual( std::string()+											\
+		  "\n========================================================================\n"	\
+			"||Variable :             || "+#quantityName+"\n"								\
+			"||-----------------------||---------------------------------------------\n"	\
+			"||Type is :              || "+#typeQ+"\n"										\
+			"||-----------------------||---------------------------------------------\n"	\
+			"||The default value :    || This variable is MANDATORY!\n"						\
+			"========================================================================\n"	\
+			"|Description:|\n"																\
+			"--------------\n"																\
+			""+#description+"\n"                                      						\
+			"========================================================================\n\n");\
+		this->register_variable_parsing(													\
+			&std::remove_pointer<decltype(this)>::type ::parse_variable_##quantityName);	\
 		return 0;																			\
 	};																						\
-	void * call_##quantityName##_description_add											\
-											= add_##quantityName##_description()			\
+	void * call_##quantityName##_processing													\
+				= this->perform_##quantityName##_processing()								\
+
+
 
 } /* namespace input */
 } /* namespace scallop */
