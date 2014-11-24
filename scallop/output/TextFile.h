@@ -25,8 +25,20 @@
 namespace scallop {
 namespace output {
 
+/**
+ * 	\brief Manage the textFile output.
+ *
+ * 	Text files are all ASCII.
+ */
 class TextFile {
 public:
+
+	/**
+	 * \brief Create or overwrite a file and fill it with content.
+	 *
+	 * @param fileName The name of the file.
+	 * @param content The new content of the file on return.
+	 */
 	void write(std::string const& fileName, std::string const& content) const;
 };
 

@@ -28,19 +28,30 @@ namespace scallop {
 namespace input {
 
 /**
- * Perform the initial startup of the code.
+ * \brief Perform the initial startup of the code and trigger the InputFile reading.
+ *
+ * The constructor will fill the internal InputFile with data which can then be accessed by
+ * other input classes that parse selected input options from the InputFile.
+ * The InputFile can be accessed using \ref get_parsed_input_file()
  */
 class Setup {
 public:
 
 	/**
-	 * Create the initial startup.
+	 * \brief Create the initial startup.
 	 *
 	 * @param argc The number of arguments taken from the input.
 	 * @param argv The array of size argc with c-stype char arrays.
 	 */
 	Setup(int argc, char *argv[]);
 
+	/**
+	 * \brief Allows constant access to the internal InputFile.
+	 *
+	 * Input classes can look up their respective defined input options using the returned const reference.
+	 *
+	 * @return A const reference to the internal InputFile
+	 */
 	InputFile const& get_parsed_input_file() const;
 private:
 	InputFile _inputFile;

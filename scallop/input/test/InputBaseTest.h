@@ -27,10 +27,12 @@ namespace scallop {
 namespace input {
 namespace test {
 
+/**
+ * 	\brief Tests the InputBase CRTP class with a selected set of input options.
+ */
 class InputBaseTest : public InputBase<InputBaseTest> {
 
-	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
-			sizeTest,
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(sizeTest,
 			"Tests the reading of a type of size_t.\n",
 			"zero",
 			0,

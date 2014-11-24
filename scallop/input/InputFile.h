@@ -27,30 +27,72 @@
 namespace scallop {
 namespace input {
 
+/**
+ * 	\brief Read input to the scallop code and parse it into a key/value map.
+ *
+ *	\ref parse_input performs that key value parsing of a string that contains the input.
+ * 	Using the \ref get_input_config_value method one can check the input file for the value string that
+ * 	corresponds to the key string. Internally, there is a mutable tracking of the keys accessed in this way.
+ * 	One can \ref get_list_unread_input_parameters to examine at some point, which keys have
+ * 	not been referenced so far. This allows to help the user to determine, say, misspelled input keys with
+ * 	default values that are silently taken with their default otherwise.
+ */
 class InputFile {
 public:
+
 	/**
-	 * Inspect the stored key/value pairs.
+	 * \brief Inspect the stored key/value pairs.
 	 *
-	 * @param key String with the key name.
+	 * Referenced keys are traced so that \ref get_list_unread_input_parameters() will not
+	 * include the key "akey" any more if get_input_config_value( "akey" ) was called at some point.
+	 *
+	 * @param key String matching the key name.
 	 * @return	The value string, or an empty string if there is no such key.
 	 */
 	std::string get_input_config_value( std::string const& key ) const;
 
+	/**
+	 * \brief Get a list of keys in the input that have not been referenced.
+	 *
+	 * @return A vector with unreferenced keys.
+	 */
 	std::vector<std::string> get_list_unread_input_parameters() const;
 
-	void read_input_file(std::string const& fileName, std::string &infileContent) const;
+	/**
+	 * \brief Parse the content of the input file for 'key = value' string pairs.
+	 *
+	 *	See \ref parse_input on how the parsing of the content is done.
+	 * @param fileName The name of the input file.
+	 */
+	void read_input_file(std::string const& fileName);
 
+	/**
+	 * \brief Parse the input string for 'key = value' string pairs.
+	 *
+	 * It ignores comments following the char '/', '!' or '#' until the end of the line '\n'
+	 * @param input The string where the key = value pairs are searched in.
+	 */
 	void parse_input(std::string const&input);
-
-	void trim_string(std::string & str, std::string const& whitespace = " \t\n") const;
 private:
 
+	///Store the key/value pairs
 	std::map<std::string,std::string> _inputFileKeyValue;
 
+	///Store if get_input_config_value(key) was called at some point
 	mutable std::map<std::string,bool> _keyWasRead;
 
+	/**
+	 * \brief Remove the string starting from '/', '!' or '#' until '\\n' from str.
+	 * @param str Input string with not comment on output.
+	 */
 	void remove_comment(std::string & str) const;
+
+	/**
+	 * \brief Remove the leading and trailing whitespace chars from str.
+	 * @param str Input string with not leading and trailing whitespace on output.
+	 * @param whitespace The chars that count as white space.
+	 */
+	void trim_string(std::string & str, std::string const& whitespace = " \t\n") const;
 };
 
 } /* namespace input */

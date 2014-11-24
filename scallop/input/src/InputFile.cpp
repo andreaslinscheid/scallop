@@ -27,9 +27,9 @@ namespace scallop {
 namespace input {
 
 void InputFile::read_input_file(
-		std::string const & fileName,
-		std::string & infileContent) const {
-	infileContent.clear();
+		std::string const & fileName) {
+
+	std::string infileContent;
 
 	//open the file
 	std::ifstream file;
@@ -51,6 +51,8 @@ void InputFile::read_input_file(
 		line.clear();
 	}
 	file.close();
+
+	this->parse_input(infileContent);
 }
 
 

@@ -32,17 +32,14 @@ Setup::Setup(int argc, char *argv[]) {
 	//If we are in debugging mode, generate a stack trace in the case of a segmentation fault
 	error_handling::Error::generate_stacktrace_on_segfault();
 
-	std::string inputOptions;
 	if ( argc < 1 ) {
 		error_handling::Error( "\tNo options passed, exiting ... !", 1 );
 	}else if ( argc == 2 ) {
-		_inputFile.read_input_file(argv[1],inputOptions);
+		//fill the internal key/value map with content.
+		_inputFile.read_input_file(argv[1]);
 	} else {
 		error_handling::Error( "\tCannot figure out how to get input, exiting ... !", 1 );
 	}
-
-	//fill the internal key/value map with content.
-	_inputFile.parse_input(inputOptions);
 }
 
 

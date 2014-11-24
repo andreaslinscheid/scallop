@@ -26,12 +26,32 @@ namespace scallop {
 namespace input {
 namespace test {
 
+/**
+ * 	Test the input mothods of scallop.
+ *
+ * 	It creates a sample input test file and emulates a call to Setup.
+ * 	Then the sample input file is parsed using InputBaseTest.
+ */
 class Test {
 public:
+
+	/**
+	 * 	Run all tests of this suite.
+	 */
 	void run_test();
 private:
-	void create_test_input_file(std::string const& fileName);
+
+	/**
+	 * 	Parse a sample input file that is created.
+	 */
 	void test_input_file_parsing();
+
+	/**
+	 * 	Create a sample input file.
+	 * @param fileName The file Name of the sample input file.
+	 */
+	void create_test_input_file(std::string const& fileName);
+
 };
 
 } /* namespace test */
