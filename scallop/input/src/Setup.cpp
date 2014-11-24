@@ -47,5 +47,9 @@ InputFile const& Setup::get_parsed_input_file() const {
 	return _inputFile;
 }
 
+std::vector<std::string> Setup::get_list_unread_input_parameters() const {
+	return _inputFile.get_list_unread_input_parameters();
+}
+
 } /* namespace input */
 } /* namespace scallop */

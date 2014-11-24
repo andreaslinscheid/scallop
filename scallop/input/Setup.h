@@ -53,6 +53,13 @@ public:
 	 * @return A const reference to the internal InputFile
 	 */
 	InputFile const& get_parsed_input_file() const;
+
+	/**
+	 * \brief Forward the call to \ref InputFile::get_list_unread_input_parameters()
+	 *
+	 * @return A list of keys in the input file that have not been referenced.
+	 */
+	std::vector<std::string> get_list_unread_input_parameters() const;
 private:
 	InputFile _inputFile;
 

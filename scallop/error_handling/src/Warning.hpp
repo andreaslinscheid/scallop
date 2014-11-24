@@ -1,4 +1,4 @@
-/*	This file main.cpp is part of scallop.
+/*	This file Warning.cpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,25 +13,20 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 14, 2014
+ *  Created on: Nov 24, 2014
  *      Author: Andreas Linscheid
  */
 
-#include "scallop/input/input.h"
+#include "scallop/error_handling/Warning.h"
 
-using namespace scallop;
+namespace scallop {
+namespace error_handling {
 
-int main(int argc, char *argv[]) {
+template<typename T>
+Warning& Warning::operator<< (T const& message) {
+	 _sstrBuff << message;
+	return *this;
+}
 
-	//read the input file //TODO or stdin
-	input::Setup setup(argc,argv);
-
-	//Flag a warning for all keys that have not been used, as this indicates unintended input
-	std::vector<std::string> const unusedKeys = setup.get_list_unread_input_parameters();
-	for ( auto & key : unusedKeys )
-		error_handling::Warning("Key "+ key +" defined on input has never been used!") ;
-
-	return 0;
-};
-
-
+} /* namespace error_handling */
+} /* namespace scallop */
