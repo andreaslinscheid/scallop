@@ -16,10 +16,12 @@
 .*
 !.gitignore
 !.htaccess
-#the lapacke dir
-lapack*/
-# TeX temps
+#some dirs that do not contain source code
+# or are symlinks
 doc/
+tests/scallop
+#the tests.cpp files, since they are automatically generated
+*/tests.cpp
 
 make.sys*
 
