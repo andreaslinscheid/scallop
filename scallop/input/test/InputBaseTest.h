@@ -29,37 +29,29 @@ namespace test {
 
 class InputBaseTest : public InputBase<InputBaseTest> {
 
-	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(sizetTest,"Tests the reading of a type of size_t.\\\n","zero",0,size_t);
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			sizeTest,
+			"Tests the reading of a type of size_t.\n",
+			"zero",
+			0,
+			size_t);
 
+	INPUTBASE_INPUT_OPTION_MACRO(
+			doubleTest,
+			"Tests the reading of a type of double.\n",
+			double);
 
-	INPUTBASE_INPUT_OPTION_MACRO(doubleTest,"Tests the reading of a type of double.\n",double);
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			vectorSizeT,
+			"Tests the reading of a vector of size_ts.\n",
+			"List of 0 11 and 42",
+			{0 COMMA_SUBSTITUTION 11 COMMA_SUBSTITUTION 42},
+			std::vector<size_t>);
 
-//	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(boolTest,
-//			"Tests the reading of a type of type bool.\n"
-//			"The default is false",
-//			false,bool);
-//
-//	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(doubleTest,
-//			"Tests the reading of a type of type double.\n"
-//			"The default is 4.0 .",
-//			4.0,double);
-//
-//
-//	std::vector<size_t> defaultSizeTVect{10,60,30};
-//
-//	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(vectorSizeTTest,
-//			"Tests the reading of a vector of type size_t.\n"
-//			"The default is 10,60,30",
-//			,
-//			std::vector<size_t>);
-private:
-//	//test several types of input
-//	size_t stypeOption;
-//	bool _yesNoOption;
-//	double _floatDOption;
-//	float _floatOption;
-//	std::vector<size_t> _vectorOfNumbersOption;
-//	std::string _textOption;
+	INPUTBASE_INPUT_OPTION_MACRO(
+			boolTest,
+			"Tests the bool reading\n",
+			bool);
 };
 
 } /* namespace test */

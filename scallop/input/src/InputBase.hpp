@@ -21,6 +21,8 @@
 #include "scallop/error_handling/Error.h"
 #include "scallop/output/TextFile.h"
 #include <typeinfo>
+#include <type_traits>
+#include <string>
 
 namespace scallop {
 namespace input {
@@ -51,14 +53,18 @@ void InputBase<derived>::get_option(std::string const& valueString,std::vector<T
 		values = defaultValue;
 	} else {
 		std::stringstream ss(valueString);
+		if ( std::is_same<typename std::remove_cv<T>::type ,bool>::value )
+			ss >> std::boolalpha;
 		T element;
-		do{
+		while ( not (ss.tellg() == -1 or ss.tellg() == valueString.size() ) ){
 			ss >> element;
-			if ( ss.rdstate() & std::stringstream::failbit )
+			std::string nameOfType = typeid(element).name();
+			if ( ss.fail() )
 				error_handling::Error( std::string("Failed to parse the value string ")
-					+ valueString + " as " + typeid(element).name(), 1 );
+					+ valueString + " as " + nameOfType, 1 );
+
 			values.push_back(element);
-		} while ( ss.rdstate() & std::stringstream::eofbit);
+		};
 	}
 }
 
@@ -69,27 +75,6 @@ void InputBase<derived>::get_option(std::string const& valueString,std::vector<T
 		error_handling::Error("No default value, but also nothing to covert into a value.",1);
 	this->get_option(valueString,values,values);
 }
-
-//
-//template<class derived>
-//void InputBase<derived>::get_option(
-//		std::string const& valueString,
-//		std::vector<bool> const& defaultValue,
-//		std::vector<bool> &values) const {
-//	if ( valueString.empty() ){
-//		values = defaultValue;
-//	} else {
-//		std::stringstream ss(valueString);
-//		bool element;
-//		do{
-//			ss >> std::boolalpha >> element;
-//			if ( ss.rdstate() & std::stringstream::failbit )
-//				error_handling::Error( std::string("Failed to parse the value string ")
-//					+ valueString + " as bool", 1 );
-//			values.push_back(element);
-//		} while ( ss.rdstate() & std::stringstream::eofbit);
-//	}
-//}
 
 template<class derived>
 void InputBase<derived>::build_input_manual(std::string const& fileName) const {
@@ -107,13 +92,11 @@ void InputBase<derived>::add_option_to_manual(std::string const& textWithOptionD
 }
 
 template<class derived>
-void InputBase<derived>::parse_all_registered_variables(InputFile const& inputFile) {
+void InputBase<derived>::parse_variables(InputFile const& inputFile) {
 	for ( size_t i = 0 ; i < _mebrFctnPtrToVariableParsing.size(); ++i) {
 		 (static_cast<derived*>(this)->*_mebrFctnPtrToVariableParsing[i])(inputFile);
 	}
-//	for ( auto & inputVariableReadingFunction : _mebrFctnPtrToVariableParsing ) {
-//	 (inputVariableReadingFunction*)(inputFile);
-//	}
+	_isInit = true;
 }
 
 template<class derived>

@@ -51,22 +51,39 @@ void Test::test_input_file_parsing() {
 
 	//get the options from the input file
 	InputBaseTest inputFileTest;
-	inputFileTest.parse_all_registered_variables( setup.get_parsed_input_file() );
+	inputFileTest.parse_variables( setup.get_parsed_input_file() );
 
+	//Test the manual generation
 	std::string const testManualName = tmpFolder + "manualTest.txt";
 	inputFileTest.build_input_manual(testManualName);
 
+	//Print unused parameters
 	std::vector<std::string> unreadOptions =
 			setup.get_parsed_input_file().get_list_unread_input_parameters();
-	std::cout << "WARNING, the following input parameters were not read: " <<std::endl;
+	std::cout << "WARNING, the following input parameters were not used: " <<std::endl;
 	for ( auto &opt  : unreadOptions )
-		std::cout << opt << std::endl;
+		std::cout << '\t'<< opt << std::endl;
+
+	std::cout << "Read in sizeTest : " << inputFileTest.get_sizeTest() << std::endl;
+	std::cout << "Read in doubleTest : " << inputFileTest.get_doubleTest() << std::endl;
+	std::cout << "Read in boolTest : " << std::boolalpha << inputFileTest.get_boolTest() << std::endl;
+	std::cout << "Read in vectorSizeT with the elements : ";
+	std::vector<size_t> vect = inputFileTest.get_vectorSizeT();
+	for ( auto & e : vect )
+		std::cout << e << ", ";
+	std::cout << std::endl;
 }
 
 void Test::create_test_input_file(std::string const& fileName){
 	std::string const inputFileContent = "#Testfile with a comment as header line\n"
 			"#\t a tab and some test input data:\n"
-			"sizeTest=42\ndoubleTest=3.4\n";
+			"sizeTest=42\ndoubleTest=3.4\n\n"
+			"vectorSizeT=1 2 3 !testing vector reading and an inline comment\n"
+			"doubleTest=3.4 #this should work too, since it is valid "
+			"to redefine the same key but only with the same value.\n"
+			"//In the next line we test an empty line:\n\n"
+			"boolThatWillNotBeUsed = true //The program should inform about this unused variable!\n"
+			"boolTest = false";
 
 	output::TextFile textFile;
 	textFile.write(fileName,inputFileContent);

@@ -33,6 +33,24 @@ class InputBase {
 
 public:
 
+	/**
+	 * Write the internally stored input manual to the fileName.
+	 *
+	 * @param fileName The full path of the manual to be created.
+	 */
+	void build_input_manual(std::string const& fileName) const;
+
+	/**
+	 * Take an input file and fill the internal variables with content.
+	 *
+	 * @param inputFile The parsed input file.
+	 */
+	void parse_variables(InputFile const& inputFile);
+
+protected:
+
+	bool _isInit = false;
+
 	template<typename T>
 	void get_option(std::string const& valueString,T const& defaultValue,T &value) const;
 
@@ -45,34 +63,55 @@ public:
 	template<typename T>
 	void get_option(std::string const& valueString,std::vector<T> &values) const;
 
-//	void get_option(std::string const& valueString,
-//			std::vector<bool> const& defaultValue,
-//			std::vector<bool> &values) const ;
-
-	void build_input_manual(std::string const& fileName) const;
-
 	void add_option_to_manual(std::string const& textWithOptionDescription);
 
-	void parse_all_registered_variables(InputFile const& inputFile);
-
 	void register_variable_parsing( void( derived:: * function )(InputFile const&) );
+
 private:
 
-	std::vector< void(derived::*)(InputFile const&) > _mebrFctnPtrToVariableParsing;
-
 	std::string _manual;
+
+	std::vector< void(derived::*)(InputFile const&) > _mebrFctnPtrToVariableParsing;
 };
 
 /**
- * This macro allows to easily add new input variables.
+ * Allows to add comma in macro expansion values.
  *
- * To add a new input variable
+ * Use for example {0 COMMA_SUBSTITUTION 1 COMMA_SUBSTITUTION 2 COMMA_SUBSTITUTION 3}
+ * to initialize, say, a vector with the list {0,1,2,3} via a macro variable
+ */
+#define COMMA_SUBSTITUTION ,
+
+/**
+ * This macro allows to easily add new input variables with a default value.
+ *
+ *
+ * To add a new input variable use
+ * 		INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+ * 			quantityName,
+ * 			description,
+ * 			defaultValueText,
+ * 			defaultValueStatement,
+ * 			typeQ);
+ *
+ *	Here:
+ *\param quantityName  		Is the name of quantity in the input file and
+ *							internally in the Input module
+ *\param description		A description of the variable that appears in the manual.
+ *\param defaultValueText	A description text of the default value such as "zero" or "0" or "sequence 0 to 3".
+ *\param defaultValueStatement	A compiling expression for the default such as 0 or
+ *							{0 COMMA_SUBSTITUTION 1 COMMA_SUBSTITUTION 2 COMMA_SUBSTITUTION 3}
+ *\param typeQ				The type of the variable such as double or size_t or std::vector<size_t>
  *
  */
-#define INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(\
-		quantityName,description,defaultValueText,defaultValueStatement,typeQ)\
+#define INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(											\
+		quantityName,description,defaultValueText,defaultValueStatement,typeQ)				\
 public:                                                                                 	\
 	typeQ const& get_##quantityName() const {                                            	\
+		if ( not this->_isInit ){															\
+			error_handling::Error("Calling get_"#quantityName"()"							\
+									"before calling parse_variables()",1);					\
+		};																					\
 		return _##quantityName;                                                         	\
 	};                                                                                  	\
 private:																					\
@@ -102,10 +141,19 @@ private:																					\
 	void * call_##quantityName##_processing													\
 				= this->perform_##quantityName##_processing()								\
 
-
+/**
+ * 	Similar macro as \ref INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT without default values.
+ *
+ * 	This requires the variable to be set in the input process or the program errors out.
+ * 	See documentation of \ref INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT
+ */
 #define INPUTBASE_INPUT_OPTION_MACRO(quantityName,description,typeQ)						\
 public:                                                                                 	\
 	typeQ const& get_##quantityName() const {                                            	\
+		if ( not this->_isInit ){															\
+			error_handling::Error("Calling get_"#quantityName"()"							\
+									"before calling parse_variables()",1);					\
+		};																					\
 		return _##quantityName;                                                         	\
 	};                                                                                  	\
 private:																					\
@@ -125,7 +173,7 @@ private:																					\
 			"========================================================================\n"	\
 			"|Description:|\n"																\
 			"--------------\n"																\
-			""+#description+"\n"                                      						\
+			""+description+"\n"                                      						\
 			"========================================================================\n\n");\
 		this->register_variable_parsing(													\
 			&std::remove_pointer<decltype(this)>::type ::parse_variable_##quantityName);	\
@@ -133,7 +181,6 @@ private:																					\
 	};																						\
 	void * call_##quantityName##_processing													\
 				= this->perform_##quantityName##_processing()								\
-
 
 
 } /* namespace input */

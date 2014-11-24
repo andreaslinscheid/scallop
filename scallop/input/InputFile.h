@@ -43,12 +43,14 @@ public:
 
 	void parse_input(std::string const&input);
 
-	void trim_string(std::string & str, std::string const& whitespace = " \t") const;
+	void trim_string(std::string & str, std::string const& whitespace = " \t\n") const;
 private:
 
 	std::map<std::string,std::string> _inputFileKeyValue;
 
 	mutable std::map<std::string,bool> _keyWasRead;
+
+	void remove_comment(std::string & str) const;
 };
 
 } /* namespace input */

@@ -58,13 +58,22 @@ void InputFile::read_input_file(
 // except the first and the last element this means we have a block with
 //	value+key. Keywords are not separated by whitespace.
 void InputFile::parse_input(std::string const & input) {
-	//remove comments
 
-	//break input into key/value pairs
+	std::string strippedInput;
+
+	//remove comments
     std::stringstream ss(input);
     std::string item;
+    while( std::getline(ss, item, '\n') ) {
+    	remove_comment(item);
+    	strippedInput += item + '\n';
+    }
+
+	//break input into key/value pairs
+    std::stringstream ssstrip(strippedInput);
     std::vector<std::string> elements;
-    while( std::getline(ss, item, '=') ) {
+    while( std::getline(ssstrip, item, '=') ) {
+    	trim_string(item);
         elements.push_back(item);
     }
 
@@ -89,7 +98,7 @@ void InputFile::parse_input(std::string const & input) {
 
     	key = data.back();
     }
-	keyValuePairs.push_back( std::make_pair(key,elements.back()) );
+	keyValuePairs.push_back( std::make_pair(key, elements.back() ) );
 
 	//insert the key and value pairs into the map.
 	for ( auto const& elmentPair : keyValuePairs ) {
@@ -126,6 +135,17 @@ std::string InputFile::get_input_config_value( std::string const& key ) const {
 	return result;
 }
 
+void InputFile::remove_comment(std::string & str) const {
+	std::string const& commentTokens = "/!#";
+    const auto commentBegin = str.find_first_of(commentTokens);
+
+    if (commentBegin == std::string::npos)
+    	return; // no comment contained
+
+    const auto strRange = str.size() - commentBegin;
+
+    str.erase(commentBegin, strRange);
+}
 
 void InputFile::trim_string(std::string & str,
 		std::string const& whitespace) const {
