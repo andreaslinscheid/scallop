@@ -20,6 +20,9 @@
 #ifndef SCALLOP_ERROR_HANDLING_WARNING_H_
 #define SCALLOP_ERROR_HANDLING_WARNING_H_
 
+#include <string>
+#include <sstream>
+
 namespace scallop {
 namespace error_handling {
 

@@ -21,6 +21,7 @@
 #define SCALLOP_INPUT_INPUT_H_
 
 #include "scallop/input/Setup.h"
+#include "scallop/input/Configuration.h"
 
 
 #endif /* SCALLOP_INPUT_INPUT_H_ */

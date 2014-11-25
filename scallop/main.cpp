@@ -18,6 +18,7 @@
  */
 
 #include "scallop/input/input.h"
+#include "scallop/error_handling/Warning.h"
 
 using namespace scallop;
 
@@ -25,6 +26,19 @@ int main(int argc, char *argv[]) {
 
 	//read the input file //TODO or stdin
 	input::Setup setup(argc,argv);
+
+	//Set basic configuration options
+	input::Configuration config(setup.get_parsed_input_file());
+
+	if ( config.get_method().compare("Eliash") == 0 ){
+
+		//solve the Eliashberg equations
+		eliashberg::DriverImaginaryAxis<double> eliashEqDriver;
+		eliashEqDriver.set_input(setup);
+		do {
+			eliashEqDriver.iterate();
+		} while ( not eliashEqDriver.converged() );
+	}
 
 	//Flag a warning for all keys that have not been used, as this indicates unintended input
 	std::vector<std::string> const unusedKeys = setup.get_list_unread_input_parameters();

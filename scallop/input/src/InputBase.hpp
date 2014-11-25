@@ -28,6 +28,14 @@ namespace scallop {
 namespace input {
 
 template<class derived>
+InputBase<derived>::InputBase() { };
+
+template<class derived>
+InputBase<derived>::InputBase(InputFile const& inputFile) {
+	this->parse_variables(inputFile);
+};
+
+template<class derived>
 template<typename T>
 void InputBase<derived>::get_option(std::string const& valueString,T const& defaultValue,T &value) const{
 	std::vector<T> oneElement;

@@ -1,4 +1,4 @@
-/*	This file Warning.cpp is part of scallop.
+/*	This file Configuration.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,32 +13,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 24, 2014
+ *  Created on: Nov 25, 2014
  *      Author: Andreas Linscheid
  */
 
-#include "scallop/error_handling/Warning.h"
-#include <iostream>
+#ifndef SCALLOP_INPUT_CONFIGURATION_H_
+#define SCALLOP_INPUT_CONFIGURATION_H_
+
+#include "scallop/input/InputBase.h"
 
 namespace scallop {
-namespace error_handling {
+namespace input {
 
-Warning::Warning() : _buffer(), _sstrBuff(_buffer) { };
+class Configuration : public InputBase<Configuration> {
 
-void Warning::print() const {
-	if ( _sstrBuff.str().empty() )
-		return;
-	std::cerr << "=====================================================\n"
-				 "||WARNING : ||\n" <<  _sstrBuff.str() <<
-				 "=====================================================\n" <<std::endl;
-}
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			method,
+			"Decide which method is used to compute SC\n"
+			"Possible choices are Elishberg 'Eliash'\n"
+			"\tand (Spin)SCDFT 'SCDFT'",
+			"SCDFT",
+			"SCDFT",
+			std::string);
+};
 
-Warning::~Warning() {
-	this->print();
-}
-
-Warning::Warning(std::string const& message) :
-		_buffer(message), _sstrBuff(_buffer)  { };
-
-} /* namespace error_handling */
+} /* namespace input */
 } /* namespace scallop */
+#endif /* SCALLOP_INPUT_CONFIGURATION_H_ */

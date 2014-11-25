@@ -46,6 +46,17 @@ class InputBase {
 public:
 
 	/**
+	 * \brief default constructor.
+	 */
+	InputBase();
+
+	/**
+	 * \brief directly calls \ref parse_variables upon construction.
+	 * @param inputFile
+	 */
+	InputBase(InputFile const& inputFile);
+
+	/**
 	 * \brief Write the internally stored input manual to the fileName.
 	 *
 	 * @param fileName The full path of the manual to be created.
