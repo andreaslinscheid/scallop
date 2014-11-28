@@ -1,4 +1,4 @@
-/*	This file MatzubaraSplittingBase.hpp is part of scallop.
+/*	This file EliashbergGapFunction.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,10 +17,29 @@
  *      Author: Andreas Linscheid
  */
 
-#include "scallop/eliashberg/MatzubaraSplittingBase.h"
+#ifndef SCALLOP_ELIASHBERG_ELIASHBERGGAPFUNCTION_H_
+#define SCALLOP_ELIASHBERG_ELIASHBERGGAPFUNCTION_H_
+
+#include "scallop/eliashberg/MatzubaraEffectiveCouplingMatrix.h"
 
 namespace scallop {
 namespace eliashberg {
 
+template<typename T>
+class EliashbergGapFunction : MatzubaraSplittingVector<T> {
+public:
+
+	template<class FreqencyRenormalization,
+			 class NambuOffDiagonalEnergyIntegral>
+	void compute(
+			T inverseTemperature,
+			EliashbergGapFunction<T> const& previousGap,
+			MatzubaraEffectiveCouplingMatrix<T> const& couplingNambuDiagonal,
+			FreqencyRenormalization const& Z,
+			NambuOffDiagonalEnergyIntegral const& N);
+};
+
 } /* namespace eliashberg */
 } /* namespace scallop */
+#include "scallop/eliashberg/src/EliashbergGapFunction.hpp"
+#endif /* SCALLOP_ELIASHBERG_ELIASHBERGGAPFUNCTION_H_ */

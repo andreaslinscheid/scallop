@@ -1,4 +1,4 @@
-/*	This file MatzubaraSplittingVector.h is part of scallop.
+/*	This file Test.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,35 +17,21 @@
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
-#define SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
-
-#include <cstddef>
-#include <vector>
+#ifndef SCALLOP_ELIASHBERG_TEST_H_
+#define SCALLOP_ELIASHBERG_TEST_H_
 
 namespace scallop {
 namespace eliashberg {
 
-template<typename T>
-class MatzubaraSplittingVector : private std::vector<T> {
+class Test {
 public:
-
-	T & operator() (size_t n, size_t j, size_t b);
-
-	T read(size_t n, size_t j, size_t b) const;
-
-	size_t get_num_matzubara_pts() const;
-
-	size_t get_num_splitting_pts() const;
-
-	size_t get_num_bands() const;
+	void run_test();
 private:
-	size_t _numMatzPts;
-	size_t _numSplitPts;
-	size_t _numBands;
+
+	template<typename T>
+	void run_Matzubara_splitting_vector_test();
 };
 
 } /* namespace eliashberg */
 } /* namespace scallop */
-#include "scallop/eliashberg/src/MatzubaraSplittingVector.hpp"
-#endif /* SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_ */
+#endif /* SCALLOP_ELIASHBERG_TEST_H_ */

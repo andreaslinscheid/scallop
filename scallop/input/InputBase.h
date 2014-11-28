@@ -188,7 +188,7 @@ public:                                                                         
 	};                                                                                  	\
 private:																					\
 	typeQ _##quantityName;																	\
-	void parse_variable_##quantityName(InputFile const& inputFile) {						\
+	void parse_variable_##quantityName(scallop::input::InputFile const& inputFile) {		\
 		typeQ defaultValue = defaultValueStatement;											\
 		std::string valueInInputFile = inputFile.get_input_config_value(#quantityName);		\
 		this->get_option(valueInInputFile,defaultValue, _##quantityName);					\
@@ -230,7 +230,7 @@ public:                                                                         
 	};                                                                                  	\
 private:																					\
 	typeQ _##quantityName;																	\
-	void parse_variable_##quantityName(InputFile const& inputFile) {						\
+	void parse_variable_##quantityName(scallop::input::InputFile const& inputFile) {		\
 		std::string valueInInputFile = inputFile.get_input_config_value(#quantityName);		\
 		this->get_option(valueInInputFile,_##quantityName);									\
 	}																						\

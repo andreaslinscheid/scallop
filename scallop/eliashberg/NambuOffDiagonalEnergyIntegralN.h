@@ -1,4 +1,4 @@
-/*	This file MatzubaraSplittingVector.h is part of scallop.
+/*	This file NambuOffDiagonalEnergyIntegralN.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,39 +13,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
+ *  Created on: Nov 26, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
-#define SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
+#ifndef SCALLOP_ELIASHBERG_NAMBUOFFDIAGONALENERGYINTEGRALN_H_
+#define SCALLOP_ELIASHBERG_NAMBUOFFDIAGONALENERGYINTEGRALN_H_
 
-#include <cstddef>
-#include <vector>
+#include "scallop/eliashberg/MatzubaraSplittingVector.h"
 
 namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-class MatzubaraSplittingVector : private std::vector<T> {
-public:
+class NambuOffDiagonalEnergyIntegralN : public MatzubaraSplittingVector<T> {
 
-	T & operator() (size_t n, size_t j, size_t b);
-
-	T read(size_t n, size_t j, size_t b) const;
-
-	size_t get_num_matzubara_pts() const;
-
-	size_t get_num_splitting_pts() const;
-
-	size_t get_num_bands() const;
-private:
-	size_t _numMatzPts;
-	size_t _numSplitPts;
-	size_t _numBands;
+	template<class gapSquareRoot, class FrequencyRenorm, class AsymetricEnergyRenorm>
+	void compute(
+			gapSquareRoot const& gapSqrtUp,
+			gapSquareRoot const& gapSqrtDown,
+			FrequencyRenorm const& Z,
+			AsymetricEnergyRenorm const& A);
 };
 
 } /* namespace eliashberg */
 } /* namespace scallop */
-#include "scallop/eliashberg/src/MatzubaraSplittingVector.hpp"
-#endif /* SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_ */
+#include "scallop/eliashberg/src/NambuOffDiagonalEnergyIntegralN.hpp"
+#endif /* SCALLOP_ELIASHBERG_NAMBUOFFDIAGONALENERGYINTEGRALN_H_ */

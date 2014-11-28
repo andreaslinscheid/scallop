@@ -1,4 +1,4 @@
-/*	This file MatzubaraSplittingVector.h is part of scallop.
+/*	This file MatzubaraSplittingMatrix.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,12 +13,12 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
+ *  Created on: Nov 26, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
-#define SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
+#ifndef SCALLOP_ELIASHBERG_MATZUBARASPLITTINGMATRIX_H_
+#define SCALLOP_ELIASHBERG_MATZUBARASPLITTINGMATRIX_H_
 
 #include <cstddef>
 #include <vector>
@@ -27,12 +27,12 @@ namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-class MatzubaraSplittingVector : private std::vector<T> {
+class MatzubaraSplittingMatrix : private std::vector<T> {
 public:
 
-	T & operator() (size_t n, size_t j, size_t b);
+	T & operator() (size_t n, size_t j, size_t b, size_t np, size_t jn, size_t bp);
 
-	T read(size_t n, size_t j, size_t b) const;
+	T read(size_t n, size_t j, size_t b, size_t np, size_t jn, size_t bp) const;
 
 	size_t get_num_matzubara_pts() const;
 
@@ -40,12 +40,13 @@ public:
 
 	size_t get_num_bands() const;
 private:
-	size_t _numMatzPts;
-	size_t _numSplitPts;
-	size_t _numBands;
+
+	size_t _matzubaraDim;
+
+	size_t _splittingDim;
 };
 
 } /* namespace eliashberg */
 } /* namespace scallop */
-#include "scallop/eliashberg/src/MatzubaraSplittingVector.hpp"
-#endif /* SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_ */
+#include "scallop/eliashberg/src/MatzubaraSplittingMatrix.hpp"
+#endif /* SCALLOP_ELIASHBERG_MATZUBARASPLITTINGMATRIX_H_ */

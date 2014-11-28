@@ -1,4 +1,4 @@
-/*	This file DriverImaginaryAxis.h is part of scallop.
+/*	This file BasicFunctions.hpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,38 +13,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
+ *  Created on: Nov 27, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_DRIVERIMAGINARYAXIS_H_
-#define SCALLOP_ELIASHBERG_DRIVERIMAGINARYAXIS_H_
-
-#include "scallop/eliashberg/MatzubaraSplittingVector.h"
-#include "scallop/eliashberg/EliashbergImaginaryAxis.h"
-#include "scallop/input/input.h"
+#include "scallop/auxillary/BasicFunctions.h"
 
 namespace scallop {
-namespace eliashberg {
+namespace auxillary {
 
-template <typename T>
-class DriverImaginaryAxis {
-public:
-
-	void set_input(input::Setup const& setup);
-
-	void initialize();
-
-	void iterate();
-
-	bool converged() const;
-private:
-
-	EliashbergImaginaryAxis<T> _singleRunDriver;
-
-	T _currentTemperature;
-};
-
-} /* namespace eliashberg */
+} /* namespace auxillary */
 } /* namespace scallop */
-#endif /* SCALLOP_ELIASHBERG_DRIVERIMAGINARYAXIS_H_ */

@@ -64,7 +64,7 @@ void InputBase<derived>::get_option(std::string const& valueString,std::vector<T
 		if ( std::is_same<typename std::remove_cv<T>::type ,bool>::value )
 			ss >> std::boolalpha;
 		T element;
-		while ( not (ss.tellg() == -1 or ss.tellg() == valueString.size() ) ){
+		while ( not ( (ss.tellg() == -1) or (ss.tellg() == static_cast<int>(valueString.size()) )) ){
 			ss >> element;
 			std::string nameOfType = typeid(element).name();
 			if ( ss.fail() )

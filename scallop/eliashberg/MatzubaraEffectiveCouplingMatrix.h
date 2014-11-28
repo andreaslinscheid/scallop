@@ -1,4 +1,4 @@
-/*	This file MatzubaraSplittingVector.h is part of scallop.
+/*	This file MatzubaraEffectiveCouplingMatrix.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,35 +17,19 @@
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
-#define SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_
+#ifndef SCALLOP_ELIASHBERG_MATZUBARAEFFECTIVECOUPLINGMATRIX_H_
+#define SCALLOP_ELIASHBERG_MATZUBARAEFFECTIVECOUPLINGMATRIX_H_
 
-#include <cstddef>
-#include <vector>
+#include "scallop/eliashberg/MatzubaraSplittingMatrix.h"
 
 namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-class MatzubaraSplittingVector : private std::vector<T> {
-public:
-
-	T & operator() (size_t n, size_t j, size_t b);
-
-	T read(size_t n, size_t j, size_t b) const;
-
-	size_t get_num_matzubara_pts() const;
-
-	size_t get_num_splitting_pts() const;
-
-	size_t get_num_bands() const;
-private:
-	size_t _numMatzPts;
-	size_t _numSplitPts;
-	size_t _numBands;
+class MatzubaraEffectiveCouplingMatrix : MatzubaraSplittingMatrix<T> {
 };
 
 } /* namespace eliashberg */
 } /* namespace scallop */
-#include "scallop/eliashberg/src/MatzubaraSplittingVector.hpp"
-#endif /* SCALLOP_ELIASHBERG_MATZUBARASPLITTINGVECTOR_H_ */
+#include "scallop/eliashberg/src/MatzubaraEffectiveCouplingMatrix.hpp"
+#endif /* SCALLOP_ELIASHBERG_MATZUBARAEFFECTIVECOUPLINGMATRIX_H_ */
