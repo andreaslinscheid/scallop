@@ -22,8 +22,11 @@
 
 #include "scallop/eliashberg/EliashbergGapFunction.h"
 #include "scallop/eliashberg/NambuOffDiagonalEnergyIntegralN.h"
+#include "scallop/eliashberg/NambuDiagonalEnergyIntegralM.h"
 #include "scallop/eliashberg/FrequencyCorrectionZ.h"
 #include "scallop/eliashberg/GapSquareRoot.h"
+#include "scallop/eliashberg/ASymmetricEnergyCorrection.h"
+#include "scallop/eliashberg/MatzubaraEffectiveCouplingMatrix.h"
 
 namespace scallop {
 namespace eliashberg {
@@ -34,19 +37,32 @@ namespace eliashberg {
 template<typename T>
 class EliashbergImaginaryAxis {
 
+	EliashbergImaginaryAxis(
+			MatzubaraEffectiveCouplingMatrix<T> const& diagonalCouplingUpSpin,
+			MatzubaraEffectiveCouplingMatrix<T> const& diagonalCouplingDownSpin,
+			MatzubaraEffectiveCouplingMatrix<T> const& offDiagonalCoupling);
+
 	void solve(
 			T _temperature,
 			EliashbergGapFunction<T> const& deltaEInitalGuess,
-			FrequencyCorrectionZ<T> const& ZInitalGuess);
+			FrequencyCorrectionZ<T> const& ZInitalGuess,
+			ASymmetricEnergyCorrection<T> const& AInitialGuess);
 
 private:
+	MatzubaraEffectiveCouplingMatrix<T> const& _diagonalCouplingUpSpin;
+	MatzubaraEffectiveCouplingMatrix<T> const& _diagonalCouplingDownSpin;
+	MatzubaraEffectiveCouplingMatrix<T> const& _offDiagonalCoupling;
 
 	T _temperature;
 
 	EliashbergGapFunction<T> _deltaE;
-	FrequencyCorrectionZ<T> _Z;
-	GapSquareRoot<T> _gapSquareRootSpinUp;
-	GapSquareRoot<T> _gapSquareRootSpinDown;
+	FrequencyCorrectionZ<T> _eliashZ;
+	GapSquareRoot<T,auxillary::Constants::upspin> _gapSquareRootSpinUp;
+	GapSquareRoot<T,auxillary::Constants::downspin> _gapSquareRootSpinDown;
+	ASymmetricEnergyCorrection<T> _eliashA;
+	NambuDiagonalEnergyIntegralM<T,auxillary::Constants::upspin> _spinUpM;
+	NambuDiagonalEnergyIntegralM<T,auxillary::Constants::downspin> _spinDownM;
+	NambuOffDiagonalEnergyIntegralN<T> _eliashN;
 
 
 };

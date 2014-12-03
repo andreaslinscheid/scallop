@@ -22,5 +22,30 @@
 namespace scallop {
 namespace eliashberg {
 
+template<typename T, int spin>
+void GapSquareRoot<T,spin>::compute(FrequencyCorrectionZ<T> const& Z,
+		EliashbergGapFunction<T> const& deltaE,
+		ASymmetricEnergyCorrection<T> const& A,
+		T inverseTemperature){
+
+	//abbreviation for the complex identity
+	std::complex<double> complex_i = std::complex<double>(0.0,1.0);
+
+	int numMatzPtsDiv2 = static_cast<int>(this->get_num_matzubara_pts())/2;
+
+	//main computation loop
+	for (size_t b = 0; b < this->get_num_bands(); ++b )
+		for (size_t j = 0; j < this->get_num_splitting_pts(); ++j )
+			for (int n = -numMatzPtsDiv2; n < numMatzPtsDiv2; ++n){
+
+				T omegaN = auxillary::BasicFunctions::matzubara_frequency_of_index(n,inverseTemperature);
+
+				(*this)(b,j,n) = std::sqrt	(-( std::pow( Z.read(b,j,n)*deltaE.read(b,j,n) , 2)
+											   -std::pow( complex_i * omegaN * Z.read(b,j,n)
+														 -spin*_splittingMesh[j], 2)
+											  )
+										  	);
+			}
+}
 } /* namespace eliashberg */
 } /* namespace scallop */

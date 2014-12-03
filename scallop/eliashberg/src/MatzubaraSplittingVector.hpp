@@ -22,5 +22,15 @@
 namespace scallop {
 namespace eliashberg {
 
+template<typename T>
+T & MatzubaraSplittingVector<T>::operator() (size_t b, size_t j, size_t n) {
+	return (b*this->get_num_splitting_pts() + j)*this->get_num_matzubara_pts() + n;
+}
+
+template<typename T>
+T MatzubaraSplittingVector<T>::operator() (size_t b, size_t j, size_t n) const {
+	return (*this)(b,j,n);
+}
+
 } /* namespace eliashberg */
 } /* namespace scallop */

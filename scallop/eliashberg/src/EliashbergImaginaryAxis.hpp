@@ -18,75 +18,65 @@
  */
 
 #include "scallop/eliashberg/EliashbergImaginaryAxis.h"
+#include "scallop/auxillary/BasicFunctions.h"
+#include "scallop/auxillary/MixingModule.h"
 
 namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-void EliashbergImaginaryAxis<T>::solve(
+EliashbergImaginaryAxis<T>::EliashbergImaginaryAxis(
+		MatzubaraEffectiveCouplingMatrix<T> const& diagonalCouplingUpSpin,
+		MatzubaraEffectiveCouplingMatrix<T> const& diagonalCouplingDownSpin,
+		MatzubaraEffectiveCouplingMatrix<T> const& offDiagonalCoupling) :
+				_diagonalCouplingUpSpin(diagonalCouplingUpSpin),
+				_diagonalCouplingDownSpin(diagonalCouplingDownSpin),
+				_offDiagonalCoupling(offDiagonalCoupling){ };
 
+template<typename T>
+void EliashbergImaginaryAxis<T>::solve(
 		T temperature,
 		EliashbergGapFunction<T> const& deltaEInitalGuess,
-		FrequencyCorrectionZ<T> const& ZInitalGuess) {
+		FrequencyCorrectionZ<T> const& ZInitalGuess,
+		ASymmetricEnergyCorrection<T> const& AInitialGuess) {
 
 	_deltaE = deltaEInitalGuess;
-	_Z = ZInitalGuess;
-	T beta =
+	auxillary::MixingModule< EliashbergGapFunction<T> > MixingDeltaE(_deltaE);
+	_eliashZ = ZInitalGuess;
+	auxillary::MixingModule< FrequencyCorrectionZ<T> > MixingZ(_eliashZ);
+	_eliashA = AInitialGuess;
+	auxillary::MixingModule< ASymmetricEnergyCorrection<T> > MixingA(_eliashA);
+	_temperature = temperature;
+	T beta = auxillary::BasicFunctions::inverse_temperature(_temperature);
 
-	bool converged = false;
+	bool converged;
 
 	do {
 
 		//Compute square root tmp save
-		_gapSquareRootSpinUp.compute(_Z,_deltaE,_ASymmetricEnergyCorrection,_inverseTemperature,true);
-		_gapSquareRootSpinDown.compute(_frequencyCorrection,
-				_pairing,_ASymmetricEnergyCorrection,_inverseTemperature,false);
-		//
+		_gapSquareRootSpinUp.compute(_eliashZ,_deltaE,_eliashA,beta);
+		_gapSquareRootSpinDown.compute(_eliashZ,_deltaE,_eliashA,beta);
+
 		//Compute energy integrals
-		_NambuDiagonalEnergyIntegralUpSpin.compute(_gapSquareRootSpinUp,
-				_gapSquareRootSpinDown,_frequencyCorrection,_ASymmetricEnergyCorrection,
-				_inverseTemperature,true);
-		_NambuDiagonalEnergyIntegralDownSpin.compute(_gapSquareRootSpinUp,
-				_gapSquareRootSpinDown,_frequencyCorrection,_ASymmetricEnergyCorrection,
-				_inverseTemperature,false);
-		_NambuOffDiagonalEnergyIntegral.compute(_gapSquareRootSpinUp,
-				_gapSquareRootSpinDown,_frequencyCorrection,_ASymmetricEnergyCorrection);
-		//
-		//absDiff is the sum of absolut value differences old to new
-		bool converged = true;
-		bool switchToBroyden = true;
-		//
-		//Main Eliashberg: compute gap equation
-		_pairing.compute(_NambuOffDiagonalEffectiveCoupling,_NambuOffDiagonalEnergyIntegral,
-				_frequencyCorrection,_inverseTemperature,_mixingParameter,_convergencyNumberOfDigits,_digitsToSwitchToBroydenMixing,
-				_pairingMixing,converged,switchToBroyden);
-		//					and Nambu diagonal parts
-		_ASymmetricEnergyCorrection.compute(_NambuDiagonalEffectiveCouplingUpSpin,
-				_NambuDiagonalEffectiveCouplingDownSpin,_NambuDiagonalEnergyIntegralUpSpin,
-				_NambuDiagonalEnergyIntegralDownSpin,_frequencyCorrection,_inverseTemperature,
-				_mixingParameter,_convergencyNumberOfDigits,converged);
-		//
-		_frequencyCorrection.compute(_NambuDiagonalEffectiveCouplingUpSpin,
-				_NambuDiagonalEffectiveCouplingDownSpin,_NambuDiagonalEnergyIntegralUpSpin,
-				_NambuDiagonalEnergyIntegralDownSpin,_frequencyCorrection,_inverseTemperature,
-				_mixingParameter,_convergencyNumberOfDigits,converged);
-		//
-		//we always consider the loop to be convereged if the gap went below the minimum
-		if ( ( fabs(_pairing.get_value_with_max_abs().real()) < fabs(_gapConsideredZero.real()) ) and
-				( fabs(_pairing.get_value_with_max_abs().imag()) < fabs(_gapConsideredZero.imag())) )
-			converged = true;
-		if ( _minNumberOfIterations >= numberOfIterations){
-			converged = false;
-		}
-		//
-		//switch to non-linear Broyden Mixing at given convergence
-		if ( not (_broydenMixingInUse) and switchToBroyden ){
-			std::cout << "\t switched to Broyden Mixing" << "\n";
-			restart_mixing(1);
-		}
-		//
-		//report the norm to give the user a hind about the convergence improvement
-		std::cout << "\tThe norm of the gap function is " << _pairing.compute_norm_sqrt_of_abs_square() << "\n";
+		_spinUpM.compute(_gapSquareRootSpinUp,_gapSquareRootSpinDown,_eliashZ,_eliashA,beta);
+		_spinDownM.compute(_gapSquareRootSpinUp,_gapSquareRootSpinDown,_eliashZ,_eliashA,beta);
+		_eliashN.compute(_gapSquareRootSpinUp,_gapSquareRootSpinDown,_eliashZ,_eliashA);
+
+		//Main Eliashberg, be careful to use the variables from the last iteration consistently
+		_deltaE.compute(_offDiagonalCoupling,_eliashN,MixingZ.get_current_iteration(),beta);
+		_eliashA.compute(_diagonalCouplingUpSpin,_diagonalCouplingDownSpin,
+				_spinUpM,_spinDownM,MixingZ.get_current_iteration(),beta);
+		_eliashZ.compute(_diagonalCouplingUpSpin,_diagonalCouplingDownSpin,
+				_spinUpM,_spinDownM,MixingZ.get_current_iteration(),beta);
+
+		//check convergence
+		converged = true;
+		bool switchToBroydboolen = true;
+
+		//mix in old solutions
+		MixingDeltaE.mixing(_deltaE);
+		MixingZ.mixing(_eliashZ);
+		MixingA.mixing(_eliashA);
 	} while (not converged);
 }
 

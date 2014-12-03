@@ -20,30 +20,19 @@
 #ifndef SCALLOP_ELIASHBERG_MATZUBARASPLITTINGMATRIX_H_
 #define SCALLOP_ELIASHBERG_MATZUBARASPLITTINGMATRIX_H_
 
+#include "scallop/eliashberg/MatzubaraSplittingBase.h"
 #include <cstddef>
-#include <vector>
 
 namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-class MatzubaraSplittingMatrix : private std::vector<T> {
+class MatzubaraSplittingMatrix : public MatzubaraSplittingBase<MatzubaraSplittingMatrix<T>,T> {
 public:
 
 	T & operator() (size_t n, size_t j, size_t b, size_t np, size_t jn, size_t bp);
 
 	T read(size_t n, size_t j, size_t b, size_t np, size_t jn, size_t bp) const;
-
-	size_t get_num_matzubara_pts() const;
-
-	size_t get_num_splitting_pts() const;
-
-	size_t get_num_bands() const;
-private:
-
-	size_t _matzubaraDim;
-
-	size_t _splittingDim;
 };
 
 } /* namespace eliashberg */

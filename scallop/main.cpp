@@ -19,6 +19,7 @@
 
 #include "scallop/input/input.h"
 #include "scallop/error_handling/Warning.h"
+#include "scallop/eliashberg/eliashberg.h"
 
 using namespace scallop;
 

@@ -24,51 +24,39 @@ namespace eliashberg {
 
 template<typename T>
 void FrequencyCorrectionZ<T>::compute(
-		MatzubaraSplittingMatrix<double> const& EffectiveCouplingKernelUpSpin,
-		MatzubaraSplittingMatrix<double> const& EffectiveCouplingKernelDownSpin,
-		MatzubaraSplittingVector<std::complex<double> > const& MUpSpin,
-		MatzubaraSplittingVector<std::complex<double> > const& MDownSpin,
-		MatzubaraSplittingVector<std::complex<double> > const& Z,
-		double inverseTemperature,
-		double mixing,
-		int digitsToAgreeOnConvergence,
-		bool &converged){
-	//
-	//abbreviation complex identity
+		MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelUpSpin,
+		MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelDownSpin,
+		NambuDiagonalEnergyIntegralM<T,auxillary::Constants::upspin> const& MUpSpin,
+		NambuDiagonalEnergyIntegralM<T,auxillary::Constants::downspin> const& MDownSpin,
+		FrequencyCorrectionZ<T> const& previousZ,
+		double inverseTemperature ) {
+
 	std::complex<double> complex_i = std::complex<double>(0.0,1.0);
-	//
-	//main computation loop
-	for(size_t n=_matzubaraDim;n--;){
-		for(size_t j=_splittingDim;j--;){
-			//
-			//init
-			std::complex<double> oldValueForMixing = (*this)(n,j);
-			(*this)(n,j) = 0.0;
-			//
-			//Integration loop
-			for(size_t np=_matzubaraDim;np--;){
-				for(size_t jp=_splittingDim;jp--;){
-					(*this)(n,j) += EffectiveCouplingKernelUpSpin.read(n,j,np,jp)*MUpSpin.read(np,jp);
-				}
+
+	for (size_t b = 0 ; b < this->get_num_bands() ; ++b )
+		for(size_t j= 0 ; j <  this->get_num_splitting_pts() ; ++j)
+			for(size_t n = 0 ; n < this->get_num_matzubara_pts() ; ++n){
+
+				(*this)(b,j,n) = 0.0;
+
+				//Integration loop for up and down spin
+				for (size_t bp = 0 ; bp < this->get_num_bands() ; ++bp )
+					for(size_t jp= 0 ; jp <  this->get_num_splitting_pts() ; ++jp)
+						for(size_t np = 0 ; np < this->get_num_matzubara_pts() ; ++np)
+							(*this)(b,j,n) +=
+									EffectiveCouplingKernelUpSpin(b,j,n,bp,jp,np)*MUpSpin(bp,jp,np);
+
+				for (size_t bp = 0 ; bp < this->get_num_bands() ; ++bp )
+					for(size_t jp= 0 ; jp <  this->get_num_splitting_pts() ; ++jp)
+						for(size_t np = 0 ; np < this->get_num_matzubara_pts() ; ++np)
+							(*this)(b,j,n) +=
+									EffectiveCouplingKernelDownSpin(b,j,n,bp,jp,np)*MDownSpin(bp,jp,np);
+
+				//Scale
+				(*this)(b,j,n) *= complex_i/(4.0*inverseTemperature
+						*auxillary::BasicFunctions::matzubara_frequency_of_index(n-_matzubaraDim/2,inverseTemperature));
+				(*this)(b,j,n) += 1.0;
 			}
-			for(size_t np=_matzubaraDim;np--;){
-				for(size_t jp=_splittingDim;jp--;){
-					(*this)(n,j) += EffectiveCouplingKernelDownSpin.read(n,j,np,jp)*MDownSpin.read(np,jp);
-				}
-			}
-			//Scale
-			(*this)(n,j) *= complex_i/(4.0*inverseTemperature
-					*EliashbergEquations::matzubara_point_to_frequency_fermionic(n-_matzubaraDim/2,inverseTemperature));
-			(*this)(n,j) += 1.0;
-			//
-			//check convergence
-			converged = converged and BasicFunctions::agree_on_significant_decimal_digits_with_threshold(
-					abs(oldValueForMixing),abs((*this)(n,j)),digitsToAgreeOnConvergence,10e-10);
-			//
-			//linearly mix with old value
-			(*this)(n,j) += (oldValueForMixing - (*this)(n,j))*mixing;
-		}
-	}
 }
 
 } /* namespace eliashberg */

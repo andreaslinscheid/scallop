@@ -20,11 +20,25 @@
 #ifndef SCALLOP_ELIASHBERG_GAPSQUAREROOT_H_
 #define SCALLOP_ELIASHBERG_GAPSQUAREROOT_H_
 
+#include "scallop/eliashberg/MatzubaraSplittingVector.h"
+#include "scallop/eliashberg/FrequencyCorrectionZ.h"
+#include "scallop/eliashberg/EliashbergGapFunction.h"
+#include "scallop/eliashberg/ASymmetricEnergyCorrection.h"
+
 namespace scallop {
 namespace eliashberg {
 
-template<typename T>
-class GapSquareRoot {
+template<typename T, int spin>
+class GapSquareRoot : public MatzubaraSplittingVector<T> {
+
+	static_assert( abs(spin) == 1, "Must be specialized with valid spin of +-1" );
+
+public :
+
+	void compute(FrequencyCorrectionZ<T> const& Z,
+			EliashbergGapFunction<T> const& Delta,
+			ASymmetricEnergyCorrection<T> const& A,
+			T inverseTemperature);
 };
 
 } /* namespace eliashberg */

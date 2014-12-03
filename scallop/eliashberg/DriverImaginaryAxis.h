@@ -47,4 +47,5 @@ private:
 
 } /* namespace eliashberg */
 } /* namespace scallop */
+#include "scallop/eliashberg/src/DriverImaginaryAxis.hpp"
 #endif /* SCALLOP_ELIASHBERG_DRIVERIMAGINARYAXIS_H_ */

@@ -1,4 +1,4 @@
-/*	This file FrequencyCorrectionZ.h is part of scallop.
+/*	This file ASymmetricEnergyCorrection.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,29 +13,21 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 27, 2014
+ *  Created on: Nov 28, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_FREQUENCYCORRECTIONZ_H_
-#define SCALLOP_ELIASHBERG_FREQUENCYCORRECTIONZ_H_
+#ifndef SCALLOP_ELIASHBERG_ASYMMETRICENERGYCORRECTION_H_
+#define SCALLOP_ELIASHBERG_ASYMMETRICENERGYCORRECTION_H_
 
 namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-class FrequencyCorrectionZ : public MatzubaraSplittingVector<T> {
-
-	void compute(
-			MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelUpSpin,
-			MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelDownSpin,
-			NambuDiagonalEnergyIntegralM<T,auxillary::Constants::upspin> const& MUpSpin,
-			NambuDiagonalEnergyIntegralM<T,auxillary::Constants::downspin> const& MDownSpin,
-			FrequencyCorrectionZ<T> const& previousZ,
-			double inverseTemperature);
+class ASymmetricEnergyCorrection : public MatzubaraSplittingVector<T>{
 };
 
 } /* namespace eliashberg */
 } /* namespace scallop */
-#include "scallop/eliashberg/src/FrequencyCorrectionZ.hpp"
-#endif /* SCALLOP_ELIASHBERG_FREQUENCYCORRECTIONZ_H_ */
+#include "scallop/eliashberg/src/ASymmetricEnergyCorrection.hpp"
+#endif /* SCALLOP_ELIASHBERG_ASYMMETRICENERGYCORRECTION_H_ */

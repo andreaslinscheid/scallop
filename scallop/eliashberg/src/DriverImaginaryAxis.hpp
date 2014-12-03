@@ -22,5 +22,11 @@
 namespace scallop {
 namespace eliashberg {
 
+template<typename T>
+void DriverImaginaryAxis<T>::iterate() {
+	//determine what to do
+
+}
+
 } /* namespace eliashberg */
 } /* namespace scallop */

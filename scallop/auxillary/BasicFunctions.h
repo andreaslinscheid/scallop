@@ -27,6 +27,26 @@ struct BasicFunctions {
 
 	template<typename T>
 	static T inverse_temperature(T temperature);
+
+	template<typename T>
+	static T matzubara_frequency_of_index(int index, T beta);
+};
+
+template<typename T>
+struct Constants {
+
+	static constexp int upspin = 1;
+
+	static const int downspin = -1;
+
+	static const T kBoltzmannMHartree = 0.003166811429;
+
+	static const T THZToMHartree = 0.151983;
+
+	static const T RYToMHartree = 500;
+
+	static const T cmToTheMinus1ToMHartree = 0.0000045563352812*1000;
+
 };
 
 } /* namespace auxillary */

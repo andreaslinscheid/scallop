@@ -1,4 +1,4 @@
-/*	This file MatzubaraEffectiveCouplingMatrix.h is part of scallop.
+/*	This file NambuDiagonalEnergyIntegralM.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,30 +13,27 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
+ *  Created on: Nov 28, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_ELIASHBERG_MATZUBARAEFFECTIVECOUPLINGMATRIX_H_
-#define SCALLOP_ELIASHBERG_MATZUBARAEFFECTIVECOUPLINGMATRIX_H_
+#ifndef SCALLOP_ELIASHBERG_NAMBUDIAGONALENERGYINTEGRALM_H_
+#define SCALLOP_ELIASHBERG_NAMBUDIAGONALENERGYINTEGRALM_H_
 
-#include "scallop/eliashberg/MatzubaraSplittingMatrix.h"
-#include "scallop/couplings/FrequencyDependentCoupling.h"
+#include "scallop/eliashberg/MatzubaraSplittingVector.h"
 
 namespace scallop {
 namespace eliashberg {
 
-template<typename T>
-class MatzubaraEffectiveCouplingMatrix : public MatzubaraSplittingMatrix<T> {
-public:
+template<typename T, int spin>
+class NambuDiagonalEnergyIntegralM : public MatzubaraSplittingVector<T> {
 
-	void compute(
-			size_t numberMatzubaraPts,
-			T temperature,
-			couplings::FrequencyDependentCoupling<T> const& couplingData);
+	static_assert( abs(spin) == 1 , "Must specialize NambuDiagonalEnergyIntegralM with spin +-1");
+
+public:
 };
 
 } /* namespace eliashberg */
 } /* namespace scallop */
-#include "scallop/eliashberg/src/MatzubaraEffectiveCouplingMatrix.hpp"
-#endif /* SCALLOP_ELIASHBERG_MATZUBARAEFFECTIVECOUPLINGMATRIX_H_ */
+#include "scallop/eliashberg/src/NambuDiagonalEnergyIntegralM.hpp"
+#endif /* SCALLOP_ELIASHBERG_NAMBUDIAGONALENERGYINTEGRALM_H_ */

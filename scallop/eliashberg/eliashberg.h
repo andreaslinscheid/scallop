@@ -1,4 +1,4 @@
-/*	This file BasicFunctions.hpp is part of scallop.
+/*	This file eliashberg.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,25 +13,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 27, 2014
+ *  Created on: Nov 30, 2014
  *      Author: Andreas Linscheid
  */
 
-#include "scallop/auxillary/BasicFunctions.h"
-#include <cmath>
+#ifndef SCALLOP_ELIASHBERG_ELIASHBERG_H_
+#define SCALLOP_ELIASHBERG_ELIASHBERG_H_
 
-namespace scallop {
-namespace auxillary {
+#include "scallop/eliashberg/DriverImaginaryAxis.h"
 
-template<typename T>
-T BasicFunctions::inverse_temperature(T temperature){
-	return 1/(Constants<T>::kBoltzmannHartree*temperature);
-}
 
-template<typename T>
-T BasicFunctions::matzubara_frequency_of_index(int index, T beta) {
-	return M_PI*(2*index+1)/beta;
-}
-
-} /* namespace auxillary */
-} /* namespace scallop */
+#endif /* SCALLOP_ELIASHBERG_ELIASHBERG_H_ */
