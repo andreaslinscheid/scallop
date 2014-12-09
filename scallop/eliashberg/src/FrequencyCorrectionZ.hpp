@@ -26,8 +26,8 @@ template<typename T>
 void FrequencyCorrectionZ<T>::compute(
 		MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelUpSpin,
 		MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelDownSpin,
-		NambuDiagonalEnergyIntegralM<T,auxillary::Constants::upspin> const& MUpSpin,
-		NambuDiagonalEnergyIntegralM<T,auxillary::Constants::downspin> const& MDownSpin,
+		NambuDiagonalEnergyIntegralM<T,auxillary::Constants<T>::upspin> const& MUpSpin,
+		NambuDiagonalEnergyIntegralM<T,auxillary::Constants<T>::downspin> const& MDownSpin,
 		FrequencyCorrectionZ<T> const& previousZ,
 		double inverseTemperature ) {
 
@@ -54,7 +54,8 @@ void FrequencyCorrectionZ<T>::compute(
 
 				//Scale
 				(*this)(b,j,n) *= complex_i/(4.0*inverseTemperature
-						*auxillary::BasicFunctions::matzubara_frequency_of_index(n-_matzubaraDim/2,inverseTemperature));
+						*auxillary::BasicFunctions::matzubara_frequency_of_index(
+								n-this->get_num_matzubara_pts()/2,inverseTemperature));
 				(*this)(b,j,n) += 1.0;
 			}
 }

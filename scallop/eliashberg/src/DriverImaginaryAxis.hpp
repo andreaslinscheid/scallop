@@ -23,9 +23,26 @@ namespace scallop {
 namespace eliashberg {
 
 template<typename T>
+DriverImaginaryAxis<T>::DriverImaginaryAxis() :
+		_diagonalCouplingUpSpin(),
+		_diagonalCouplingDownSpin(),
+		_offDiagonalCoupling(),
+		_singleRunDriver(_diagonalCouplingUpSpin,_diagonalCouplingDownSpin,_offDiagonalCoupling) { };
+
+template<typename T>
 void DriverImaginaryAxis<T>::iterate() {
 	//determine what to do
 
+}
+
+template<typename T>
+void DriverImaginaryAxis<T>::set_input(input::Setup const& setup) {
+
+}
+
+template<typename T>
+bool DriverImaginaryAxis<T>::converged() const {
+	return true;
 }
 
 } /* namespace eliashberg */

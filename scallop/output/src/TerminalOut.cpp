@@ -1,4 +1,4 @@
-/*	This file Configuration.h is part of scallop.
+/*	This file TerminalOut.cpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,32 +13,27 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
+ *  Created on: Dec 5, 2014
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_INPUT_CONFIGURATION_H_
-#define SCALLOP_INPUT_CONFIGURATION_H_
-
-#include "scallop/input/InputBase.h"
+#include "scallop/output/TerminalOut.h"
 
 namespace scallop {
-namespace input {
+namespace output {
 
-class Configuration : public InputBase<Configuration> {
+TerminalOut::TerminalOut() : _verbosityLvl(0), _buffer(), _sstrBuff(_buffer)  { };
 
-	using InputBase<Configuration>::InputBase;
+TerminalOut::TerminalOut(size_t verbosityLvl): _verbosityLvl(verbosityLvl), _buffer(), _sstrBuff(_buffer){ };
 
-	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
-			method,
-			"Decide which method is used to compute SC\n"
-			"Possible choices are Elishberg 'Eliash'\n"
-			"\tand (Spin)SCDFT 'SCDFT'",
-			"SCDFT",
-			"SCDFT",
-			std::string);
-};
+void TerminalOut::print() const {
+	if ( _sstrBuff.str().empty() )
+		return;
+	std::cout << _sstrBuff;
+}
 
-} /* namespace input */
+TerminalOut::~TerminalOut() {
+	this->print();
+}
+} /* namespace output */
 } /* namespace scallop */
-#endif /* SCALLOP_INPUT_CONFIGURATION_H_ */

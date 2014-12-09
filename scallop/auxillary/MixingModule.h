@@ -26,7 +26,7 @@ namespace auxillary {
 template<class T>
 class MixingModule {
 public:
-	MixingModule(T const& quantityToMix,size_t numberIterationsConsidered = 0);
+	MixingModule(T const& quantityToMix,size_t numberIterationsConsidered = 1);
 
 	void init(T const& quantityToMix,size_t numberIterationsConsidered);
 	void restart(size_t numberIterationsConsidered);
@@ -48,26 +48,11 @@ public:
 
 	T const& get_privious_iteration(size_t numItInThePast=1) const;
 private:
-	typedef class DropStack{
-	public:
-		DropStack() : _data(NULL),_offset(0) {};
-		~DropStack();
-		DropStack & operator= (DropStack const& rhs);
-		explicit DropStack(DropStack const& other);
-		void init(size_t vectorDimension,size_t maxNumberOfIterationsConsidered);
-		T& operator() (size_t vectorIndex,size_t iterationInThePast){
-			return _data[( (_offset + iterationInThePast) % _maxIterations) * _vectorDim + vectorIndex];
-		}
-		T * operator[] (size_t iterationInThePast){
-			return &_data[( (_offset + iterationInThePast) % _maxIterations) * _vectorDim];
-		}
-		void push(T * vectorData);
-	private:
-		T * _data;
-		size_t _maxIterations;
-		size_t _vectorDim;
-		size_t _offset;
-	}dropStack;
+
+	std::vector<T> _history;
+	std::vector<&T> _refStepsHistory;
+
+	T & _refCurrentIteration;
 
 	double _weightsForErrorInverseJacobian;
 	double * _weightsForErrorIteration;

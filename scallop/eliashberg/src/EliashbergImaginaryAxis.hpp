@@ -51,6 +51,8 @@ void EliashbergImaginaryAxis<T>::solve(
 
 	bool converged;
 
+	size_t numIterations = 0;
+
 	do {
 
 		//Compute square root tmp save
@@ -77,7 +79,29 @@ void EliashbergImaginaryAxis<T>::solve(
 		MixingDeltaE.mixing(_deltaE);
 		MixingZ.mixing(_eliashZ);
 		MixingA.mixing(_eliashA);
+
+		++numIterations;
 	} while (not converged);
+}
+
+template<typename T>
+void EliashbergImaginaryAxis<T>::report_statistics(size_t numIterations, bool converged) {
+
+}
+
+template<typename T>
+EliashbergGapFunction<T> const& EliashbergImaginaryAxis<T>::get_eliashberg_gap() const {
+	return _deltaE;
+}
+
+template<typename T>
+FrequencyCorrectionZ<T> const& EliashbergImaginaryAxis<T>::get_eliashberg_Z() const {
+	return _eliashZ;
+}
+
+template<typename T>
+ASymmetricEnergyCorrection<T> const& EliashbergImaginaryAxis<T>::get_eliashberg_A() const {
+	return _eliashA;
 }
 
 } /* namespace eliashberg */

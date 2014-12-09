@@ -35,17 +35,17 @@ struct BasicFunctions {
 template<typename T>
 struct Constants {
 
-	static constexp int upspin = 1;
+	static const int upspin = 1;
 
 	static const int downspin = -1;
 
-	static const T kBoltzmannMHartree = 0.003166811429;
+	static constexpr T kBoltzmannMHartree = 0.003166811429;
 
-	static const T THZToMHartree = 0.151983;
+	static constexpr T THZToMHartree = 0.151983;
 
-	static const T RYToMHartree = 500;
+	static constexpr T RYToMHartree = 500;
 
-	static const T cmToTheMinus1ToMHartree = 0.0000045563352812*1000;
+	static constexpr T cmToTheMinus1ToMHartree = 0.0000045563352812*1000;
 
 };
 

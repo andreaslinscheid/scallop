@@ -17,9 +17,34 @@
  *      Author: Andreas Linscheid
  */
 #include "scallop/auxillary/MixingModule.h"
+#include "scallop/error_handling/Error.h"
 
 namespace scallop {
 namespace auxillary {
+
+template<class T>
+MixingModule<T>::MixingModule(T const& quantityToMix,size_t numberIterationsConsidered)
+	:	_history(numberIterationsConsidered,quantityToMix), _refCurrentIteration(&_history[0]) { };
+
+
+template<class T>
+void MixingModule<T>::init(T const& quantityToMix,size_t numberIterationsConsidered) {
+	if ( numberIterationsConsidered > 0)
+		error_handling::Error("Mixing must use 1 or more previous steps",2);
+	_history = std::vector<T>(numberIterationsConsidered,quantityToMix);
+	_refStepsHistory.clear();
+	_refStepsHistory.reserve(numberIterationsConsidered);
+	for ( auto &&refH : _history)
+		_refStepsHistory.push_back(refH);
+}
+
+template<class T>
+void MixingModule<T>::mixing(double mixingParameter,T & pointerToVectorNewAndOut) {
+	for ( auto it = _history.begin()+1 ; it != _history.end(); ++it)
+		*it = *(it - 1);
+
+	pointerToVectorNewAndOut
+}
 
 } /* namespace auxillary */
 } /* namespace scallop */

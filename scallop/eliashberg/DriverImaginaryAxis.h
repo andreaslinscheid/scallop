@@ -31,6 +31,8 @@ template <typename T>
 class DriverImaginaryAxis {
 public:
 
+	DriverImaginaryAxis();
+
 	void set_input(input::Setup const& setup);
 
 	void initialize();
@@ -39,6 +41,12 @@ public:
 
 	bool converged() const;
 private:
+
+	MatzubaraEffectiveCouplingMatrix<T> _diagonalCouplingUpSpin;
+
+	MatzubaraEffectiveCouplingMatrix<T> _diagonalCouplingDownSpin;
+
+	MatzubaraEffectiveCouplingMatrix<T> _offDiagonalCoupling;
 
 	EliashbergImaginaryAxis<T> _singleRunDriver;
 

@@ -29,8 +29,8 @@ class FrequencyCorrectionZ : public MatzubaraSplittingVector<T> {
 	void compute(
 			MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelUpSpin,
 			MatzubaraEffectiveCouplingMatrix<T> const& EffectiveCouplingKernelDownSpin,
-			NambuDiagonalEnergyIntegralM<T,auxillary::Constants::upspin> const& MUpSpin,
-			NambuDiagonalEnergyIntegralM<T,auxillary::Constants::downspin> const& MDownSpin,
+			NambuDiagonalEnergyIntegralM<T,auxillary::Constants<T>::upspin> const& MUpSpin,
+			NambuDiagonalEnergyIntegralM<T,auxillary::Constants<T>::downspin> const& MDownSpin,
 			FrequencyCorrectionZ<T> const& previousZ,
 			double inverseTemperature);
 };

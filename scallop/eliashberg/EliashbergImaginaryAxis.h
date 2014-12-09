@@ -37,6 +37,8 @@ namespace eliashberg {
 template<typename T>
 class EliashbergImaginaryAxis {
 
+public:
+
 	EliashbergImaginaryAxis(
 			MatzubaraEffectiveCouplingMatrix<T> const& diagonalCouplingUpSpin,
 			MatzubaraEffectiveCouplingMatrix<T> const& diagonalCouplingDownSpin,
@@ -48,6 +50,14 @@ class EliashbergImaginaryAxis {
 			FrequencyCorrectionZ<T> const& ZInitalGuess,
 			ASymmetricEnergyCorrection<T> const& AInitialGuess);
 
+	void report_statistics(size_t numIterations, bool converged);
+
+	EliashbergGapFunction<T> const& get_eliashberg_gap() const;
+
+	FrequencyCorrectionZ<T> const& get_eliashberg_Z() const;
+
+	ASymmetricEnergyCorrection<T> const& get_eliashberg_A() const;
+
 private:
 	MatzubaraEffectiveCouplingMatrix<T> const& _diagonalCouplingUpSpin;
 	MatzubaraEffectiveCouplingMatrix<T> const& _diagonalCouplingDownSpin;
@@ -57,11 +67,11 @@ private:
 
 	EliashbergGapFunction<T> _deltaE;
 	FrequencyCorrectionZ<T> _eliashZ;
-	GapSquareRoot<T,auxillary::Constants::upspin> _gapSquareRootSpinUp;
-	GapSquareRoot<T,auxillary::Constants::downspin> _gapSquareRootSpinDown;
+	GapSquareRoot<T,auxillary::Constants<T>::upspin> _gapSquareRootSpinUp;
+	GapSquareRoot<T,auxillary::Constants<T>::downspin> _gapSquareRootSpinDown;
 	ASymmetricEnergyCorrection<T> _eliashA;
-	NambuDiagonalEnergyIntegralM<T,auxillary::Constants::upspin> _spinUpM;
-	NambuDiagonalEnergyIntegralM<T,auxillary::Constants::downspin> _spinDownM;
+	NambuDiagonalEnergyIntegralM<T,auxillary::Constants<T>::upspin> _spinUpM;
+	NambuDiagonalEnergyIntegralM<T,auxillary::Constants<T>::downspin> _spinDownM;
 	NambuOffDiagonalEnergyIntegralN<T> _eliashN;
 
 

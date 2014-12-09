@@ -42,7 +42,7 @@ void GapSquareRoot<T,spin>::compute(FrequencyCorrectionZ<T> const& Z,
 
 				(*this)(b,j,n) = std::sqrt	(-( std::pow( Z.read(b,j,n)*deltaE.read(b,j,n) , 2)
 											   -std::pow( complex_i * omegaN * Z.read(b,j,n)
-														 -spin*_splittingMesh[j], 2)
+														 -spin* this->get_splitting_pt(j), 2)
 											  )
 										  	);
 			}
