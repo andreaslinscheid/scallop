@@ -50,7 +50,7 @@ T & MatzubaraSplittingBase<derived,T>::operator[] (size_t i) {
 }
 
 template<class derived,typename T>
-T const& MatzubaraSplittingBase<derived,T>::operator[] (size_t i) const{
+T MatzubaraSplittingBase<derived,T>::operator[] (size_t i) const{
 	return (*this)[i];
 }
 

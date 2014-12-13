@@ -44,7 +44,7 @@ public:
 
 	T & operator[] (size_t i);
 
-	T const& operator[] (size_t i) const;
+	T operator[] (size_t i) const;
 
 	size_t get_num_matzubara_pts() const;
 

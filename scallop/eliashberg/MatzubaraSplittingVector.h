@@ -30,9 +30,9 @@ template<typename T>
 class MatzubaraSplittingVector : public MatzubaraSplittingBase<MatzubaraSplittingVector<T>,T> {
 public:
 
-	T & operator() (size_t b, size_t j, size_t n);
+	T & operator() (size_t b, size_t j, int n);
 
-	T operator() (size_t b, size_t j, size_t n) const;
+	T operator() (size_t b, size_t j, int n) const;
 
 };
 

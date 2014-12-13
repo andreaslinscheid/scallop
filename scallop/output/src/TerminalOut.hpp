@@ -24,7 +24,7 @@ namespace output {
 
 template<typename T>
 TerminalOut& TerminalOut::operator<< (T const& message) {
-	_sstrBuff << T;
+	_sstrBuff << message;
 	return *this;
 }
 

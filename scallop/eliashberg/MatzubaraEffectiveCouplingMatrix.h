@@ -27,8 +27,12 @@ namespace scallop {
 namespace eliashberg {
 
 template<typename T>
-class MatzubaraEffectiveCouplingMatrix : public MatzubaraSplittingMatrix<T> {
+class MatzubaraEffectiveCouplingMatrix : public MatzubaraSplittingVector<T> {
 public:
+
+	T & operator() (size_t b, size_t j, size_t bp, size_t jp, int nMinusNp);
+
+	T operator() (size_t b, size_t j, size_t bp, size_t jp, int nMinusNp) const;
 
 	void compute(
 			size_t numberMatzubaraPts,

@@ -20,6 +20,9 @@
 #ifndef SCALLOP_OUTPUT_TERMINALOUT_H_
 #define SCALLOP_OUTPUT_TERMINALOUT_H_
 
+#include <cstddef>
+#include <sstream>
+
 namespace scallop {
 namespace output {
 
@@ -45,6 +48,8 @@ public:
 	TerminalOut& operator<< (T const& message);
 
 private:
+
+	const bool _printToStdErr;
 
 	const size_t _verbosityLvl;
 

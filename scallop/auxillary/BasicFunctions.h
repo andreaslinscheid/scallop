@@ -47,6 +47,14 @@ struct Constants {
 
 	static constexpr T cmToTheMinus1ToMHartree = 0.0000045563352812*1000;
 
+
+};
+
+struct GlobalVariables {
+
+	///Determines if output to the terminal from inside the code is printed.
+	///Levels are <=0 : all, 1 : stripped, 2 : essential
+	static int verbosityLvLOutPut;
 };
 
 } /* namespace auxillary */

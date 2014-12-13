@@ -18,18 +18,34 @@
  */
 
 #include "scallop/output/TerminalOut.h"
+#include "scallop/auxillary/BasicFunctions.h"
+#include <iostream>
 
 namespace scallop {
 namespace output {
 
-TerminalOut::TerminalOut() : _verbosityLvl(0), _buffer(), _sstrBuff(_buffer)  { };
+TerminalOut::TerminalOut() :
+		_printToStdErr(false),
+		_verbosityLvl(0),
+		_buffer(),
+		_sstrBuff(_buffer)  { };
 
-TerminalOut::TerminalOut(size_t verbosityLvl): _verbosityLvl(verbosityLvl), _buffer(), _sstrBuff(_buffer){ };
+TerminalOut::TerminalOut(size_t verbosityLvl) :
+		_printToStdErr(false),
+		_verbosityLvl(verbosityLvl),
+		_buffer(),
+		_sstrBuff(_buffer) { };
 
 void TerminalOut::print() const {
 	if ( _sstrBuff.str().empty() )
 		return;
-	std::cout << _sstrBuff;
+	if ( auxillary::GlobalVariables::verbosityLvLOutPut > static_cast<int>(_verbosityLvl))
+		return;
+	if ( _printToStdErr ){
+		std::cerr << _sstrBuff;
+	} else {
+		std::cout << _sstrBuff;
+	}
 }
 
 TerminalOut::~TerminalOut() {
