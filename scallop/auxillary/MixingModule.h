@@ -50,17 +50,19 @@ public:
 private:
 
 	std::vector<T> _history;
-	std::vector<&T> _refStepsHistory;
 
-	T & _refCurrentIteration;
+	///this index mapping is such that _history[_locationConologicalHistory[i]] refers to the ith last added element
+	std::vector<size_t> _locationConologicalHistory;
 
-	double _weightsForErrorInverseJacobian;
-	double * _weightsForErrorIteration;
-	T * _saveOfVectorFromPreviousIteration;
-	T * _beta;
-	T * _cOfEq15b;
-	dropStack _deltaVector;
-	dropStack _deltaFunctional;
+	typename T::value_type _weightsForErrorInverseJacobian;
+	std::vector<typename T::value_type> _weightsForErrorIteration;
+
+	std::vector<typename T::value_type> _dotProductBuffer;
+
+	std::vector<typename T::value_type> _beta;
+	std::vector<typename T::value_type> _cOfEq15b;
+	std::vector<T> _deltaVector;
+	std::vector<T> _deltaFunctional;
 	bool _isInitialized;
 	size_t _numberOfIterationsSoFar;
 	size_t _maxNumberOfIterationsConsideredForMixing;
