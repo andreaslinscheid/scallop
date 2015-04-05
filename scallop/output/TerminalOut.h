@@ -29,13 +29,19 @@ namespace output {
 class TerminalOut {
 public:
 
+	enum verbosityLvl {
+		high = 1000,
+		medium = 1100,
+		low = 1110
+	};
+
 	TerminalOut();
 
 	~TerminalOut();
 
 	void print() const;
 
-	TerminalOut(size_t verbosityLvl);
+	TerminalOut(int verbLvl);
 
 	/**
 	 * \brief Allow the user to insert any type of message.
@@ -51,7 +57,10 @@ private:
 
 	const bool _printToStdErr;
 
-	const size_t _verbosityLvl;
+	/// Verbosity level when the currently buffered message is printed.
+	/// 0 means low the message is always printed, while 1 will only be printed if
+	/// the global verbosity level is higher or equal than medium.
+	const int _verbosityLvl;
 
 	std::string _buffer;
 

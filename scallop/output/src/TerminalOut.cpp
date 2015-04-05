@@ -19,6 +19,7 @@
 
 #include "scallop/output/TerminalOut.h"
 #include "scallop/auxillary/BasicFunctions.h"
+#include "scallop/auxillary/globals.h"
 #include <iostream>
 
 namespace scallop {
@@ -30,16 +31,16 @@ TerminalOut::TerminalOut() :
 		_buffer(),
 		_sstrBuff(_buffer)  { };
 
-TerminalOut::TerminalOut(size_t verbosityLvl) :
+TerminalOut::TerminalOut(int verbLvl) :
 		_printToStdErr(false),
-		_verbosityLvl(verbosityLvl),
+		_verbosityLvl(verbLvl),
 		_buffer(),
 		_sstrBuff(_buffer) { };
 
 void TerminalOut::print() const {
 	if ( _sstrBuff.str().empty() )
 		return;
-	if ( auxillary::GlobalVariables::verbosityLvLOutPut > static_cast<int>(_verbosityLvl))
+	if ( auxillary::globals::verbosityLvl < _verbosityLvl )
 		return;
 	if ( _printToStdErr ){
 		std::cerr << _sstrBuff;

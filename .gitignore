@@ -22,6 +22,7 @@ doc/
 tests/scallop
 #the tests.cpp files, since they are automatically generated
 */tests.cpp
+tests.cpp
 
 make.sys*
 

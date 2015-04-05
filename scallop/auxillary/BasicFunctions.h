@@ -50,13 +50,6 @@ struct Constants {
 
 };
 
-struct GlobalVariables {
-
-	///Determines if output to the terminal from inside the code is printed.
-	///Levels are <=0 : all, 1 : stripped, 2 : essential
-	static int verbosityLvLOutPut;
-};
-
 } /* namespace auxillary */
 } /* namespace scallop */
 #include "scallop/auxillary/src/BasicFunctions.hpp"
