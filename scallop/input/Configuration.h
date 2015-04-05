@@ -37,6 +37,15 @@ class Configuration : public InputBase<Configuration> {
 			"SCDFT",
 			"SCDFT",
 			std::string);
+
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			verbosityLvl,
+			"Decide how much output is written to the console\n"
+			"Possible choices are minimum '0'\n"
+			"\tmedium '1'\n\thigh(all) '2'",
+			"2",
+			2,
+			int);
 };
 
 } /* namespace input */

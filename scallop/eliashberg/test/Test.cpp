@@ -21,9 +21,14 @@
 
 namespace scallop {
 namespace eliashberg {
+namespace test{
 
 void Test::run_test() {
+
+	//Tests of individual components
+	this->run_Matzubara_splitting_vector_test<double>();
 }
 
+} /* namespace test */
 } /* namespace eliashberg */
 } /* namespace scallop */

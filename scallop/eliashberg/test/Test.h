@@ -22,6 +22,7 @@
 
 namespace scallop {
 namespace eliashberg {
+namespace test{
 
 class Test {
 public:
@@ -32,6 +33,7 @@ private:
 	void run_Matzubara_splitting_vector_test();
 };
 
+} /* namespace test */
 } /* namespace eliashberg */
 } /* namespace scallop */
 #endif /* SCALLOP_ELIASHBERG_TEST_H_ */
