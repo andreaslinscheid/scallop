@@ -1,17 +1,28 @@
-# To make "debug" the default configuration if invoked with just "make":
+# To make "debug" the default configuration if invoked with just "make" except we want to build libraries.
 #
+ifneq ($(MAKECMDGOALS),lib)
+ifeq ($(CFG),)
+CFG=release
+endif
+else
 ifeq ($(CFG),)
 CFG=debug
+endif
 endif
 
 # The source files: We fetch them from the source tree. We exclude the .../test/tests.cpp files
 # since they contain small subprograms that excecute the tests in the given module individually.
-SOURCE_FILES := $(shell find -L . -type f | grep "scallop/" | grep .*\.cpp | grep -vP "(?:\./)?tests\/*" )
+SOURCE_FILES := $(shell find -L ./scallop/ -type f | grep .*\.cpp | grep -vP "(?:\./)?tests?\/*" )
 
 # Build a Dependency list and an Object list, by replacing the .cpp
 # extension to .d for dependency files, and .o for object files.
 DEP = $(patsubst %.cpp, deps.$(CFG)/%.d, ${SOURCE_FILES})
 OBJ = $(patsubst %.cpp, objs.$(CFG)/%.o, ${SOURCE_FILES})
+
+# A list of libraries that can be compiled. We take the detour via first fetching the
+# cpp files since for modules that do not have cpp files (i.e. are header only) we do not need to create a lib
+BUILDLIBLIST := $(shell find -L ./scallop/ -type f | grep .*\.cpp|grep -v main.cpp | grep -vP "(?:\./)?tests?\/*"|sed -e 's/\.\/scallop\/\(\w*\).*/\1/'|uniq)
+
 
 # The final binary
 TARGET=scallop.x
@@ -63,11 +74,20 @@ deps.$(CFG)/%.d: %.cpp
 	sed 's,\(.*\)\.o[ :]*,objs.$(CFG)\/$(shell echo "$@"| sed -e 's/^[^\/]*\/\(.*\)\.d$$/\1/').o $@ : ,g' < $@.$$$$ > $@;\
 	rm -f $@.$$$$
 
-.PHONY: clean
+
+.PHONY: clean lib
 clean:
 	@rm -rf \
 	deps.debug objs.debug bin.debug \
-	deps.release objs.release bin.release
+	deps.release objs.release bin.release \
+	lib
+
+lib : ${OBJ} | inform
+	@mkdir -p lib
+	@$(foreach lib, $(BUILDLIBLIST), echo "Building library $(lib)";a="";for i in $(OBJ); do a=$$a" `echo $$i|grep $(lib)`";done;ar rs lib/lib$(lib).a $$a; echo "";) 
+
+# Generate the list of objects that belong to this library
+		  
 
 
 # Unless "make clean" is called, include the dependency files
