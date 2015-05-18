@@ -1,4 +1,4 @@
-/*	This file Test.cpp is part of scallop.
+/*	This file Test.hpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,23 +13,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
- *      Author: Andreas Linscheid
+ *  Created on: Apr 5, 2015
+ *      Author: alinsch
  */
 
-#include "Test.h"
+#include "scallop/eliashberg/test/Test.h"
 
 namespace scallop {
 namespace eliashberg {
 namespace test{
 
-void Test::run_test() {
+template<typename T>
+void Test::run_DriverImaginaryAxis_test() {
 
-	//Tests of individual components
-	this->run_MatzubaraSplittingVector_test<double>();
-	this->run_DriverImaginaryAxis_test<double>();
+	DriverImaginaryAxis<T> driver;
+}
+
+
+template<typename T>
+void Test::run_MatzubaraSplittingVector_test() {
+
 }
 
 } /* namespace test */
 } /* namespace eliashberg */
 } /* namespace scallop */
+
+

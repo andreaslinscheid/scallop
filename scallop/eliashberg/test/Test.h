@@ -20,6 +20,8 @@
 #ifndef SCALLOP_ELIASHBERG_TEST_H_
 #define SCALLOP_ELIASHBERG_TEST_H_
 
+#include "scallop/eliashberg/eliashberg.h"
+
 namespace scallop {
 namespace eliashberg {
 namespace test{
@@ -30,10 +32,14 @@ public:
 private:
 
 	template<typename T>
-	void run_Matzubara_splitting_vector_test();
+	void run_MatzubaraSplittingVector_test();
+
+	template<typename T>
+	void run_DriverImaginaryAxis_test();
 };
 
 } /* namespace test */
 } /* namespace eliashberg */
 } /* namespace scallop */
+#include "scallop/eliashberg/test/Test.hpp"
 #endif /* SCALLOP_ELIASHBERG_TEST_H_ */
