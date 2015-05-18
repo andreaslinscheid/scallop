@@ -45,7 +45,7 @@ void MixingModule<T>::init(T const& quantityToMix,
 
 	//save init parameters
 	_maxNumberOfIterationsConsideredForMixing = numberIterationsConsidered;
-	_vectorDim = vectorDimension;
+	_vectorDim = quantityToMix.size();
 
 	//set the weights to the values suggested in the paper
 	_weightsForErrorIteration =
@@ -74,7 +74,7 @@ T const& MixingModule<T>::get_current_iteration() const {
 }
 
 template<class T>
-T const& MixingModule<T>::get_privious_iteration(size_t numItInThePast=1) const {
+T const& MixingModule<T>::get_privious_iteration(size_t numItInThePast) const {
 	return _history[_locationConologicalHistory[numItInThePast]];
 }
 

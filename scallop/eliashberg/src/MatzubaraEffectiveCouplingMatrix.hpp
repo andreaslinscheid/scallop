@@ -70,7 +70,7 @@ void MatzubaraEffectiveCouplingMatrix<T>::compute(
 						typename couplings::FrequencyDependentCoupling<T>::iterator itCoupl
 							= couplingData.begin_freq(b,j,bp,jp);
 						for (size_t ifreq = 0; ifreq < couplingData.get_frequency_mesh().size() ; ++ifreq){
-							(*this)(b,j,n,jp,nMnp-this->get_num_matzubara_pts()/2) +=
+							(*this)(b,j,jp,nMnp-this->get_num_matzubara_pts()/2) +=
 									2.0*couplingData.get_frequency_mesh()[ifreq]
 									   * (*itCoupl)
 									/(omegaNMinusOmegaNprimeSqr[nMnp]+std::pow(couplingData.get_frequecny_mesh()[ifreq],2))
