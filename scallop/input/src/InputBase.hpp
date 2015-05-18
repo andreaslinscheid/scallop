@@ -48,7 +48,7 @@ template<class derived>
 template<typename T>
 void InputBase<derived>::get_option(std::string const& valueString,T &value) const {
 	if ( valueString.empty() )
-		error_handling::Error("No default value, but also noting to covert into a value.",1);
+		scallop::error_handling::Error("No default value, but also noting to covert into a value.",1);
 	//we don't care what the default is, since from this point valueString is either successfully parsed or
 	//	the input fails.
 	this->get_option(valueString,value,value);
@@ -68,7 +68,7 @@ void InputBase<derived>::get_option(std::string const& valueString,std::vector<T
 			ss >> element;
 			std::string nameOfType = typeid(element).name();
 			if ( ss.fail() )
-				error_handling::Error( std::string("Failed to parse the value string ")
+				scallop::error_handling::Error( std::string("Failed to parse the value string ")
 					+ valueString + " as " + nameOfType, 1 );
 
 			values.push_back(element);
@@ -80,7 +80,7 @@ template<class derived>
 template<typename T>
 void InputBase<derived>::get_option(std::string const& valueString,std::vector<T> &values) const {
 	if ( valueString.empty() )
-		error_handling::Error("No default value, but also nothing to covert into a value.",1);
+		scallop::error_handling::Error("No default value, but also nothing to covert into a value.",1);
 	this->get_option(valueString,values,values);
 }
 

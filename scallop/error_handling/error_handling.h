@@ -1,4 +1,4 @@
-/*	This file input.h is part of scallop.
+/*	This file error_handling.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -17,12 +17,11 @@
  *      Author: Andreas Linscheid
  */
 
-#ifndef SCALLOP_INPUT_INPUT_H_
-#define SCALLOP_INPUT_INPUT_H_
+#ifndef SCALLOP_ERROR_HANDLING_ERROR_HANDLING_H_
+#define SCALLOP_ERROR_HANDLING_ERROR_HANDLING_H_
 
-#include "scallop/input/Setup.h"
-#include "scallop/input/Configuration.h"
-#include "scallop/input/InputBase.h"
+#include "scallop/error_handling/Error.h"
+#include "scallop/error_handling/Warning.h"
 
 
-#endif /* SCALLOP_INPUT_INPUT_H_ */
+#endif /* SCALLOP_ERROR_HANDLING_ERROR_HANDLING_H_ */

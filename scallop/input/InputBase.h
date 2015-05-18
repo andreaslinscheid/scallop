@@ -20,6 +20,7 @@
 #ifndef SCALLOP_INPUT_INPUTBASE_H_
 #define SCALLOP_INPUT_INPUTBASE_H_
 
+#include "scallop/error_handling/error_handling.h"
 #include "scallop/input/InputFile.h"
 #include <string>
 #include <vector>
@@ -181,7 +182,7 @@ private:
 public:                                                                                 	\
 	typeQ const& get_##quantityName() const {                                            	\
 		if ( not this->_isInit ){															\
-			error_handling::Error("Calling get_"#quantityName"()"							\
+			scallop::error_handling::Error("Calling get_"#quantityName"()"							\
 									"before calling parse_variables()",1);					\
 		};																					\
 		return _##quantityName;                                                         	\
@@ -223,7 +224,7 @@ private:																					\
 public:                                                                                 	\
 	typeQ const& get_##quantityName() const {                                            	\
 		if ( not this->_isInit ){															\
-			error_handling::Error("Calling get_"#quantityName"()"							\
+			scallop::error_handling::Error("Calling get_"#quantityName"()"							\
 									"before calling parse_variables()",1);					\
 		};																					\
 		return _##quantityName;                                                         	\
