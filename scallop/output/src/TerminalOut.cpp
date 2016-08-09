@@ -43,9 +43,9 @@ void TerminalOut::print() const {
 	if ( auxillary::globals::verbosityLvl < _verbosityLvl )
 		return;
 	if ( _printToStdErr ){
-		std::cerr << _sstrBuff;
+		std::cerr << _sstrBuff.rdbuf();
 	} else {
-		std::cout << _sstrBuff;
+		std::cout << _sstrBuff.rdbuf();
 	}
 }
 

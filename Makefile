@@ -29,7 +29,8 @@ TARGET=scallop.x
 
 # What compiler to use for generating dependencies: 
 # it will be invoked with -MM -MP
-CXXDEP = g++
+CXXDEP = g++-5
+CXX = g++-5
 
 # What include flags to pass to the compiler
 INCLUDES = -I./
@@ -80,11 +81,16 @@ clean:
 	@rm -rf \
 	deps.debug objs.debug bin.debug \
 	deps.release objs.release bin.release \
-	lib
+	lib debuglib
 
 lib : ${OBJ} | inform
+ifeq ($(CFG),release)
 	@mkdir -p lib
 	@$(foreach lib, $(BUILDLIBLIST), echo "Building library $(lib)";a="";for i in $(OBJ); do a=$$a" `echo $$i|grep $(lib)`";done;ar rs lib/lib$(lib).a $$a; echo "";) 
+else
+	@mkdir -p debuglib
+	@$(foreach lib, $(BUILDLIBLIST), echo "Building debugging library $(lib)";a="";for i in $(OBJ); do a=$$a" `echo $$i|grep $(lib)`";done;ar rs debuglib/lib$(lib).a $$a; echo "";) 
+endif
 
 # Generate the list of objects that belong to this library
 		  
