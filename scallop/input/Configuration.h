@@ -32,10 +32,10 @@ class Configuration : public InputBase<Configuration> {
 	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
 			method,
 			"Decide which method is used to compute SC\n"
-			"Possible choices are Elishberg 'Eliash'\n"
-			"\tand (Spin)SCDFT 'SCDFT'",
-			"SCDFT",
-			"SCDFT",
+			"Possible choices are:\n\t isotropic Eliashberg 'eli'\n"
+			"\t orbital resolved Gw-FLEX 'kgw'",
+			"kgw",
+			"kgw",
 			std::string);
 
 	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(

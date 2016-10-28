@@ -1,4 +1,4 @@
-/*	This file DriverImaginaryAxis.cpp is part of scallop.
+/*	This file MatsubaraImagTimeFourierTransform.hpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,38 +13,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 25, 2014
+ *  Created on: Oct 28, 2016
  *      Author: Andreas Linscheid
  */
 
-#include "scallop/eliashberg/DriverImaginaryAxis.h"
+#include "scallop/gw_flex/MatsubaraImagTimeFourierTransform.h"
 
 namespace scallop {
-namespace eliashberg {
+namespace gw_flex {
 
-template<typename T>
-DriverImaginaryAxis<T>::DriverImaginaryAxis() :
-		_diagonalCouplingUpSpin(),
-		_diagonalCouplingDownSpin(),
-		_offDiagonalCoupling(),
-		_singleRunDriver(_diagonalCouplingUpSpin,_diagonalCouplingDownSpin,_offDiagonalCoupling) { };
-
-template<typename T>
-void DriverImaginaryAxis<T>::iterate()
-{
-	//determine what to do
-
-}
-
-template<typename T>
-void DriverImaginaryAxis<T>::set_input(input::Setup const& setup) {
-
-}
-
-template<typename T>
-bool DriverImaginaryAxis<T>::converged() const {
-	return true;
-}
-
-} /* namespace eliashberg */
+} /* namespace gw_flex */
 } /* namespace scallop */

@@ -23,22 +23,30 @@
 
 using namespace scallop;
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
 	//read the input file //TODO or stdin
 	input::Setup setup(argc,argv);
 
 	//Set basic configuration options
 	input::Configuration config(setup.get_parsed_input_file());
 
-	if ( config.get_method().compare("Eliash") == 0 ){
-
+	if ( config.get_method().compare("eli") == 0 )
+	{
 		//solve the Eliashberg equations
 		eliashberg::DriverImaginaryAxis<double> eliashEqDriver;
+
 		eliashEqDriver.set_input(setup);
-		do {
-			eliashEqDriver.iterate();
-		} while ( not eliashEqDriver.converged() );
+
+		eliashEqDriver.solve();
+	}
+	else if ( config.get_method().compare("kgw"))
+	{
+
+	}
+	else
+	{
+		error_handling::Error("unkown task");
 	}
 
 	//Flag a warning for all keys that have not been used, as this indicates unintended input

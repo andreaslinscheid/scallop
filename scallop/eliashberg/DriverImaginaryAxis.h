@@ -39,6 +39,8 @@ public:
 
 	void iterate();
 
+	void solve();
+
 	bool converged() const;
 private:
 
