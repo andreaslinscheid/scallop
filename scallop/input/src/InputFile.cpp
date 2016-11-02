@@ -144,7 +144,7 @@ std::string InputFile::get_input_config_value( std::string const& key ) const {
 }
 
 void InputFile::remove_comment(std::string & str) const {
-	std::string const& commentTokens = "!#/";
+	std::string const& commentTokens = "!#";
     const auto commentBegin = str.find_first_of(commentTokens);
 
     if (commentBegin == std::string::npos)
