@@ -1,4 +1,4 @@
-/*	This file Test.cpp is part of scallop.
+/*	This file MatsubaraImagTimeFourierTransform_test.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -14,29 +14,30 @@
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
  *  Created on: Oct 28, 2016
- *      Author: alinsch
+ *      Author: A. Linscheid
  */
 
-#include "scallop/gw_flex/test/Test.h"
-#include "scallop/gw_flex/test/MatsubaraImagTimeFourierTransform_test.h"
-#include <complex>
+#ifndef SCALLOP_GW_FLEX_TEST_MATSUBARAIMAGTIMEFOURIERTRANSFORM_TEST_H_
+#define SCALLOP_GW_FLEX_TEST_MATSUBARAIMAGTIMEFOURIERTRANSFORM_TEST_H_
 
-namespace scallop {
-namespace gw_flex {
-namespace test {
-
-void Test::run_test()
+namespace scallop
 {
-	test_time_freq_Fourier_transform();
-}
-
-
-void Test::test_time_freq_Fourier_transform()
+namespace gw_flex
 {
-	MatsubaraImagTimeFourierTransform_test<std::complex<double> > fft_freq_d;
-	fft_freq_d.test_free_particle_greensfunction();
-}
+namespace test
+{
+
+template<typename T>
+class MatsubaraImagTimeFourierTransform_test
+{
+public:
+
+	void test_free_particle_greensfunction();
+};
 
 } /* namespace test */
 } /* namespace gw_flex */
 } /* namespace scallop */
+
+#include "scallop/gw_flex/test/MatsubaraImagTimeFourierTransform_test.hpp"
+#endif /* SCALLOP_GW_FLEX_TEST_MATSUBARAIMAGTIMEFOURIERTRANSFORM_TEST_H_ */

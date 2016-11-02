@@ -1,4 +1,4 @@
-/*	This file Test.cpp is part of scallop.
+/*	This file TypeMapComplex.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,30 +13,33 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Oct 28, 2016
- *      Author: alinsch
+ *  Created on: Nov 1, 2016
+ *      Author: A. Linscheid
  */
 
-#include "scallop/gw_flex/test/Test.h"
-#include "scallop/gw_flex/test/MatsubaraImagTimeFourierTransform_test.h"
+#ifndef SCALLOP_AUXILLARY_TYPEMAPCOMPLEX_H_
+#define SCALLOP_AUXILLARY_TYPEMAPCOMPLEX_H_
+
 #include <complex>
 
-namespace scallop {
-namespace gw_flex {
-namespace test {
-
-void Test::run_test()
+namespace scallop
 {
-	test_time_freq_Fourier_transform();
-}
-
-
-void Test::test_time_freq_Fourier_transform()
+namespace auxillary
 {
-	MatsubaraImagTimeFourierTransform_test<std::complex<double> > fft_freq_d;
-	fft_freq_d.test_free_particle_greensfunction();
-}
 
-} /* namespace test */
-} /* namespace gw_flex */
-} /* namespace scallop */
+template<class T>
+struct TypeMapComplex
+{
+	typedef T type;
+};
+
+template<class T>
+struct TypeMapComplex<std::complex<T> >
+{
+	typedef T type;
+};
+
+}; /* namespace scallop */
+}; /* namespace auxillary */
+
+#endif /* SCALLOP_AUXILLARY_TYPEMAPCOMPLEX_H_ */
