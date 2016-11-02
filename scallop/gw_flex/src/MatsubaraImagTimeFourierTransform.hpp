@@ -118,18 +118,36 @@ void MatsubaraImagTimeFourierTransform<T>::fourier_transform_bosons_freq_to_time
 template<typename T>
 void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_time_to_freq( bT invTemp )
 {
+	const size_t nM = this->get_num_time();
+
 	//Multiply the phase factor exp( \sqrt(-1) \pi i/N_mats ) from the (2n+1)
 	for (size_t ik = 0 ; ik < this->get_num_grid() ; ++ik )
-		for (size_t iw = 0 ; iw < this->get_num_time() ; ++iw )
+		for (size_t iw = 0 ; iw < nM ; ++iw )
 		{
-			auto it = this->data_begin_modify() + (ik*this->get_num_time()+iw)*this->get_data_block_size();
+			auto it = this->data_begin_modify() + (ik*nM+iw)*this->get_data_block_size();
 			auto itEnd = it+this->get_data_block_size();
 			for ( ; it != itEnd ; ++it )
-				(*it) *= (invTemp / this->get_num_time())
-						* std::exp( T(0, (M_PI * iw) / this->get_num_time() ) );
+				(*it) *=  std::exp( T(0, (M_PI * iw) / nM) );
 		}
 
 	this->perform_time_to_freq_fft();
+
+	//Multiply prefactor that comes from the integration kernel
+	for (size_t ik = 0 ; ik < this->get_num_grid() ; ++ik )
+		for (size_t iw = 0 ; iw < this->get_num_time() ; ++iw )
+		{
+			auto it = this->data_begin_modify() + (ik*nM+iw)*this->get_data_block_size();
+			auto itEnd = it+this->get_data_block_size();
+
+			//remember that frequencies are stored with negative frequencies in the second half of the array
+			int frequencyIndex =
+					(iw < nM/2 ?
+							static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
+
+			T phase = T(0,M_PI*(2*frequencyIndex+1));
+			for ( ; it != itEnd ; ++it )
+				(*it) *=  -invTemp*(1.0-std::exp(phase/bT(nM)))/phase;
+		}
 }
 
 template<typename T>
