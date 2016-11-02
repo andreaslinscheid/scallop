@@ -23,7 +23,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <complex>
-#include <fstream>
 
 namespace scallop
 {
@@ -36,6 +35,8 @@ template<typename T>
 void
 MatsubaraImagTimeFourierTransform_test<T>::test_free_particle_greensfunction()
 {
+	std::cout << "Testing the time / frequency Fourier transform for a"
+			"single k point, single orbital free Green's function." <<std::endl;
 	typedef typename scallop::auxillary::TypeMapComplex<T>::type bT;
 
 	//Minimal test for 1 grid point in kx and ky and one orbital
@@ -105,7 +106,6 @@ MatsubaraImagTimeFourierTransform_test<T>::test_free_particle_greensfunction()
 	gf.set_time_domain();
 	gf.transform_itime_to_Mfreq( beta );
 	diff = T(0);
-std::ofstream file("/home/alinsch/codes/scallop/tests/bla2");
 	for (size_t i = 0 ; i < nM ; ++i)
 	{
 		int frequencyIndex =
@@ -114,8 +114,6 @@ std::ofstream file("/home/alinsch/codes/scallop/tests/bla2");
 		T ag = 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
 		diff += std::abs( std::real(gf(0,i,0,0,0,0,0,0))-std::real(ag))*beta/nM;
 		diff += T(0,std::abs( std::imag(gf(0,i,0,0,0,0,0,0))-std::imag(ag)))*(beta/nM);
-file << i <<'\t'<< std::real(gf(0,i,0,0,0,0,0,0)) <<'\t'<< std::imag(gf(0,i,0,0,0,0,0,0))
-			<<'\t'<< std::real(ag) <<'\t'<< std::imag(ag) <<'\n';
 	}
 
 	std::cout << "Difference between analytic and numeric Fourier transform from time to frequency of a free GF:"
