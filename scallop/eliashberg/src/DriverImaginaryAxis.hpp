@@ -46,5 +46,11 @@ bool DriverImaginaryAxis<T>::converged() const {
 	return true;
 }
 
+template<typename T>
+void DriverImaginaryAxis<T>::solve()
+{
+
+}
+
 } /* namespace eliashberg */
 } /* namespace scallop */

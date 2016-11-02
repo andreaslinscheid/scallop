@@ -79,8 +79,7 @@ void Test::create_test_input_file(std::string const& fileName){
 			"#\t a tab and some test input data:\n"
 			"sizeTest=42\ndoubleTest=3.4\n\n"
 			"vectorSizeT=1 2 3 !testing vector reading and an inline comment\n"
-			"doubleTest=3.4 #this should work too, since it is valid "
-			"to redefine the same key but only with the same value.\n"
+			"//to redefine the same key but only with the same value.\n"
 			"//In the next line we test an empty line:\n\n"
 			"boolThatWillNotBeUsed = true //The program should inform about this unused variable!\n"
 			"boolTest = false";

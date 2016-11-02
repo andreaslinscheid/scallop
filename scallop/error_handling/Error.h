@@ -43,6 +43,12 @@ public:
 	/**
 	 * \brief Call an error directly with given information.
 	 *
+	 * @param description	Error description of what went wrong.	 */
+	Error(std::string const& description);
+
+	/**
+	 * \brief Call an error directly with given information.
+	 *
 	 * @param description	Error description of what went wrong.
 	 * @param errorCode		Code describing of what went wrong. Zero means no error.
 	 */

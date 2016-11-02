@@ -36,6 +36,10 @@ Error::Error(std::string const& description,int errorCode){
 	this->call_error_no_ref(description,errorCode);
 }
 
+Error::Error(std::string const& description){
+	this->call_error_no_ref(description,1);
+}
+
 Error::Error(int line,std::string const& file,std::string const& description,size_t errorCode) {
 	this->call_error_with_code_ref(line,file,description,static_cast<int>(errorCode));
 }

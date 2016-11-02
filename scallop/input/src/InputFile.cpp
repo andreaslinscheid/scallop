@@ -68,6 +68,8 @@ void InputFile::parse_input(std::string const & input) {
     std::string item;
     while( std::getline(ss, item, '\n') ) {
     	remove_comment(item);
+    	if ( item.empty() )
+    		continue;
     	strippedInput += item + '\n';
     }
 
@@ -105,14 +107,15 @@ void InputFile::parse_input(std::string const & input) {
 	keyValuePairs.push_back( std::make_pair(key, elements.back() ) );
 
 	//insert the key and value pairs into the map.
-	for ( auto const& elmentPair : keyValuePairs ) {
+	std::map< std::string, bool> keyRead;
+	for ( auto elmentPair : keyValuePairs ) {
 
 		auto ret = _inputFileKeyValue.insert(elmentPair);
 		if ( not ret.second ) { //i.e. the key exists already
 
 			if (  (*ret.first).second.compare(elmentPair.second) != 0 ) {
 				std::string const msg = std::string("Key ") + (*ret.first).first
-						+ " appears twice with disagreeing value, i.e. first " + (*ret.first).second
+						+ " appears twice, i.e. first " + (*ret.first).second
 						+ " and second with " + elmentPair.second;
 				error_handling::Error(msg , 1);
 			}
@@ -122,8 +125,9 @@ void InputFile::parse_input(std::string const & input) {
 		std::pair<std::string,bool> keyReadThisValue;
 		keyReadThisValue.first = elmentPair.first;
 		keyReadThisValue.second = false; //has not yet been read
-		_keyWasRead.insert(keyReadThisValue);
+		keyRead.insert(keyReadThisValue);
 	}
+	_keyWasRead = keyRead;
 }
 
 std::string InputFile::get_input_config_value( std::string const& key ) const {
@@ -140,7 +144,7 @@ std::string InputFile::get_input_config_value( std::string const& key ) const {
 }
 
 void InputFile::remove_comment(std::string & str) const {
-	std::string const& commentTokens = "!#";
+	std::string const& commentTokens = "!#/";
     const auto commentBegin = str.find_first_of(commentTokens);
 
     if (commentBegin == std::string::npos)
