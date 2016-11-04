@@ -19,6 +19,7 @@
 
 #include "scallop/gw_flex/test/Test.h"
 #include "scallop/gw_flex/test/MatsubaraImagTimeFourierTransform_test.h"
+#include "scallop/gw_flex/test/GreensFunctionOrbital_test.h"
 #include <complex>
 
 namespace scallop {
@@ -27,9 +28,15 @@ namespace test {
 
 void Test::run_test()
 {
+	test_GreensFunctionOrbital();
 	test_time_freq_Fourier_transform();
 }
 
+void Test::test_GreensFunctionOrbital()
+{
+	GreensFunctionOrbital_test< std::complex<double> > gf_test;
+	gf_test.transform_reciprocal_to_realspace();
+}
 
 void Test::test_time_freq_Fourier_transform()
 {

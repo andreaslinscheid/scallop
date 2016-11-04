@@ -42,8 +42,7 @@ public:
 	FFTBase();
 
 	FFTBase(std::vector<T> data,
-			size_t dimKProc,
-			std::vector<size_t> howmanyK,
+			std::vector<size_t> spaceGrid,
 			size_t dimTimeFT,
 			size_t blockSize);
 
@@ -51,8 +50,7 @@ public:
 
 	void plan_ffts(
 			std::vector<T> data,
-			size_t dimKProc,
-			std::vector<size_t> howmanyK,
+			std::vector<size_t> spaceGrid,
 			size_t dimTimeFT,
 			size_t blockSize);
 
@@ -70,6 +68,23 @@ public:
 
 	size_t get_data_block_size() const;
 
+	/**
+	 * Obtain the space grid this processor handles currently.
+	 *
+	 * @return Vector of dimension of space. The entries specify the current grid elements in that direction
+	 * 			handled by this processor.
+	 * 			Example: Total space dim = { 10 , 10 }, 2 processors.
+	 * 					If this object is in k space : returns {5 , 10}
+	 * 					If this object is in R space : returns {10, 5 }
+	 */
+	std::vector<size_t> get_spaceGrid_proc() const;
+
+	void perform_R_to_k_fft();
+
+	void perform_k_to_R_fft();
+
+	bool is_init() const;
+
 protected:
 
 	void perform_time_to_freq_fft();
@@ -78,20 +93,26 @@ protected:
 
 private:
 
-	//dimension of k-space minus the parallel dimension
+	///Set to true once initialized
+	bool isInit_ = false;
+
+	///dimension of k-space minus the parallel x dimension
 	size_t dimKProc_ = 0;
 
-	//Number of k vectors this processor handles
-	std::vector<size_t> howmanyK_;
+	///dimension of R-space minus the parallel y dimension
+	size_t dimRProc_ = 0;
 
-	//Matsubara frequency dimension
+	///Number of k vectors in the grid
+	std::vector<size_t> spaceGrid_;
+
+	///Matsubara frequency dimension
 	size_t dimTimeFT_ = 0;
 
-	//chunk of data in the last dimension, for example Nambu-spin^2 * orbitals^2
+	///chunk of data in the last dimension, for example Nambu-spin^2 * orbitals^2
 	size_t blockSize_ = 0;
 
-	//Plan one discrete Fourier transform part of the imaginary time to frequency transform
-	//	for each k point. The convention with signs implies w_n==>\tau is forward.
+	///Plan one discrete Fourier transform part of the imaginary time to frequency transform
+	///	for each k point. The convention with signs implies w_n==>\tau is forward.
 	fftw_plan * fftw3PlanTimeFwd_ = NULL;
 
 	//Plan one discrete Fourier transform part of the frequency to imaginary time transform

@@ -33,6 +33,8 @@ private:
 
 	void test_time_freq_Fourier_transform();
 
+	void test_GreensFunctionOrbital();
+
 };
 
 } /* namespace test */

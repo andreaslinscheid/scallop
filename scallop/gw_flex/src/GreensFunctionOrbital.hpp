@@ -56,7 +56,7 @@ template<typename T>
 T GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
 {
-	return *(this->data_begin_modify() + this->memory_layout(ig,it,l1,a1,s1,l2,a2,s2) );
+	return *(this->begin() + this->memory_layout(ig,it,l1,a1,s1,l2,a2,s2) );
 }
 
 template<typename T>
@@ -67,12 +67,35 @@ T & GreensFunctionOrbital<T>::operator() (
 }
 
 template<typename T>
+T GreensFunctionOrbital<T>::operator() (
+		size_t ig, size_t it, size_t m1,  size_t m2) const
+{
+	return *(this->begin() + this->memory_layout_combined_notation(ig,it,m1,m2) );
+}
+
+template<typename T>
+T & GreensFunctionOrbital<T>::operator() (
+		size_t ig, size_t it, size_t m1,  size_t m2)
+{
+	return *(this->data_begin_modify() + this->memory_layout_combined_notation(ig,it,m1,m2) );
+}
+
+template<typename T>
 size_t GreensFunctionOrbital<T>::memory_layout(
 		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
 {
+	size_t m1 = (l1*2+a1)*2+s1;
+	size_t m2 = (l2*2+a2)*2+s2;
+	return this->memory_layout_combined_notation(ig,it,m1,m2);
+}
+
+template<typename T>
+size_t GreensFunctionOrbital<T>::memory_layout_combined_notation(
+		size_t ig, size_t it, size_t m1, size_t m2) const
+{
 	auto nM = this->get_num_time();
-	auto nO = orbitalDim_;
-	size_t ptr_offset = ((((((ig*nM+it)*nO+l1)*2+a1)*2+s1)*nO+l2)*2+a2)*2+s2;
+	auto nC = orbitalDim_*4;
+	size_t ptr_offset = ((ig*nM+it)*nC+m1)*nC+m2;
 
 #ifdef DEBUG_BUILD
 	if ( ptr_offset > ( this->end()-this->begin() ))
@@ -80,6 +103,15 @@ size_t GreensFunctionOrbital<T>::memory_layout(
 #endif
 	return ptr_offset;
 }
+
+template<typename T>
+typename std::vector<T>::iterator
+GreensFunctionOrbital<T>::get_iterator_at(
+		size_t ig, size_t it, size_t m1, size_t m2)
+{
+	return (this->data_begin_modify() + this->memory_layout_combined_notation(ig,it,m1,m2));
+}
+
 
 } /* namespace gw_flex */
 } /* namespace scallop */

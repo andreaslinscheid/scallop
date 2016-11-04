@@ -62,8 +62,6 @@ FFTBase< std::complex<double> >::plan_time_fft()
 			scallop::error_handling::Error(std::string()
 				+"Unable to plan DFT for imaginary time to frequency at k: " + std::to_string(ik) );
 
-		std::copy( dataCpy.begin(), dataCpy.end(), data_.begin() );
-
 		fftw3PlanTimeBkwd_[ik] = fftw_plan_many_dft(
 				dim,n,howmany,
 				dataPtr, inembed,istride, idist,
@@ -89,35 +87,113 @@ FFTBase< std::complex<double> >::plan_space_fft()
 {
 	auto dataCpy = data_;
 
-//	fftw_complex * dataPtr = reinterpret_cast<fftw_complex*>(&data_[0]);
-//
-//	int dim = static_cast<int>( dimKProc_ );
-//	int * n = new int [dim];
-//	int howmany = static_cast<int>( howmanyK_ );
-//	for ( size_t i = 0; i < static_cast<size_t>(dim); i++)
-//		n[i] = kgrid_.get_nk_dim(i);
-//	int idist = static_cast<int>(kgrid_.get_nkpts());
-//	int odist = static_cast<int>(kgrid_.get_nkpts());
-//	int * inembed =NULL;
-//	int * onembed = NULL;
-//	int istride = 1;
-//	int ostride = 1;
-//
-//	fftw3PlanFwd_ = fftw_plan_many_dft(
-//			dim,n,howmany,
-//			dataPtr, inembed,istride, idist,
-//			dataPtr, onembed,ostride, odist,
-//			-1,FFTW_PATIENT);
-//
-//	std::copy( data.begin(), data.end(), data_.begin() );
-//
-//	fftw3PlanBkwd_ = fftw_plan_many_dft(
-//			dim,n,howmany,
-//			dataPtr, inembed,istride, idist,
-//			dataPtr, onembed,ostride, odist,
-//			1,FFTW_PATIENT);
-//
-//	std::copy( data.begin(), data.end(), data_.begin() );
+	fftw_complex * dataPtr = reinterpret_cast<fftw_complex*>(&data_[0]);
+
+	int dim = static_cast<int>( spaceGrid_.size() );
+	const parallel::MPIModule &mpi = parallel::MPIModule::get_instance();
+	if ( mpi.get_nproc() > 1 )
+		dim--;
+
+	int * inembed =NULL;
+	int * onembed = NULL;
+	int * n = new int [dim];
+	int idist = 1;
+	int odist = 1;
+	int howmany = static_cast<int>( blockSize_*dimTimeFT_ );
+
+	//Plan the R --> k transform
+	if ( mpi.get_nproc() > 1 )
+	{
+		//plan Rx
+		n[0] = spaceGrid_[0];
+
+		int istride = static_cast<int>(blockSize_*dimTimeFT_*dimKProc_);
+		int ostride = static_cast<int>(blockSize_*dimTimeFT_*dimKProc_);
+
+		fftw3PlanKSingleFwd_ = fftw_plan_many_dft(
+				1,n,howmany,
+				dataPtr, inembed,istride, idist,
+				dataPtr, onembed,ostride, odist,
+				-1,FFTW_PATIENT);
+
+		// and plan the Ry and higher dimension
+		for ( int i = 1; i < dim+1; i++)
+			n[i] = spaceGrid_[i];
+
+		istride = static_cast<int>(blockSize_*dimTimeFT_);
+		ostride = static_cast<int>(blockSize_*dimTimeFT_);
+
+		fftw3PlanKParaFwd_ = fftw_plan_many_dft(
+				dim,n,howmany,
+				dataPtr, inembed,istride, idist,
+				dataPtr, onembed,ostride, odist,
+				-1,FFTW_PATIENT);
+	}
+	else
+	{
+		for ( int i = 0; i < dim; i++)
+			n[i] = spaceGrid_[i];
+
+		int istride = static_cast<int>(blockSize_*dimTimeFT_);;
+		int ostride = static_cast<int>(blockSize_*dimTimeFT_);;
+
+		fftw3PlanKParaFwd_ = fftw_plan_many_dft(
+				dim,n,howmany,
+				dataPtr, inembed,istride, idist,
+				dataPtr, onembed,ostride, odist,
+				-1,FFTW_PATIENT);
+	}
+
+	//Plan the k --> R transform
+	if ( mpi.get_nproc() > 1 )
+	{
+		//skip kx
+		for ( int i = 1; i < dim+1; i++)
+			n[i] = spaceGrid_[i];
+
+		int istride = static_cast<int>(blockSize_*dimTimeFT_);
+		int ostride = static_cast<int>(blockSize_*dimTimeFT_);
+
+		fftw3PlanKParaBkwd_ = fftw_plan_many_dft(
+				dim,n,howmany,
+				dataPtr, inembed,istride, idist,
+				dataPtr, onembed,ostride, odist,
+				1,FFTW_PATIENT);
+
+		//Now plan kx as the fastest running dimension
+		n[0] = spaceGrid_[0];
+
+		istride = static_cast<int>(blockSize_*dimTimeFT_*dimKProc_);
+		ostride = static_cast<int>(blockSize_*dimTimeFT_*dimKProc_);
+
+		fftw3PlanKSingleBkwd_ = fftw_plan_many_dft(
+				1,n,howmany,
+				dataPtr, inembed,istride, idist,
+				dataPtr, onembed,ostride, odist,
+				1,FFTW_PATIENT);
+
+		std::copy( dataCpy.begin(), dataCpy.end(), data_.begin() );
+	}
+	else
+	{
+		for ( int i = 0; i < dim; i++)
+			n[i] = spaceGrid_[i];
+
+		int istride = static_cast<int>(blockSize_*dimTimeFT_);;
+		int ostride = static_cast<int>(blockSize_*dimTimeFT_);;
+
+		fftw3PlanKParaBkwd_ = fftw_plan_many_dft(
+				dim,n,howmany,
+				dataPtr, inembed,istride, idist,
+				dataPtr, onembed,ostride, odist,
+				1,FFTW_PATIENT);
+	}
+
+	std::copy( dataCpy.begin(), dataCpy.end(), data_.begin() );
+
+	delete [] n;
+	delete [] inembed;
+	delete [] onembed;
 }
 
 } /* namespace gw_flex */

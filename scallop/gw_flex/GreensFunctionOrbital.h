@@ -48,12 +48,25 @@ public:
 	T & operator() (
 			size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2);
 
+	T operator() (
+			size_t ig, size_t it, size_t m1,  size_t m2) const;
+
+	T & operator() (
+			size_t ig, size_t it, size_t m1,  size_t m2);
+
+	typename std::vector<T>::iterator
+	get_iterator_at(
+			size_t ig, size_t it, size_t m1, size_t m2);
+
 private:
 
 	size_t orbitalDim_ = 0;
 
 	size_t memory_layout(
 			size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const;
+
+	size_t memory_layout_combined_notation(
+			size_t ig, size_t it, size_t m1, size_t m2) const;
 };
 
 } /* namespace gw_flex */

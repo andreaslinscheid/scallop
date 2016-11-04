@@ -46,7 +46,6 @@ void MatsubaraImagTimeFourierTransform<T>::initialize(
 		nK *= kd;
 	FFTBase<T>::plan_ffts(
 			std::move(data),
-			nK,
 			gridDims,
 			dimImTime,
 			dataBlockSize);

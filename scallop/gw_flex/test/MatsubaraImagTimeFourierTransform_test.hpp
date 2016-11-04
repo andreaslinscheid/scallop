@@ -40,7 +40,7 @@ MatsubaraImagTimeFourierTransform_test<T>::test_free_particle_greensfunction()
 	typedef typename scallop::auxillary::TypeMapComplex<T>::type bT;
 
 	//Minimal test for 1 grid point in kx and ky and one orbital
-	const size_t nM = 10000;
+	const size_t nM = 1000;
 	const bT kb = 0.86173324 ; // meV / K
 	const bT temp = 0.1; // K
 	const bT beta = 1.0 / (kb * temp);
