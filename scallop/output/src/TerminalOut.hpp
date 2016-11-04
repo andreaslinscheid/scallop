@@ -19,15 +19,43 @@
 
 #include "scallop/output/TerminalOut.h"
 
-namespace scallop {
-namespace output {
+namespace scallop
+{
+namespace output
+{
+
+template<class T>
+MessageChain operator<<(TerminalOut &msg, T const data)
+{
+	msg.insert(data);
+	return MessageChain(msg);
+};
+
+template<class T>
+MessageChain const& operator<<(MessageChain const& msgChain, T const data)
+{
+	msgChain.insert(data);
+	return msgChain;
+};
 
 template<typename T>
-TerminalOut& TerminalOut::operator<< (T const& message) {
-	_sstrBuff << message;
-	return *this;
+void TerminalOut::insert(T const& msg)
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	if ( mpi.get_mpi_me() != 0 )
+		return;
+
+	if ( auxillary::globals::vLvl <= verbosityLvl_ )
+		return;
+
+	sstrBuff_ << msg;
 }
 
-
+template<class T>
+void MessageChain::insert(T const& data) const
+{
+	theMessage_.insert(data);
+}
 } /* namespace output */
 } /* namespace scallop */

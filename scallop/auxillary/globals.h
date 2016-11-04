@@ -24,9 +24,15 @@ namespace scallop{
 namespace auxillary{
 namespace globals{
 
-///The global verbosity level of command line output.
-/// Default is high(all) = 2 here, but overwritten with the default in the input module.
-extern int verbosityLvl;
+///Set the global verbosity level of command line output.
+typedef enum
+{
+	high = 1000,
+	medium = 1100,
+	low = 1110
+} VerbosityLvl;
+
+extern VerbosityLvl vLvl;
 
 } /*namespace globals */
 } /*namespace auxillary */

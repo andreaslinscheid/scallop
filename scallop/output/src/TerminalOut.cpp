@@ -19,38 +19,53 @@
 
 #include "scallop/output/TerminalOut.h"
 #include "scallop/auxillary/BasicFunctions.h"
-#include "scallop/auxillary/globals.h"
 #include <iostream>
 
-namespace scallop {
-namespace output {
+namespace scallop
+{
+namespace output
+{
 
 TerminalOut::TerminalOut() :
-		_printToStdErr(false),
-		_verbosityLvl(0),
-		_buffer(),
-		_sstrBuff(_buffer)  { };
+		printToStdErr_(false),
+		verbosityLvl_(auxillary::globals::VerbosityLvl::high),
+		sstrBuff_( std::string() )
+{
 
-TerminalOut::TerminalOut(int verbLvl) :
-		_printToStdErr(false),
-		_verbosityLvl(verbLvl),
-		_buffer(),
-		_sstrBuff(_buffer) { };
+};
 
-void TerminalOut::print() const {
-	if ( _sstrBuff.str().empty() )
+TerminalOut::TerminalOut(auxillary::globals::VerbosityLvl verbLvl) :
+		printToStdErr_(false),
+		verbosityLvl_(verbLvl),
+		sstrBuff_( std::string() )
+{
+
+};
+
+void TerminalOut::print()
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	if ( mpi.get_mpi_me() != 0 )
 		return;
-	if ( auxillary::globals::verbosityLvl < _verbosityLvl )
-		return;
-	if ( _printToStdErr ){
-		std::cerr << _sstrBuff.rdbuf();
-	} else {
-		std::cout << _sstrBuff.rdbuf();
+
+	if ( ! printToStdErr_ )
+	{
+		std::cout << sstrBuff_.str() << std::endl;
 	}
+	else
+	{
+		std::cerr << sstrBuff_.str() << std::endl;
+	}
+	sstrBuff_.str( std::string() );
+	sstrBuff_.clear();
 }
 
-TerminalOut::~TerminalOut() {
-	this->print();
+MessageChain::~MessageChain()
+{
+	theMessage_.print();
 }
+
+
 } /* namespace output */
 } /* namespace scallop */

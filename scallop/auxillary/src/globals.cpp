@@ -23,8 +23,7 @@ namespace scallop{
 namespace auxillary{
 namespace globals{
 
-///Set the global verbosity level of command line output.
-extern int verbosityLvl = 2;
+VerbosityLvl vLvl = high;
 
 } /*namespace globals */
 } /*namespace auxillary */

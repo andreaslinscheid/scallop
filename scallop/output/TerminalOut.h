@@ -20,51 +20,52 @@
 #ifndef SCALLOP_OUTPUT_TERMINALOUT_H_
 #define SCALLOP_OUTPUT_TERMINALOUT_H_
 
+#include "scallop/auxillary/globals.h"
+#include "scallop/parallel/MPIModule.h"
 #include <cstddef>
 #include <sstream>
 
-namespace scallop {
-namespace output {
+namespace scallop
+{
+namespace output
+{
 
-class TerminalOut {
+class TerminalOut
+{
 public:
-
-	enum verbosityLvl {
-		high = 1000,
-		medium = 1100,
-		low = 1110
-	};
-
 	TerminalOut();
 
-	~TerminalOut();
+	TerminalOut( auxillary::globals::VerbosityLvl verbLvl );
 
-	void print() const;
+	void print();
 
-	TerminalOut(int verbLvl);
-
-	/**
-	 * \brief Allow the user to insert any type of message.
-	 *
-	 * It can be used with any type that can be stringified using the operator<< of a stringstream
-	 *
-	 * @param message The message the internal buffer is set to.
-	 */
 	template<typename T>
-	TerminalOut& operator<< (T const& message);
-
+	void insert(T const& msg);
 private:
 
-	const bool _printToStdErr;
+	const bool printToStdErr_;
 
 	/// Verbosity level when the currently buffered message is printed.
 	/// 0 means low the message is always printed, while 1 will only be printed if
 	/// the global verbosity level is higher or equal than medium.
-	const int _verbosityLvl;
+	const auxillary::globals::VerbosityLvl verbosityLvl_;
 
-	std::string _buffer;
+	std::stringstream sstrBuff_;
+};
 
-	std::stringstream _sstrBuff;
+class MessageChain
+{
+public:
+	MessageChain(TerminalOut & theMessage);
+
+	template<class T>
+	void insert(T const& msg) const;
+
+	~MessageChain();
+private:
+	void operator= (MessageChain rhs) = delete;
+
+	TerminalOut & theMessage_;
 };
 
 } /* namespace output */
