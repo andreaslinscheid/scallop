@@ -87,14 +87,12 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 			//We put the result already into this object and multiply the other unitary transform
 			if( timeSpace )
 			{
-				for ( size_t iKSB = 0 ; iKSB < nO ; ++iKSB)
-					for ( size_t a = 0 ; a < 2 ; ++a)
-						for ( size_t s = 0 ; s < 2 ; ++s)
-						{
-							bT e = KSBands[(ik*a)*nO+iKSB];
-							bT taui = invTemp*(bT(it)/bT(nM));
-							bareGF[(iKSB*2+a)*2+s] = -FermiFunc(-e,invTemp)*std::exp(-taui*e);
-						}
+				for ( size_t iMKSB = 0 ; iMKSB < nO*4 ; ++iMKSB)
+				{
+					bT e = KSBands[ik*nO*4+iMKSB];
+					bT taui = invTemp*(bT(it)/bT(nM));
+					bareGF[iMKSB] = -FermiFunc(-e,invTemp)*std::exp(-taui*e);
+				}
 			}
 			else
 			{

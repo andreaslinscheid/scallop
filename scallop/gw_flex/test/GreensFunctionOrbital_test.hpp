@@ -100,7 +100,8 @@ GreensFunctionOrbital_test<T>::GreensFunctionOrbital_test()
 				for (size_t sa = 0 ; sa < 4 ; ++sa)
 				{
 					bT energy = cos_bnd(ikx,iky,sa);
-					T analytic = -FermiFunc(-energy)*std::exp(-beta*energy);
+					bT taui = (beta*iw) / nMKS;
+					T analytic = -FermiFunc(-energy)*std::exp(-taui*energy);
 
 					diff += std::abs(std::real(KS_gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa))-std::real(analytic));
 					diff += std::abs(std::imag(KS_gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa))-std::imag(analytic));
