@@ -37,134 +37,109 @@ void MatsubaraImagTimeFourierTransform<T>::initialize(
 		size_t dimImTime,
 		std::vector<size_t> gridDims,
 		size_t dataBlockSize,
-		bool initialInFreqDomain,
+		bool initialInTimeDomain,
 		bool initialInReciprocalDomain,
-		std::vector<T> data)
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data)
 {
-	size_t nK = 1;
-	for (auto kd : gridDims )
-		nK *= kd;
-	FFTBase<T>::plan_ffts(
+	FFTBase<T>::initialize(
 			std::move(data),
+			initialInReciprocalDomain,
+			initialInTimeDomain,
 			gridDims,
 			dimImTime,
 			dataBlockSize);
 }
 
 template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::transform_Mfreq_to_itime( bT invTemp )
+void MatsubaraImagTimeFourierTransform<T>::transform_itime_Mfreq( bT invTemp )
 {
-	if ( statusTimeDomain_ )
-		scallop::error_handling::Error(
-				"Cannot apply frequency to time transform to something already in time space!");
-
 	if ( isFermi_ )
 	{
-		this->fourier_transform_fermions_freq_to_time( invTemp );
+		this->fourier_transform_fermions_time_freq( invTemp );
 	}
 	else
 	{
-		this->fourier_transform_bosons_freq_to_time( invTemp );
+		this->fourier_transform_bosons_time_freq( invTemp );
 	}
 }
 
 template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::transform_itime_to_Mfreq( bT invTemp )
-{
-	if ( ! statusTimeDomain_ )
-		scallop::error_handling::Error(
-				"Cannot apply time to frequency transform to something already in frequency space!");
-
-	if ( isFermi_ )
-	{
-		this->fourier_transform_fermions_time_to_freq(invTemp);
-	}
-	else
-	{
-		this->fourier_transform_bosons_time_to_freq(invTemp);
-	}
-}
-
-template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_freq_to_time( bT invTemp )
-{
-	//frequency to time transform is a simple DFT, normalized by the inverse temperature
-	this->perform_freq_to_time_fft();
-
-	//Multiply the phase factor exp( - \sqrt(-1) \pi i/N_mats ) from the (2n+1)
-	for (size_t ik = 0 ; ik < this->get_num_grid() ; ++ik )
-		for (size_t iw = 0 ; iw < this->get_num_time() ; ++iw )
-		{
-			auto it = this->data_begin_modify() + (ik*this->get_num_time()+iw)*this->get_data_block_size();
-			auto itEnd = it+this->get_data_block_size();
-			for ( ; it != itEnd ; ++it )
-				(*it) *= std::exp( T(0, -(M_PI * iw) / this->get_num_time() ) );
-		}
-
-	//Scale by beta
-	for ( auto it = this->data_begin_modify(); it != this->data_end_modify(); ++it  )
-		(*it) *= 1.0/invTemp;
-
-	statusTimeDomain_ = true;
-}
-
-template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::fourier_transform_bosons_freq_to_time( bT invTemp )
-{
-
-}
-
-template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_time_to_freq( bT invTemp )
+void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_time_freq( bT invTemp )
 {
 	const size_t nM = this->get_num_time();
+	const size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
+//	const size_t nR = this->get_spaceGrid_proc().get_num_R_grid();
 
-	//Multiply the phase factor exp( \sqrt(-1) \pi i/N_mats ) from the (2n+1)
-	for (size_t ik = 0 ; ik < this->get_num_grid() ; ++ik )
-		for (size_t iw = 0 ; iw < nM ; ++iw )
+	if ( this->is_in_time_space() )
+	{
+		if ( this->is_in_k_space() )
 		{
-			auto it = this->data_begin_modify() + (ik*nM+iw)*this->get_data_block_size();
-			auto itEnd = it+this->get_data_block_size();
-			for ( ; it != itEnd ; ++it )
-				(*it) *=  std::exp( T(0, (M_PI * iw) / nM) );
+			//Multiply the phase factor exp( \sqrt(-1) \pi i/N_mats ) from the (2n+1)
+			for (size_t ik = 0 ; ik < nK ; ++ik )
+			{
+				size_t id = this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ik);
+				for (size_t iw = 0 ; iw < nM ; ++iw )
+				{
+					auto ptr_block = this->write_data_ptr_block(id,iw);
+					for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+						ptr_block[ib] *=  std::exp( T(0, (M_PI * iw) / nM) );
+				}
+			}
 		}
+	}
 
-	this->perform_time_to_freq_fft();
+	//frequency to time transform is a simple DFT, normalized by the inverse temperature
+	this->perform_time_fft();
 
-	//Multiply prefactor that comes from the integration kernel
-	for (size_t ik = 0 ; ik < this->get_num_grid() ; ++ik )
-		for (size_t iw = 0 ; iw < this->get_num_time() ; ++iw )
+	if ( ! this->is_in_time_space() )
+	{
+		if ( this->is_in_k_space() )
 		{
-			auto it = this->data_begin_modify() + (ik*nM+iw)*this->get_data_block_size();
-			auto itEnd = it+this->get_data_block_size();
+			//Multiply prefactor that comes from the integration kernel
+			for (size_t ik = 0 ; ik < nK ; ++ik )
+			{
+				size_t id = this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ik);
+				for (size_t iw = 0 ; iw < nM ; ++iw )
+				{
+					auto ptr_block = this->write_data_ptr_block(id,iw);
 
-			//remember that frequencies are stored with negative frequencies in the second half of the array
-			int frequencyIndex =
-					(iw < nM/2 ?
-							static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
+					//remember that frequencies are stored with negative frequencies in the second half of the array
+					int frequencyIndex =
+							(iw < nM/2 ?
+									static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
 
-			T phase = T(0,M_PI*(2*frequencyIndex+1));
-			for ( ; it != itEnd ; ++it )
-				(*it) *=  -invTemp*(1.0-std::exp(phase/bT(nM)))/phase;
+					T phase = T(0,M_PI*(2*frequencyIndex+1));
+					for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+						ptr_block[ib] *=  -invTemp*(1.0-std::exp(phase/bT(nM)))/phase;
+				}
+			}
 		}
+	}
+	else //... we are now in time space
+	{
+		//Multiply the phase factor exp( - \sqrt(-1) \pi i/N_mats ) from the (2n+1)
+		// and scale by beta
+		if ( this->is_in_k_space() )
+		{
+			for (size_t ik = 0 ; ik < nK ; ++ik )
+			{
+				size_t idk = this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ik);
+				for (size_t iw = 0 ; iw < nM ; ++iw )
+				{
+					auto ptr_block = this->write_data_ptr_block(idk,iw);
+					for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+						ptr_block[ib] *= std::exp( T(0, -(M_PI * iw) / nM ) )/invTemp;
+				}
+			}
+		}
+	}
+
 }
 
 template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::fourier_transform_bosons_time_to_freq( bT invTemp )
+void MatsubaraImagTimeFourierTransform<T>::fourier_transform_bosons_time_freq( bT invTemp )
 {
 
-}
-
-template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::set_time_domain()
-{
-	statusTimeDomain_ = true;
-}
-
-template<typename T>
-void MatsubaraImagTimeFourierTransform<T>::set_frequency_domain()
-{
-	statusTimeDomain_ = false;
 }
 
 } /* namespace gw_flex */

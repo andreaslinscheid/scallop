@@ -37,9 +37,9 @@ void GreensFunctionOrbital<T>::initialize(
 		size_t dimImTime,
 		std::vector<size_t> gridDims,
 		size_t orbitalDim,
-		bool initialInFreqDomain,
+		bool initialInTimeDomain,
 		bool initialInReciprocalDomain,
-		std::vector<T> data)
+		typename auxillary::TemplateTypedefs<T>::scallop_vector const& data)
 {
 	orbitalDim_ = orbitalDim;
 
@@ -47,71 +47,54 @@ void GreensFunctionOrbital<T>::initialize(
 			dimImTime,
 			gridDims,
 			orbitalDim*orbitalDim*16,
-			initialInFreqDomain,
+			initialInTimeDomain,
 			initialInReciprocalDomain,
-			std::move(data));
+			data);
 }
 
 template<typename T>
 T GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
 {
-	return *(this->begin() + this->memory_layout(ig,it,l1,a1,s1,l2,a2,s2) );
+	return *(this->read_phs_grid_ptr_block(ig,it) + this->memory_layout(l1,a1,s1,l2,a2,s2) );
 }
 
 template<typename T>
 T & GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2)
 {
-	return *(this->data_begin_modify() + this->memory_layout(ig,it,l1,a1,s1,l2,a2,s2) );
+	return *(this->write_phs_grid_ptr_block(ig,it) + this->memory_layout(l1,a1,s1,l2,a2,s2) );
 }
 
 template<typename T>
 T GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t m1,  size_t m2) const
 {
-	return *(this->begin() + this->memory_layout_combined_notation(ig,it,m1,m2) );
+	return *(this->read_phs_grid_ptr_block(ig,it) + this->memory_layout_combined_notation(m1,m2) );
 }
 
 template<typename T>
 T & GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t m1,  size_t m2)
 {
-	return *(this->data_begin_modify() + this->memory_layout_combined_notation(ig,it,m1,m2) );
+	return *(this->write_phs_grid_ptr_block(ig,it) + this->memory_layout_combined_notation(m1,m2) );
 }
 
 template<typename T>
 size_t GreensFunctionOrbital<T>::memory_layout(
-		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
+		size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
 {
 	size_t m1 = (l1*2+a1)*2+s1;
 	size_t m2 = (l2*2+a2)*2+s2;
-	return this->memory_layout_combined_notation(ig,it,m1,m2);
+	return this->memory_layout_combined_notation(m1,m2);
 }
 
 template<typename T>
-size_t GreensFunctionOrbital<T>::memory_layout_combined_notation(
-		size_t ig, size_t it, size_t m1, size_t m2) const
+size_t GreensFunctionOrbital<T>::memory_layout_combined_notation( size_t m1, size_t m2) const
 {
-	auto nM = this->get_num_time();
 	auto nC = orbitalDim_*4;
-	size_t ptr_offset = ((ig*nM+it)*nC+m1)*nC+m2;
-
-#ifdef DEBUG_BUILD
-	if ( ptr_offset > ( this->end()-this->begin() ))
-		scallop::error_handling::Error("GreensFunctionOrbital: access out of bounds!");
-#endif
-	return ptr_offset;
+	return m1*nC+m2;
 }
-
-template<typename T>
-typename std::vector<T>::iterator
-GreensFunctionOrbital<T>::get_iterator_at(
-		size_t ig, size_t it, size_t m1, size_t m2)
-{
-	return (this->data_begin_modify() + this->memory_layout_combined_notation(ig,it,m1,m2));
-}
-
 
 } /* namespace gw_flex */
 } /* namespace scallop */

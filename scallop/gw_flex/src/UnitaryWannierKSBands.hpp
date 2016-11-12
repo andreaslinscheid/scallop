@@ -25,80 +25,66 @@ namespace gw_flex
 {
 
 template<typename T>
+UnitaryWannierKSBands<T>::UnitaryWannierKSBands()
+{
+
+}
+
+template<typename T>
 void UnitaryWannierKSBands<T>::initialize_identity(
 		std::vector<size_t> spaceGrid,
 		size_t numOrbitals)
 {
-	spaceGrid_ = std::move(spaceGrid);
-	numOrb_ = numOrbitals;
-	numGridPts_ = 1;
-	for ( auto p : spaceGrid_ )
-		numGridPts_ *= p;
+	this->initialize_layout_2pt_obj(numOrbitals);
+	size_t nO = this->get_nOrb();
 
-	data_ = std::vector<T>(16*numGridPts_*numOrb_*numOrb_, T(0) );
-	for ( size_t ik = 0 ; ik < numGridPts_ ; ++ik)
-		for ( size_t m1 = 0 ; m1 < numOrb_*4 ; ++m1)
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+	this->initialize( data, true, false, std::move(spaceGrid), 1, 16*nO*nO );
+
+	//Since we are initializing the identity everywhere, the grid does not matter.
+	size_t nG = this->get_spaceGrid_proc().get_num_k_grid();
+
+	for ( size_t ik = 0 ; ik < nG ; ++ik)
+		for ( size_t m1 = 0 ; m1 < nO*4 ; ++m1)
 		{
-			(*this)(ik,m1,m1) = 1.0;
+			(*this)(ik,m1,m1) = T(1.0);
 		}
 }
 
 template<typename T>
 T UnitaryWannierKSBands<T>::operator() (size_t ik, size_t m1, size_t m2) const
 {
-	return *(data_.begin()+this->memory_layout_combined_notation(ik,m1,m2));
+	return *(this->read_phs_grid_ptr(ik,m1,m2));
 }
 
 template<typename T>
 T & UnitaryWannierKSBands<T>::operator() (size_t ik, size_t m1, size_t m2)
 {
-	return *(data_.begin()+this->memory_layout_combined_notation(ik,m1,m2));
+	return *(this->write_phs_grid_ptr(ik,m1,m2));
 }
 
 template<typename T>
-typename std::vector<T>::const_iterator
-UnitaryWannierKSBands<T>::get_iterator_at(size_t ik, size_t m1, size_t m2) const
+T const * UnitaryWannierKSBands<T>::read_phs_grid_ptr(size_t ik, size_t m1, size_t m2 ) const
 {
-	return (data_.begin()+this->memory_layout_combined_notation(ik,m1,m2));
+	return FFTBase<T>::read_phs_grid_ptr_block(ik,0)+this->memory_layout_combined_notation_2pt_obj(m1,m2);
 }
 
 template<typename T>
-size_t UnitaryWannierKSBands<T>::memory_layout(size_t ik, size_t l, size_t a1, size_t s1, size_t i, size_t a2, size_t s2) const
+T * UnitaryWannierKSBands<T>::write_phs_grid_ptr(size_t ik, size_t m1, size_t m2 )
 {
-	size_t m1 = (l*2+a1)*2+s1;
-	size_t m2 = (i*2+a2)*2+s2;
-	return this->memory_layout_combined_notation(ik,m1,m2);
+	return FFTBase<T>::write_phs_grid_ptr_block(ik,0)+this->memory_layout_combined_notation_2pt_obj(m1,m2);
 }
 
 template<typename T>
-size_t UnitaryWannierKSBands<T>::memory_layout_combined_notation(size_t ik, size_t m1, size_t m2) const
+T const * UnitaryWannierKSBands<T>::read_phs_grid_ptr_block(size_t ik) const
 {
-	auto nC = numOrb_*4;
-	size_t ptr_offset = (ik*nC+m1)*nC+m2;
-
-#ifdef DEBUG_BUILD
-//	if ( ptr_offset > ( this->end()-this->begin() ))
-//		scallop::error_handling::Error("GreensFunctionOrbital: access out of bounds!");
-#endif
-	return ptr_offset;
+	return FFTBase<T>::read_phs_grid_ptr_block(ik,0);
 }
 
 template<typename T>
-size_t UnitaryWannierKSBands<T>::get_num_orbitals() const
+T * UnitaryWannierKSBands<T>::write_phs_grid_ptr_block(size_t ik)
 {
-	return numOrb_;
-}
-
-template<typename T>
-size_t UnitaryWannierKSBands<T>::get_num_kpts() const
-{
-	return numGridPts_;
-}
-
-template<typename T>
-std::vector<size_t> UnitaryWannierKSBands<T>::get_k_grid() const
-{
-	return spaceGrid_;
+	return FFTBase<T>::write_phs_grid_ptr_block(ik,0);
 }
 
 } /* namespace gw_flex */

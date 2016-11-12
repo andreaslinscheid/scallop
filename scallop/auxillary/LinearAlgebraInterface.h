@@ -53,14 +53,18 @@ class LinearAlgebraInterface
 public:
 
 	void matrix_times_diagonal_matrix(
-			typename std::vector<T>::const_iterator matrix, size_t dim,
-			typename std::vector<T>::const_iterator diagonalMatrix,
-			typename std::vector<T>::iterator resultMatrix) const;
+			T const * matrix, size_t dim,
+			T const * diagonalMatrix,
+			T * resultMatrix) const;
+
+	void matrix_times_diagonal_matrix(
+			T * matrix, size_t dim,
+			T const * diagonalMatrix) const;
 
 	void matrix_times_matrix(
-			typename std::vector<T>::const_iterator mleft, size_t dim,
-			typename std::vector<T>::const_iterator mright,
-			typename std::vector<T>::iterator result) const;
+			T const * mleft, size_t dim,
+			T const * mright,
+			T * result) const;
 
 private:
 

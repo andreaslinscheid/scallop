@@ -1,4 +1,4 @@
-/*	This file globals.h is part of scallop.
+/*	This file TemplateTypedefs.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,34 +13,30 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Apr 5, 2015
- *      Author: alinsch
+ *  Created on: Nov 8, 2016
+ *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_AUXILLARY_GLOBALS_H_
-#define SCALLOP_AUXILLARY_GLOBALS_H_
+#ifndef SCALLOP_AUXILLARY_TEMPLATETYPEDEFS_H_
+#define SCALLOP_AUXILLARY_TEMPLATETYPEDEFS_H_
 
+#include "scallop/auxillary/AlignmentAllocator.h"
 #include <vector>
 
 namespace scallop
 {
 namespace auxillary
 {
-namespace globals
+
+template<typename T>
+class TemplateTypedefs
 {
+public:
+	typedef std::vector<T, auxillary::AlignmentAllocator<T,32> > scallop_vector;
+//	typedef std::vector<T> scallop_vector;
+};
 
-///Set the global verbosity level of command line output.
-typedef enum
-{
-	high = 1000,
-	medium = 1100,
-	low = 1110
-} VerbosityLvl;
+} /* namespace auxillary */
+} /* namespace scallop */
 
-extern VerbosityLvl vLvl;
-
-} /*namespace globals */
-} /*namespace auxillary */
-} /*namespace scallop */
-
-#endif /* SCALLOP_AUXILLARY_GLOBALS_H_ */
+#endif /* SCALLOP_AUXILLARY_TEMPLATETYPEDEFS_H_ */

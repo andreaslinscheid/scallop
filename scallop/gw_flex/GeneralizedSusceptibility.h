@@ -1,4 +1,4 @@
-/*	This file GreensFunctionOrbital_test.h is part of scallop.
+/*	This file GeneralizedSusceptibility.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,48 +13,33 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 2, 2016
+ *  Created on: Nov 11, 2016
  *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_TEST_GREENSFUNCTIONORBITAL_TEST_H_
-#define SCALLOP_GW_FLEX_TEST_GREENSFUNCTIONORBITAL_TEST_H_
+#ifndef SCALLOP_GW_FLEX_GENERALIZEDSUSCEPTIBILITY_H_
+#define SCALLOP_GW_FLEX_GENERALIZEDSUSCEPTIBILITY_H_
 
+#include "scallop/gw_flex/MatsubaraImagTimeFourierTransform.h"
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
-#include "scallop/gw_flex/KohnShamGreensFunctionOrbital.h"
-#include "scallop/auxillary/TypeMapComplex.h"
 
 namespace scallop
 {
 namespace gw_flex
 {
-namespace test
-{
 
 template<typename T>
-class GreensFunctionOrbital_test
+class GeneralizedSusceptibility : public MatsubaraImagTimeFourierTransform<T>
 {
 public:
-	typedef typename scallop::auxillary::TypeMapComplex<T>::type bT;
+	GeneralizedSusceptibility();
 
-	GreensFunctionOrbital_test();
-
-	void test_all();
-
-private:
-
-	void transform_reciprocal_to_realspace();
-
-	void test_full_loop_time_space_back();
-
-	GreensFunctionOrbital<T> gf_singleBand_;
-
-	KohnShamGreensFunctionOrbital<T> KS_gf_singleBand_;
+	void compute_from_gf(GreensFunctionOrbital<T> const & gf);
 };
 
-} /* namespace test */
 } /* namespace gw_flex */
 } /* namespace scallop */
 
-#include "scallop/gw_flex/test/GreensFunctionOrbital_test.hpp"
-#endif /* SCALLOP_GW_FLEX_TEST_GREENSFUNCTIONORBITAL_TEST_H_ */
+
+#include "scallop/gw_flex/src/GeneralizedSusceptibility.hpp"
+#endif /* SCALLOP_GW_FLEX_GENERALIZEDSUSCEPTIBILITY_H_ */

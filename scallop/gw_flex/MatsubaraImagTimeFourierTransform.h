@@ -22,6 +22,7 @@
 
 #include "scallop/gw_flex/FFTBase.h"
 #include "scallop/auxillary/TypeMapComplex.h"
+#include "scallop/auxillary/TemplateTypedefs.h"
 #include <vector>
 #include <cstdlib>
 
@@ -45,9 +46,9 @@ public:
 			size_t dimImTime,
 			std::vector<size_t> gridDims,
 			size_t dataBlockSize,
-			bool initialInFreqDomain,
+			bool initialInTimeDomain,
 			bool initialInReciprocalDomain,
-			std::vector<T> data);
+			typename auxillary::TemplateTypedefs<T>::scallop_vector data);
 
 	/**
 	 * Transform \p data from imaginary time to Matsubara frequency.
@@ -58,39 +59,16 @@ public:
 	 * @param blockSize
 	 * @param Fermi
 	 */
-	void transform_itime_to_Mfreq( bT invTemp );
-
-	void transform_Mfreq_to_itime( bT invTemp );
-
-	/**
-	 * 	When called overwrites the internal status such that
-	 * 	the data is interpreted to be in the time domain
-	 */
-	void set_time_domain();
-
-	/**
-	 * 	When called overwrites the internal status such that
-	 * 	the data is interpreted to be in the frequency domain
-	 */
-	void set_frequency_domain();
+	void transform_itime_Mfreq( bT invTemp );
 
 private:
 
 	//If set true, it will call the time Fourier transform for Fermions, otherwise the one for Bosons
 	bool isFermi_;
 
-	bool isInit_ = false;
+	void fourier_transform_fermions_time_freq( bT invTemp );
 
-	//track in which domain this object currently resides
-	bool statusTimeDomain_ = false;
-
-	void fourier_transform_fermions_time_to_freq( bT invTemp );
-
-	void fourier_transform_fermions_freq_to_time( bT invTemp );
-
-	void fourier_transform_bosons_time_to_freq( bT invTemp );
-
-	void fourier_transform_bosons_freq_to_time( bT invTemp );
+	void fourier_transform_bosons_time_freq( bT invTemp );
 
 
 };

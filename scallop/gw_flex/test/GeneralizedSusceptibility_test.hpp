@@ -1,4 +1,4 @@
-/*	This file globals.h is part of scallop.
+/*	This file GeneralizedSusceptibility_test.hpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,34 +13,33 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Apr 5, 2015
- *      Author: alinsch
+ *  Created on: Nov 11, 2016
+ *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_AUXILLARY_GLOBALS_H_
-#define SCALLOP_AUXILLARY_GLOBALS_H_
-
-#include <vector>
+#include "scallop/gw_flex/GeneralizedSusceptibility.h"
 
 namespace scallop
 {
-namespace auxillary
-{
-namespace globals
+namespace gw_flex
 {
 
-///Set the global verbosity level of command line output.
-typedef enum
+template<typename T>
+class GeneralizedSusceptibility_test
 {
-	high = 1000,
-	medium = 1100,
-	low = 1110
-} VerbosityLvl;
+public:
+	void test_all();
+private:
+	GeneralizedSusceptibility<T> sust_;
+};
 
-extern VerbosityLvl vLvl;
+template<typename T>
+void GeneralizedSusceptibility_test<T>::test_all()
+{
+	KohnShamGreensFunctionOrbital<T> gf;
 
-} /*namespace globals */
-} /*namespace auxillary */
-} /*namespace scallop */
+	sust_.compute_from_gf( gf );
+}
 
-#endif /* SCALLOP_AUXILLARY_GLOBALS_H_ */
+} /* namespace gw_flex */
+} /* namespace scallop */

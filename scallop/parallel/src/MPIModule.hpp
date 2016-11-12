@@ -55,7 +55,7 @@ struct sum_single_impl<T, true >
 
 		auto data_ptr = &(*data.begin());
 		MPITypeMap<typename T::value_type> MPITypeMap;
-		mpi::MPImodule const& mpiobj = mpi::MPImodule::get_instance();
+		MPIModule const& mpiobj = MPIModule::get_instance();
 		int ierr;
 		if ( mpiobj.get_mpi_me() == proc)
 		{
@@ -176,54 +176,54 @@ struct gather_impl<T, true >
 	void gather( T & dataRoot,size_t blocksize,  T const& dataAll, size_t proc )
 	{
 #ifdef MPI_PARALLEL
-		//We make an assumption about dataRoot being allocated to the
-		//	correct total size. Then we assume that data is distributed
-		//	among processor equally with an overhead of N elements
-		//	placed in the first N procs
-		mpi::MPImodule const& mpiobj = mpi::MPImodule::get_instance();
-		int * recvcounts = NULL;
-		int * displs = NULL;
-
-		//Yes, the MPI library promises to NOT modify 'data_ptr_send'
-		auto data_ptr_send = const_cast<typename T::value_type*>(&(*dataAll.begin()));
-		decltype(data_ptr_send) data_ptr_recv = NULL;;
-		if ( mpiobj.get_mpi_me() == proc)
-			data_ptr_recv = &(*dataRoot.begin());
-
-		if ( mpiobj.get_mpi_me() == proc)
-		{
-			size_t sizeGather = dataRoot.end() - dataRoot.begin();
-			if ( sizeGather == 0 || sizeGather % blocksize != 0 )
-				scallop::error_handling::Error("Problem: container not allocated correct size",5);
-			std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(sizeGather/blocksize);
-			recvcounts = new int [distr.size()];
-			displs = new int [distr.size()];
-			for ( size_t i = 0 ; i < distr.size() ; ++i )
-			{
-				recvcounts[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
-						-static_cast<int>(distr[i].first))*blocksize;
-				displs[i] = distr[i].first*blocksize;
-			}
-		}
-		size_t sizeSend = dataAll.end() - dataAll.begin();
-
-		MPITypeMap<typename T::value_type> MPITypeMap;
-		int ierr = MPI_Gatherv(
-				data_ptr_send,
-				sizeSend,
-				MPITypeMap.type,
-				data_ptr_recv,
-				recvcounts,
-				displs,
-				MPITypeMap.type,
-				proc,
-				MPI_COMM_WORLD);
-
-		if ( ierr != 0 )
-			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
-
-		delete [] recvcounts;
-		delete [] displs;
+//		//We make an assumption about dataRoot being allocated to the
+//		//	correct total size. Then we assume that data is distributed
+//		//	among processor equally with an overhead of N elements
+//		//	placed in the first N procs
+//		MPIModule const& mpiobj = MPIModule::get_instance();
+//		int * recvcounts = NULL;
+//		int * displs = NULL;
+//
+//		//Yes, the MPI library promises to NOT modify 'data_ptr_send'
+//		auto data_ptr_send = const_cast<typename T::value_type*>(&(*dataAll.begin()));
+//		decltype(data_ptr_send) data_ptr_recv = NULL;;
+//		if ( mpiobj.get_mpi_me() == proc)
+//			data_ptr_recv = &(*dataRoot.begin());
+//
+//		if ( mpiobj.get_mpi_me() == proc)
+//		{
+//			size_t sizeGather = dataRoot.end() - dataRoot.begin();
+//			if ( sizeGather == 0 || sizeGather % blocksize != 0 )
+//				scallop::error_handling::Error("Problem: container not allocated correct size",5);
+//			std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(sizeGather/blocksize);
+//			recvcounts = new int [distr.size()];
+//			displs = new int [distr.size()];
+//			for ( size_t i = 0 ; i < distr.size() ; ++i )
+//			{
+//				recvcounts[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
+//						-static_cast<int>(distr[i].first))*blocksize;
+//				displs[i] = distr[i].first*blocksize;
+//			}
+//		}
+//		size_t sizeSend = dataAll.end() - dataAll.begin();
+//
+//		MPITypeMap<typename T::value_type> MPITypeMap;
+//		int ierr = MPI_Gatherv(
+//				data_ptr_send,
+//				sizeSend,
+//				MPITypeMap.type,
+//				data_ptr_recv,
+//				recvcounts,
+//				displs,
+//				MPITypeMap.type,
+//				proc,
+//				MPI_COMM_WORLD);
+//
+//		if ( ierr != 0 )
+//			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
+//
+//		delete [] recvcounts;
+//		delete [] displs;
 #endif
 	}
 
@@ -234,7 +234,7 @@ struct gather_impl<T, true >
 		//	correct total size. Then we assume that data is distributed
 		//	among processor equally with an overhead of N elements
 		//	placed in the first N procs
-		mpi::MPImodule const& mpiobj = mpi::MPImodule::get_instance();
+		MPIModule const& mpiobj = MPIModule::get_instance();
 		int * recvcounts = NULL;
 		int * displs = NULL;
 
@@ -323,61 +323,61 @@ struct scatter_impl<T,true>
 	void scatter( T const& dataRoot,size_t blocksize,  T & dataAll, size_t proc )
 	{
 #ifdef MPI_PARALLEL
-		//We make an assumption about dataRoot being allocated to the
-		//	correct total size. Then we assume that data is distributed
-		//	among processor equally with an overhead of N elements
-		//	placed in the first N procs
-		mpi::MPImodule const& mpiobj = mpi::MPImodule::get_instance();
-		int * sendcounts = NULL;
-		int * displs = NULL;
-
-		std::vector< size_t > sizesProc ( mpiobj.get_nproc() );
-		if ( mpiobj.get_mpi_me() == proc)
-		{
-			size_t sizeSend = dataRoot.end() - dataRoot.begin();
-			if ( sizeSend == 0 || sizeSend % blocksize != 0 )
-				scallop::error_handling::Error("Problem: container not allocated correct size",5);
-			std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(sizeSend/blocksize);
-			sendcounts = new int [distr.size()];
-			displs = new int [distr.size()];
-			for ( size_t i = 0 ; i < distr.size() ; ++i )
-			{
-				sizesProc[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
-						-static_cast<int>(distr[i].first))*blocksize;
-				sendcounts[i] = sizesProc[i];
-				displs[i] = distr[i].first*blocksize;
-			}
-		}
-
-		mpiobj.bcast(sizesProc);
-		size_t sizeRecei = dataAll.end() - dataAll.begin();
-		size_t sizeActual =  sizesProc[ mpiobj.get_mpi_me() ];
-		if ( sizeRecei != sizeActual )
-			scallop::error_handling::Error("Scatter: Receive container not allocated to correct size",100+mpiobj.get_mpi_me());
-
-		auto data_ptr_recv = &(*dataAll.begin());
-		decltype(data_ptr_recv) data_ptr_send = NULL;;
-		//Yes, the MPI library promises to NOT modify 'data_ptr_send'
-		if ( mpiobj.get_mpi_me() == proc)
-			data_ptr_send = const_cast<typename T::value_type*>(&(*dataRoot.begin()));
-
-		MPITypeMap<typename T::value_type> MPITypeMap;
-		int ierr = MPI_Scatterv(
-				data_ptr_send,
-				sendcounts,
-				displs,
-				MPITypeMap.type,
-				data_ptr_recv,
-				sizeRecei,
-				MPITypeMap.type,
-				proc,
-				MPI_COMM_WORLD);
-
-		if ( ierr != 0 )
-			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
-
-		delete [] sendcounts;
-		delete [] displs;
+//		//We make an assumption about dataRoot being allocated to the
+//		//	correct total size. Then we assume that data is distributed
+//		//	among processor equally with an overhead of N elements
+//		//	placed in the first N procs
+//		MPIModule const& mpiobj = MPIModule::get_instance();
+//		int * sendcounts = NULL;
+//		int * displs = NULL;
+//
+//		std::vector< size_t > sizesProc ( mpiobj.get_nproc() );
+//		if ( mpiobj.get_mpi_me() == proc)
+//		{
+//			size_t sizeSend = dataRoot.end() - dataRoot.begin();
+//			if ( sizeSend == 0 || sizeSend % blocksize != 0 )
+//				scallop::error_handling::Error("Problem: container not allocated correct size",5);
+//			std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(sizeSend/blocksize);
+//			sendcounts = new int [distr.size()];
+//			displs = new int [distr.size()];
+//			for ( size_t i = 0 ; i < distr.size() ; ++i )
+//			{
+//				sizesProc[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
+//						-static_cast<int>(distr[i].first))*blocksize;
+//				sendcounts[i] = sizesProc[i];
+//				displs[i] = distr[i].first*blocksize;
+//			}
+//		}
+//
+//		mpiobj.bcast(sizesProc);
+//		size_t sizeRecei = dataAll.end() - dataAll.begin();
+//		size_t sizeActual =  sizesProc[ mpiobj.get_mpi_me() ];
+//		if ( sizeRecei != sizeActual )
+//			scallop::error_handling::Error("Scatter: Receive container not allocated to correct size",100+mpiobj.get_mpi_me());
+//
+//		auto data_ptr_recv = &(*dataAll.begin());
+//		decltype(data_ptr_recv) data_ptr_send = NULL;;
+//		//Yes, the MPI library promises to NOT modify 'data_ptr_send'
+//		if ( mpiobj.get_mpi_me() == proc)
+//			data_ptr_send = const_cast<typename T::value_type*>(&(*dataRoot.begin()));
+//
+//		MPITypeMap<typename T::value_type> MPITypeMap;
+//		int ierr = MPI_Scatterv(
+//				data_ptr_send,
+//				sendcounts,
+//				displs,
+//				MPITypeMap.type,
+//				data_ptr_recv,
+//				sizeRecei,
+//				MPITypeMap.type,
+//				proc,
+//				MPI_COMM_WORLD);
+//
+//		if ( ierr != 0 )
+//			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
+//
+//		delete [] sendcounts;
+//		delete [] displs;
 #endif
 	}
 };
@@ -395,47 +395,48 @@ struct all_gather_impl<T, true >
 	void all_gather( T & data,  T const& dataSend, size_t eleReceive, size_t blocksize )
 	{
 #ifdef MPI_PARALLEL
-		//We make an assumption about data being allocated to the
-		//	correct total size on each proc. Then we assume that data is distributed
-		//	among processor equally with an overhead of N elements
-		//	placed in the first N procs
-		mpi::MPImodule const& mpiobj = mpi::MPImodule::get_instance();
-		int * recvcounts = NULL;
-		int * displs = NULL;
-
-		auto data_ptr_rece = &(*data.begin());
-		auto data_ptr_send = const_cast<typename T::value_type*>(&(*dataSend.begin()));
-		size_t sendcount = dataSend.end() - dataSend.begin();
-
-		if ( eleReceive == 0 || eleReceive % blocksize != 0 )
-			scallop::error_handling::Error("Problem: container not allocated correct size",5);
-
-		std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(eleReceive/blocksize);
-		recvcounts = new int [distr.size()];
-		displs = new int [distr.size()];
-		for ( size_t i = 0 ; i < distr.size() ; ++i )
-		{
-			recvcounts[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
-					-static_cast<int>(distr[i].first))*blocksize;
-			displs[i] = distr[i].first*blocksize;
-		}
-
-		MPITypeMap<typename T::value_type> MPITypeMap;
-		int ierr = MPI_Allgatherv(
-				data_ptr_send,
-				sendcount,
-				MPITypeMap.type,
-				data_ptr_rece,
-				recvcounts,
-				displs,
-				MPITypeMap.type,
-				MPI_COMM_WORLD);
-
-		if ( ierr != 0 )
-			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
-
-		delete [] recvcounts;
-		delete [] displs;
+//	This was specific to the parallization in the prelimnary version of the code. Change or remove it here.
+//		//We make an assumption about data being allocated to the
+//		//	correct total size on each proc. Then we assume that data is distributed
+//		//	among processor equally with an overhead of N elements
+//		//	placed in the first N procs
+//		MPIModule const& mpiobj = MPIModule::get_instance();
+//		int * recvcounts = NULL;
+//		int * displs = NULL;
+//
+//		auto data_ptr_rece = &(*data.begin());
+//		auto data_ptr_send = const_cast<typename T::value_type*>(&(*dataSend.begin()));
+//		size_t sendcount = dataSend.end() - dataSend.begin();
+//
+//		if ( eleReceive == 0 || eleReceive % blocksize != 0 )
+//			scallop::error_handling::Error("Problem: container not allocated correct size",5);
+//
+//		std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(eleReceive/blocksize);
+//		recvcounts = new int [distr.size()];
+//		displs = new int [distr.size()];
+//		for ( size_t i = 0 ; i < distr.size() ; ++i )
+//		{
+//			recvcounts[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
+//					-static_cast<int>(distr[i].first))*blocksize;
+//			displs[i] = distr[i].first*blocksize;
+//		}
+//
+//		MPITypeMap<typename T::value_type> MPITypeMap;
+//		int ierr = MPI_Allgatherv(
+//				data_ptr_send,
+//				sendcount,
+//				MPITypeMap.type,
+//				data_ptr_rece,
+//				recvcounts,
+//				displs,
+//				MPITypeMap.type,
+//				MPI_COMM_WORLD);
+//
+//		if ( ierr != 0 )
+//			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
+//
+//		delete [] recvcounts;
+//		delete [] displs;
 #endif
 	}
 };
@@ -458,7 +459,7 @@ struct broad_cast_impl<T, true >
 
 #ifdef DEBUG_BUILD
 		//use the single element version to check if the space is correctly allocated
-		mpi::MPImodule const& mpiobj = mpi::MPImodule::get_instance();
+		MPIModule const& mpiobj = MPIModule::get_instance();
 		size_t rootSize = sendcount;
 		mpiobj.bcast(rootSize,proc);
 		if ( sendcount != rootSize )
@@ -513,7 +514,7 @@ struct max_impl<T, false >
 	void max_val(T & data, size_t & proc )
 	{
 #ifdef MPI_PARALLEL
-		mpi::MPImodule const& mpi = mpi::MPImodule::get_instance();
+		MPIModule const& mpi = MPIModule::get_instance();
 		MPITypeMap<T> MPITypeMap;
 
 		std::vector<T> comp( mpi.get_nproc() , T(0) );
@@ -542,6 +543,27 @@ void MPIModule::sum( T & data  ) const
 {
 	delegate::sum_impl<T,std::is_class<T>::value > sumdel;
 	sumdel.sum( data );
+}
+
+template<typename T>
+void MPIModule::all_to_all( typename auxillary::TemplateTypedefs<T>::scallop_vector & data, size_t count) const
+{
+#ifdef MPI_PARALLEL
+	auto data_ptr_recv = &( *data.begin() );
+	MPITypeMap<T> MPITypeMap;
+
+	int ierr = MPI_Alltoall(
+			MPI_IN_PLACE,
+			static_cast<int>(count),
+			MPITypeMap.type,
+			data_ptr_recv,
+			static_cast<int>(count),
+			MPITypeMap.type,
+			MPI_COMM_WORLD);
+
+	if ( ierr != 0 )
+		std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
+#endif
 }
 
 template<typename T>

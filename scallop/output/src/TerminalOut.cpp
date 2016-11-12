@@ -46,7 +46,10 @@ void TerminalOut::print()
 {
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 
-	if ( mpi.get_mpi_me() != 0 )
+	if ( ! mpi.ioproc() )
+		return;
+
+	if ( auxillary::globals::vLvl < verbosityLvl_ )
 		return;
 
 	if ( ! printToStdErr_ )
@@ -59,6 +62,11 @@ void TerminalOut::print()
 	}
 	sstrBuff_.str( std::string() );
 	sstrBuff_.clear();
+}
+
+MessageChain::MessageChain(TerminalOut & theMessage)
+	:	theMessage_(theMessage)
+{
 }
 
 MessageChain::~MessageChain()

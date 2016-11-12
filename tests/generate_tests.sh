@@ -21,7 +21,7 @@
 newline=$'\n'
 tab=$'\t'
 testFolders=`find ../scallop/ -type d | grep -P "\/test$"`
-includes=""
+includes="#include \"scallop/output/TerminalOut.h\""
 executionLines=""
 for i  in $testFolders; do
 	moduleRelPath=${i%%"/test"}
@@ -60,13 +60,15 @@ cat > tests.cpp << EOF
 #include <iostream>
 $includes
 
-int main (int argc, char *argv[]){
-	std::cout << "Starting test of the scallop project : \\n\\n" << std::endl;
-	std::cout << "\\tThe test suit was generated at $timestamp" << std::endl;
+int main (int argc, char *argv[])
+{
+	scallop::output::TerminalOut msg;
+	msg << "Starting test of the scallop project : \\n\\n";
+	msg << "\\tThe test suit was generated at $timestamp";
 	$executionLines
 	
 	
-	std::cout << "\\n\\nTest finished" << std::endl;
+	msg << "\\n\\nTest finished";
 	return 0;
 }
 EOF

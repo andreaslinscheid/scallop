@@ -20,6 +20,8 @@
 #ifndef SCALLOP_GW_FLEX_FFTBASE_H_
 #define SCALLOP_GW_FLEX_FFTBASE_H_
 
+#include "scallop/parallel/GridDistribution.h"
+#include "scallop/auxillary/AlignmentAllocator.h"
 #include <fftw3.h>
 #include <vector>
 
@@ -41,28 +43,64 @@ public:
 
 	FFTBase();
 
-	FFTBase(std::vector<T> data,
-			std::vector<size_t> spaceGrid,
+	FFTBase(FFTBase<T> const& other);
+
+	FFTBase<T> & operator= (FFTBase<T> const& rhs);
+
+	FFTBase<T> & operator= (FFTBase<T> && other );
+
+	FFTBase(
+			typename auxillary::TemplateTypedefs<T>::scallop_vector const& data,
+			bool dataIsInKSpace,
+			bool dataIsInTimeSpace,
+			std::vector<size_t> spaceGridTotal,
 			size_t dimTimeFT,
 			size_t blockSize);
 
 	~FFTBase();
 
-	void plan_ffts(
-			std::vector<T> data,
-			std::vector<size_t> spaceGrid,
+	void initialize(
+			typename auxillary::TemplateTypedefs<T>::scallop_vector const& data,
+			bool dataIsInKSpace,
+			bool dataIsInTimeSpace,
+			std::vector<size_t> spaceGridTotal,
 			size_t dimTimeFT,
 			size_t blockSize);
+	/**
+	 * Provide read access to the data stored for a grid and time point.
+	 *
+	 * @param iGrid	Consecutive index of the processor local k or R grid.
+	 * @param it	Index of time/frequency
+	 * @return		Const Ptr to the beginning of the data block at this grid/time points.
+	 */
+	T const * read_phs_grid_ptr_block(size_t iGrid, size_t it ) const;
 
-	typename std::vector<T>::const_iterator begin() const;
+	/**
+	 * Provide modifying access to the data stored for a grid and time point.
+	 *
+	 * @param iGrid	Consecutive index of the processor local k or R grid.
+	 * @param it	Index of time/frequency
+	 * @return		Ptr to the beginning of the data block at this grid/time points.
+	 */
+	T * write_phs_grid_ptr_block(size_t iGrid, size_t it );
 
-	typename std::vector<T>::const_iterator end() const;
+	/**
+	 * Provide read access to the data stored for given grid and time point.
+	 *
+	 * @param iGrid	Consecutive index of the data grid.
+	 * @param it	Index of time/frequency
+	 * @return		Const Ptr to the beginning of the data block at this grid/time points.
+	 */
+	T const * read_data_ptr_block(size_t iGrid, size_t it ) const;
 
-	typename std::vector<T>::iterator data_begin_modify();
-
-	typename std::vector<T>::iterator data_end_modify();
-
-	size_t get_num_grid() const;
+	/**
+	 * Provide modifying access to the data stored for given grid and time point.
+	 *
+	 * @param iGrid	Consecutive index of the data grid.
+	 * @param it	Index of time/frequency
+	 * @return		Ptr to the beginning of the data block at this grid/time points.
+	 */
+	T * write_data_ptr_block(size_t iGrid, size_t it );
 
 	size_t get_num_time() const;
 
@@ -77,33 +115,34 @@ public:
 	 * 					If this object is in k space : returns {5 , 10}
 	 * 					If this object is in R space : returns {10, 5 }
 	 */
-	std::vector<size_t> get_spaceGrid_proc() const;
+	parallel::GridDistribution<T> const& get_spaceGrid_proc() const;
 
-	void perform_R_to_k_fft();
-
-	void perform_k_to_R_fft();
+	void perform_space_fft();
 
 	bool is_init() const;
 
+	bool is_in_k_space() const;
+
+	bool is_in_time_space() const;
+
+	void set_time_space(bool newState);
 protected:
 
-	void perform_time_to_freq_fft();
-
-	void perform_freq_to_time_fft();
+	void perform_time_fft();
 
 private:
+
+	///keep track if this object is currently in reciprocal space
+	bool isKSpace_ = true;
+
+	///keep track if this object is currently in time space
+	bool isTimeSpace_ = true;
 
 	///Set to true once initialized
 	bool isInit_ = false;
 
-	///dimension of k-space minus the parallel x dimension
-	size_t dimKProc_ = 0;
-
-	///dimension of R-space minus the parallel y dimension
-	size_t dimRProc_ = 0;
-
-	///Number of k vectors in the grid
-	std::vector<size_t> spaceGrid_;
+	///Description of the vectors in the grid
+	parallel::GridDistribution<T> spaceGrid_;
 
 	///Matsubara frequency dimension
 	size_t dimTimeFT_ = 0;
@@ -111,35 +150,61 @@ private:
 	///chunk of data in the last dimension, for example Nambu-spin^2 * orbitals^2
 	size_t blockSize_ = 0;
 
-	///Plan one discrete Fourier transform part of the imaginary time to frequency transform
-	///	for each k point. The convention with signs implies w_n==>\tau is forward.
-	fftw_plan * fftw3PlanTimeFwd_ = NULL;
+	///Plan the discrete Fourier transform part of the imaginary time to frequency transform
+	///The convention with signs implies w_n==>\tau is forward.
+	fftw_plan fftw3PlanTimeFwd_ = NULL;
 
-	//Plan one discrete Fourier transform part of the frequency to imaginary time transform
-	//	for each k point. The convention with signs implies \tau==>w_n is backward.
-	fftw_plan * fftw3PlanTimeBkwd_ = NULL;
+	///Plan one discrete Fourier transform part of the frequency to imaginary time transform
+	///	for each k grid point. The convention with signs implies \tau==>w_n is backward.
+	fftw_plan fftw3PlanTimeBkwd_ = NULL;
 
-	//Plan the forward Fourier transform in the non-parallelized K-grid dimensions
-	//	The convention with signs implies R==>k is forward.
-	fftw_plan fftw3PlanKParaFwd_ = NULL;
+	///Plan the forward Fourier transform in the non-parallelized K-grid dimensions
+	///	The convention with signs implies R==>k is forward.
+	fftw_plan fftw3PlanGridParaFwd_ = NULL;
 
-	//Plan the backward Fourier transform in the non-parallelized K-grid dimensions
-	//	The convention with signs implies k==>R is backward.
-	fftw_plan fftw3PlanKParaBkwd_ = NULL;
+	///Plan the backward Fourier transform in the non-parallelized K-grid dimensions
+	///	The convention with signs implies k==>R is backward.
+	fftw_plan fftw3PlanGridParaBkwd_ = NULL;
 
-	//Plan the forward Fourier transform in the parallelized K-grid dimension
-	//	 The convention with signs implies R==>k is forward.
-	fftw_plan fftw3PlanKSingleFwd_ = NULL;
+	///Plan the forward Fourier transforms in the parallelized K-grid dimension
+	///for each	point in the remaining grid. The convention with signs implies R==>k is forward.
+	fftw_plan fftw3PlanGridSingleFwd_ = NULL;
 
-	//Plan the backward Fourier transform in the parallelized K-grid dimension
-	//	 The convention with signs implies k==>R is backward.
-	fftw_plan fftw3PlanKSingleBkwd_ = NULL;
+	///Plan the backward Fourier transform in the parallelized K-grid dimension
+	///for each	point in the remaining grid. The convention with signs implies k==>R is backward.
+	fftw_plan fftw3PlanGridSingleBkwd_ = NULL;
 
-	std::vector<T> data_;
+	///Main data container. Large (typically).
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data_;
+
+	///Fourier buffer. We copy data here before FFTing to avoid having to keep track of complicated layouts.
+	fftw_complex * FFTBuffer_ = NULL;
 
 	void plan_time_fft();
 
 	void plan_space_fft();
+
+	void determine_fftbuffer_dim();
+
+	void perform_R_to_k_fft();
+
+	void perform_k_to_R_fft();
+
+	void perform_time_to_freq_fft_in_R();
+
+	void perform_freq_to_time_fft_in_R();
+
+	void perform_time_to_freq_fft_in_k();
+
+	void perform_freq_to_time_fft_in_k();
+
+	void copy_or_fill_buffer_time_FFT( size_t indexBeginDataArray, bool fillBuffer );
+
+	void copy_or_fill_buffer_first_FFT(size_t ikx, size_t indexTime, bool fillBuffer );
+
+	void copy_or_fill_buffer_second_FFT(size_t ikyz, size_t indexTime, bool fillBuffer );
+
+	void deallocate_fftw3_plans();
 };
 
 } /* namespace gw_flex */

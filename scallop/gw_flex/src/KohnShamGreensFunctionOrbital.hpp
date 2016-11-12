@@ -27,41 +27,46 @@ namespace gw_flex
 
 template<typename T>
 void KohnShamGreensFunctionOrbital<T>::set_in_time_space(
-		UnitaryWannierKSBands<T> const& unitaryWannierBands,
-		std::vector<bT> const& KSBands,
+		UnitaryWannierKSBands<T> unitaryWannierBands,
+		std::vector<bT> KSBands,
 		size_t timeDim,
 		bT invTemp)
 {
-	this->set_in_both_spaces(unitaryWannierBands,KSBands,timeDim,invTemp,true);
+	unitary_ = std::move(unitaryWannierBands);
+	KSBands_ = std::move(KSBands);
+	this->set_in_both_spaces(timeDim,invTemp,true);
 }
 
 template<typename T>
 void KohnShamGreensFunctionOrbital<T>::set_in_frequency_space(
-		UnitaryWannierKSBands<T> const& unitaryWannierBands,
-		std::vector<bT> const& KSBands,
+		UnitaryWannierKSBands<T> unitaryWannierBands,
+		std::vector<bT> KSBands,
 		size_t freqDim,
 		bT invTemp)
 {
-	this->set_in_both_spaces(unitaryWannierBands,KSBands,freqDim,invTemp,false);
+	unitary_ = std::move(unitaryWannierBands);
+	KSBands_ = std::move(KSBands);
+	this->set_in_both_spaces(freqDim,invTemp,false);
 }
 
 template<typename T>
 void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
-		UnitaryWannierKSBands<T> const& unitaryWannierBands,
-		std::vector<bT> const& KSBands,
 		size_t timeDim,
 		bT invTemp,
 		bool timeSpace)
 {
-	const size_t nK = unitaryWannierBands.get_num_kpts();
+
+	const size_t nK = unitary_.get_spaceGrid_proc().get_num_k_grid();
 	const size_t nM = timeDim;
-	const size_t nO = unitaryWannierBands.get_num_orbitals();
+	const size_t nO = unitary_.get_nOrb();
+
+	auto fullGrid = unitary_.get_spaceGrid_proc().get_grid();
 
 	if ( ! this->is_init() )
 	{
-		size_t dataSize = 16*nO*nO*nK*nM;
-		std::vector<T> data( dataSize , T(0) );
-		this->initialize( timeDim, unitaryWannierBands.get_k_grid(), nO, !timeDim, true, std::move(data) );
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+		this->initialize(
+				timeDim, fullGrid , nO, timeSpace, true, data);
 	}
 
 	auto FermiFunc = [] (bT E, bT beta)
@@ -77,7 +82,7 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 	{
 		for ( size_t m1 = 0 ; m1 < nO*4 ; ++m1)
 			for ( size_t m2 = 0 ; m2 < nO*4 ; ++m2)
-				conjUnitary[m1*nO*4+m2] = std::conj(unitaryWannierBands(ik,m2,m1));
+				conjUnitary[m1*nO*4+m2] = std::conj(unitary_(ik,m2,m1));
 
 		for ( size_t it = 0 ; it < nM ; ++it)
 		{
@@ -89,7 +94,7 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 			{
 				for ( size_t iMKSB = 0 ; iMKSB < nO*4 ; ++iMKSB)
 				{
-					bT e = KSBands[ik*nO*4+iMKSB];
+					bT e = KSBands_[ik*nO*4+iMKSB];
 					bT taui = invTemp*(bT(it)/bT(nM));
 					bareGF[iMKSB] = -FermiFunc(-e,invTemp)*std::exp(-taui*e);
 				}
@@ -98,18 +103,18 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 			{
 				for ( size_t iMKSB = 0 ; iMKSB < nO*4 ; ++iMKSB)
 				{
-					bT e = KSBands[ik*nO*4+iMKSB];
+					bT e = KSBands_[ik*nO*4+iMKSB];
 					int frequencyIndex =
 							(it < nM/2 ? static_cast<int>(it) : static_cast<int>(it)-static_cast<int>(nM) );
 
 					bareGF[iMKSB] = 1.0 / (T(0,M_PI*(2*frequencyIndex+1)/invTemp) - e);
 				}
 			}
-			auto unitaryThisK = unitaryWannierBands.get_iterator_at(ik,0,0);
-			linalg.matrix_times_diagonal_matrix( unitaryThisK, nO*4, bareGF.begin(), tmp.begin() );
+			auto unitaryThisK = unitary_.read_phs_grid_ptr_block(ik);
+			linalg.matrix_times_diagonal_matrix( unitaryThisK, nO*4, bareGF.data(), tmp.data() );
 
-			auto iteratorThis = this->get_iterator_at(ik,it,0,0);
-			linalg.matrix_times_matrix( conjUnitary.begin(), nO*4, tmp.begin(), iteratorThis );
+			auto iteratorThis = this->write_phs_grid_ptr_block(ik,it);
+			linalg.matrix_times_matrix( conjUnitary.data(), nO*4, tmp.data(), iteratorThis );
 		}
 	}
 }

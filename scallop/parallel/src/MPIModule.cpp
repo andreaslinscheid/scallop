@@ -94,6 +94,10 @@ void MPIModule::mpi_init()
     MPI_Get_processor_name(processor_name, &name_len);
     name_ = std::string( processor_name );
 
+//	char * version = new char [MPI_MAX_LIBRARY_VERSION_STRING];
+//	int sv = 0;
+//	MPI_Get_library_version(version,&sv);
+//	std::cout << version << '\t' << sv << std::endl;
     if ( mpiMe_ == 0 )
     	std::cout << "Running on " << nproc_ << " processors!" << std::endl;
 #endif

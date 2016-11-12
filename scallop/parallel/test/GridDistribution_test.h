@@ -1,4 +1,4 @@
-/*	This file globals.h is part of scallop.
+/*	This file GridDistribution_test.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,34 +13,33 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Apr 5, 2015
- *      Author: alinsch
+ *  Created on: Nov 5, 2016
+ *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_AUXILLARY_GLOBALS_H_
-#define SCALLOP_AUXILLARY_GLOBALS_H_
-
-#include <vector>
+#ifndef SCALLOP_PARALLEL_TEST_GRIDDISTRIBUTION_TEST_H_
+#define SCALLOP_PARALLEL_TEST_GRIDDISTRIBUTION_TEST_H_
 
 namespace scallop
 {
-namespace auxillary
+namespace parallel
 {
-namespace globals
+namespace test
 {
 
-///Set the global verbosity level of command line output.
-typedef enum
+template<typename T>
+class GridDistribution_test
 {
-	high = 1000,
-	medium = 1100,
-	low = 1110
-} VerbosityLvl;
+public:
 
-extern VerbosityLvl vLvl;
+	void simple_grid_2D();
 
-} /*namespace globals */
-} /*namespace auxillary */
-} /*namespace scallop */
+	void simple_grid_3D();
+};
 
-#endif /* SCALLOP_AUXILLARY_GLOBALS_H_ */
+} /* namespace test */
+} /* namespace parallel */
+} /* namespace scallop */
+
+#include "scallop/parallel/test/GridDistribution_test.hpp"
+#endif /* SCALLOP_PARALLEL_TEST_GRIDDISTRIBUTION_TEST_H_ */

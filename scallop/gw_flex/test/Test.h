@@ -35,6 +35,12 @@ private:
 
 	void test_GreensFunctionOrbital();
 
+	void test_FFTBase();
+
+	void test_UnitaryWannierKSBands();
+
+	void test_Susceptibility();
+
 };
 
 } /* namespace test */

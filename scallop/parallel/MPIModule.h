@@ -20,8 +20,10 @@
 #ifndef SCALLOP_PARALLEL_MPIMODULE_H_
 #define SCALLOP_PARALLEL_MPIMODULE_H_
 
+#include "scallop/auxillary/TemplateTypedefs.h"
 #include <mpi.h>
 #include <complex>
+#include <vector>
 
 namespace scallop
 {
@@ -57,6 +59,15 @@ public:
 	size_t get_nproc() const;
 
 	std::string const& get_proc_name() const;
+
+	/**
+	 * Performs an 'in place' all-to-all communication.
+	 *
+	 * @param data		Data to be redistributed
+	 * @param count		Each process is sending/receiving count elements
+	 */
+	template<typename T>
+	void all_to_all( typename auxillary::TemplateTypedefs<T>::scallop_vector & data, size_t count) const;
 
 	//wait for everybody to get here
 	void barrier() const;

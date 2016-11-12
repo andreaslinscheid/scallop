@@ -28,27 +28,32 @@ namespace auxillary
 
 template<typename T>
 void LinearAlgebraInterface<T>::matrix_times_diagonal_matrix(
-		typename std::vector<T>::const_iterator matrix, size_t dim,
-		typename std::vector<T>::const_iterator diagonalMatrix,
-		typename std::vector<T>::iterator resultMatrix) const
+		T const * matrix, size_t dim,
+		T const * diagonalMatrix,
+		T * resultMatrix) const
 {
-	auto itEnd = diagonalMatrix + dim;
-	for ( ; diagonalMatrix != itEnd; ++diagonalMatrix )
-		for ( size_t i=0 ; i<dim ; ++i )
-		{
-			*resultMatrix = (*diagonalMatrix)*(*matrix);
-			++matrix;
-			++resultMatrix;
-		}
+	for ( size_t i = 0; i < dim; ++i )
+		for ( size_t j=0 ; j<dim ; ++j )
+			resultMatrix[i*dim+j] = matrix[i*dim+j] *diagonalMatrix[i];
+}
+
+template<typename T>
+void LinearAlgebraInterface<T>::matrix_times_diagonal_matrix(
+		T * matrix, size_t dim,
+		T const * diagonalMatrix) const
+{
+	for ( size_t i = 0; i < dim; ++i )
+		for ( size_t j=0 ; j<dim ; ++j )
+			matrix[i*dim+j] *= diagonalMatrix[i];
 }
 
 template<typename T>
 void LinearAlgebraInterface<T>::matrix_times_matrix(
-		typename std::vector<T>::const_iterator mleft, size_t dim,
-		typename std::vector<T>::const_iterator mright,
-		typename std::vector<T>::iterator result) const
+		T const * mleft, size_t dim,
+		T const * mright,
+		T * result) const
 {
-	this->call_gemm(false,false,dim,dim,dim,T(1.0),&(*mleft),dim,&(*mright),dim,T(0.0),&(*result),dim);
+	this->call_gemm(false,false,dim,dim,dim,T(1.0),mleft,dim,mright,dim,T(0.0),result,dim);
 }
 
 } /* namespace auxillary */

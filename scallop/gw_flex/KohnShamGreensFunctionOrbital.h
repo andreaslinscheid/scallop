@@ -36,21 +36,23 @@ public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
 	void set_in_time_space(
-			UnitaryWannierKSBands<T> const& unitaryWannierBands,
-			std::vector<bT> const& KSBands,
+			UnitaryWannierKSBands<T> unitaryWannierBands,
+			std::vector<bT> KSBands,
 			size_t timeDim,
 			bT invTemp);
 
 	void set_in_frequency_space(
-			UnitaryWannierKSBands<T> const& unitaryWannierBands,
-			std::vector<bT> const& KSBands,
+			UnitaryWannierKSBands<T> unitaryWannierBands,
+			std::vector<bT> KSBands,
 			size_t freqDim,
 			bT invTemp);
 private:
 
+	UnitaryWannierKSBands<T> unitary_;
+
+	std::vector<bT> KSBands_;
+
 	void set_in_both_spaces(
-			UnitaryWannierKSBands<T> const& unitaryWannierBands,
-			std::vector<bT> const& KSBands,
 			size_t timeDim,
 			bT invTemp,
 			bool timeSpace);

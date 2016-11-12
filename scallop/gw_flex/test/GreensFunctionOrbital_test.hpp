@@ -19,6 +19,8 @@
 
 #include "scallop/gw_flex/test/GreensFunctionOrbital_test.h"
 #include "scallop/gw_flex/UnitaryWannierKSBands.h"
+#include "scallop/output/TerminalOut.h"
+#include "scallop/parallel/GridDistribution.h"
 #include <cmath>
 #include <fstream>
 
@@ -30,13 +32,24 @@ namespace test
 {
 
 template<typename T>
+void GreensFunctionOrbital_test<T>::test_all()
+{
+	transform_reciprocal_to_realspace();
+
+	test_full_loop_time_space_back();
+}
+
+template<typename T>
 GreensFunctionOrbital_test<T>::GreensFunctionOrbital_test()
 {
-	std::cout << "Initializing Fourier transform in k test of a GF of a simple cosine band model" << std::endl;
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	output::TerminalOut msg;
+	msg << "Initializing Fourier transform in k test of a GF of a simple cosine band model";
+
 	//Here we define a single, 2D, cosine kx plus cosine ky band without orbital character
-	const std::vector<size_t> kgrid = { 32 , 32 };
-	const size_t nMKS = 16;
-	const size_t nM = 2;
+	const std::vector<size_t> kgrid = { 13 , 11 };
+	const size_t nMKS = 128;
+	const size_t nM = 256;
 	const bT kb = 0.86173324 ; // meV / K
 	const bT temp = 0.1; // K
 	const bT beta = 1.0 / (kb * temp);
@@ -49,75 +62,94 @@ GreensFunctionOrbital_test<T>::GreensFunctionOrbital_test()
 				+std::cos( (2*M_PI*iky)/kgrid[1] ))-mu);
 		};
 
-	//initialize empty greens function for this grid
-	std::vector<T> gfd(nM*16*kgrid[0]*kgrid[1], T(0) );
-	gf_singleBand_.initialize(nM,kgrid,1,true,true,std::move(gfd));
+	parallel::GridDistribution<T> gd;
+	gd.distribute_grid(kgrid);
 
-	std::vector<bT> energies( kgrid[0]*kgrid[1]*4 );
-	for (size_t ikx = 0 ; ikx < kgrid[0] ; ++ikx)
-		for (size_t iky = 0 ; iky < kgrid[1] ; ++iky)
-			for (size_t sa = 0 ; sa < 4 ; ++sa)
-				energies[(ikx*kgrid[1]+iky)*4+sa] = cos_bnd(ikx,iky,sa);
+	std::vector<bT> energies( gd.get_num_k_grid()*4 );
+	for (size_t ik = 0 ; ik < gd.get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gd.k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+
+		for (size_t sa = 0 ; sa < 4 ; ++sa)
+			energies[ik*4+sa] = cos_bnd(ikx,iky,sa);
+	}
 
 	UnitaryWannierKSBands<T> unitary;
 	unitary.initialize_identity(kgrid,1);
 
 	//fill with the GF with data for the single band
-	KS_gf_singleBand_.set_in_frequency_space( unitary,	energies, nMKS, beta);
+	auto a = unitary;
+	KS_gf_singleBand_.set_in_frequency_space( std::move(a), energies, nMKS, beta);
 	T diff = T(0);
-	for (size_t ikx = 0 ; ikx < kgrid[0] ; ++ikx)
+	for (size_t ik = 0 ; ik < KS_gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
 	{
-		for (size_t iky = 0 ; iky < kgrid[1] ; ++iky)
+		auto tuple = gd.k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+
+		for (size_t iw = 0 ; iw < nMKS; ++iw )
 		{
-			for (size_t iw = 0 ; iw < nMKS; ++iw )
+			for (size_t sa = 0 ; sa < 4 ; ++sa)
 			{
-				for (size_t sa = 0 ; sa < 4 ; ++sa)
-				{
-					int frequencyIndex =
-							(iw < nMKS/2 ? static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nMKS) );
+				int frequencyIndex =
+						(iw < nMKS/2 ? static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nMKS) );
 
-					bT energy = cos_bnd(ikx,iky,sa);
-					T analytic = 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
+				bT energy = cos_bnd(ikx,iky,sa);
+				T analytic = 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
 
-					diff += std::abs(std::real(KS_gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa))-std::real(analytic));
-					diff += std::abs(std::imag(KS_gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa))-std::imag(analytic));
-				}
+				diff += std::abs(std::real(KS_gf_singleBand_(ik,iw,sa,sa))-std::real(analytic));
+				diff += std::abs(std::imag(KS_gf_singleBand_(ik,iw,sa,sa))-std::imag(analytic));
 			}
 		}
 	}
-	std::cout << "Difference between known form of the KS GF in frequency and the actual return of the object:" << diff << std::endl;
+
+	mpi.sum( diff );
+	msg << "Difference between known form of the KS GF in frequency and the actual return of the object:" << diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.0000001 ) && (diff.imag() < 0.0000001 ) );
 
 	//fill with the GF with data for the single band
-	KS_gf_singleBand_.set_in_time_space( unitary,	std::move(energies), nMKS, beta);
+	KS_gf_singleBand_.set_in_time_space( std::move(unitary), std::move(energies), nMKS, beta);
 	auto FermiFunc = [&] ( bT e) { return 1.0 / ( std::exp( beta * e ) + 1.0 );};
 	diff = T(0);
-	for (size_t ikx = 0 ; ikx < kgrid[0] ; ++ikx)
+	for (size_t ik = 0 ; ik < KS_gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
 	{
-		for (size_t iky = 0 ; iky < kgrid[1] ; ++iky)
+		auto tuple = gd.k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+		for (size_t iw = 0 ; iw < nMKS; ++iw )
 		{
-			for (size_t iw = 0 ; iw < nMKS; ++iw )
+			for (size_t sa = 0 ; sa < 4 ; ++sa)
 			{
-				for (size_t sa = 0 ; sa < 4 ; ++sa)
-				{
-					bT energy = cos_bnd(ikx,iky,sa);
-					bT taui = (beta*iw) / nMKS;
-					T analytic = -FermiFunc(-energy)*std::exp(-taui*energy);
+				bT energy = cos_bnd(ikx,iky,sa);
+				bT taui = (beta*iw) / nMKS;
+				bT analytic = -1.0*FermiFunc(-energy)*std::exp(-taui*energy);
 
-					diff += std::abs(std::real(KS_gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa))-std::real(analytic));
-					diff += std::abs(std::imag(KS_gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa))-std::imag(analytic));
-				}
+				diff += std::abs(std::real(KS_gf_singleBand_(ik,iw,sa,sa))-std::real(analytic));
+				diff += std::abs(std::imag(KS_gf_singleBand_(ik,iw,sa,sa))-std::imag(analytic));
 			}
 		}
 	}
-	std::cout << "Difference between known form of the KS GF in time and the actual return of the object:" << diff << std::endl;
+	mpi.sum( diff );
+	msg << "Difference between known form of the KS GF in time and the actual return of the object:" << diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.0000001) && (diff.imag() < 0.0000001) );
+
+	//initialize empty greens function for this grid
+	typename auxillary::TemplateTypedefs<T>::scallop_vector gfd;
+	gf_singleBand_.initialize(nM,kgrid,1,false,true,gfd);
 }
 
 template<typename T>
 void GreensFunctionOrbital_test<T>::transform_reciprocal_to_realspace()
 {
-	std::cout << "Testing the reciprocal to direct lattice FFT of a cosine band." << std::endl;
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	output::TerminalOut msg;
+	msg << "Testing the reciprocal to direct lattice FFT of a cosine band.";
 
-	const std::vector<size_t> kgrid = gf_singleBand_.get_spaceGrid_proc();
+	std::vector<size_t> kgrid = gf_singleBand_.get_spaceGrid_proc().get_grid();
 	const size_t nM = gf_singleBand_.get_num_time();
 	const bT bandwidth = 20; // meV
 	const bT mu = bandwidth*0.9;
@@ -125,56 +157,235 @@ void GreensFunctionOrbital_test<T>::transform_reciprocal_to_realspace()
 	//For testing purposes, we set the GF data to t/4*(cos(kx)+cos(ky))
 	//	since we know the Fourier transform analytically. Of cause this
 	//	is not a real Green's function.
-	for (size_t ikx = 0 ; ikx < kgrid[0] ; ++ikx)
-		for (size_t iky = 0 ; iky < kgrid[1] ; ++iky)
-			for (size_t iw = 0 ; iw < nM ; ++iw)
-				for (size_t sa = 0 ; sa < 4 ; ++sa)
-					gf_singleBand_(ikx*kgrid[1]+iky,iw,sa,sa) = (sa < 2 ? 1.0:-1.0 )*
-												0.5*bandwidth*(std::cos( (2*M_PI*ikx)/kgrid[0] )
-													+std::cos( (2*M_PI*iky)/kgrid[1] ))-mu;
+	for (size_t ik = 0 ; ik < KS_gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = KS_gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+		for (size_t iw = 0 ; iw < nM ; ++iw)
+			for (size_t sa = 0 ; sa < 4 ; ++sa)
+				gf_singleBand_(ik,iw,sa,sa) = (sa < 2 ? 1.0:-1.0 )*
+									0.5*bandwidth*(std::cos( (2*M_PI*ikx)/kgrid[0] )
+										+std::cos( (2*M_PI*iky)/kgrid[1] ))-mu;
+	}
 
-	gf_singleBand_.perform_k_to_R_fft();
+	gf_singleBand_.perform_space_fft();
 
 	T diff = T(0);
-	for (size_t iRx = 0 ; iRx < kgrid[0] ; ++iRx)
+	for (size_t iR = 0 ; iR < KS_gf_singleBand_.get_spaceGrid_proc().get_num_R_grid() ; ++iR)
 	{
-		for (size_t iRy = 0 ; iRy < kgrid[1] ; ++iRy)
+		auto tuple = KS_gf_singleBand_.get_spaceGrid_proc().R_conseq_local_to_xyz_total( iR );
+		size_t iRx = tuple.front();
+		size_t iRy = tuple.back();
+		for (size_t iw = 0 ; iw < nM ; ++iw)
 		{
-			for (size_t iw = 0 ; iw < nM ; ++iw)
-			{
-				T analytic = T(0);
-				if ((iRx==iRy)&&(iRx==0))
-					analytic = -mu;
+			T analytic = T(0);
+			if ((iRx==iRy)&&(iRx==0))
+				analytic = -mu;
 
-				if ( ((iRx == 0)&&((iRy == 1)||(iRy == kgrid[1]-1)))
-					 || ((iRy == 0)&&((iRx == 1)||(iRx == kgrid[0]-1))) )
-					analytic = 0.25*bandwidth;
+			if ( ((iRx == 0)&&((iRy == 1)||(iRy == kgrid[1]-1)))
+				 || ((iRy == 0)&&((iRx == 1)||(iRx == kgrid[0]-1))) )
+				analytic = 0.25*bandwidth;
 
-				diff += std::abs(std::real(gf_singleBand_(iRx*kgrid[1]+iRy,iw,0,0))-std::real(analytic));
-				diff += std::abs(std::imag(gf_singleBand_(iRx*kgrid[1]+iRy,iw,0,0))-std::imag(analytic));
-
-			}
+			diff += std::abs(std::real(gf_singleBand_(iR,iw,0,0))-std::real(analytic));
+			diff += std::abs(std::imag(gf_singleBand_(iR,iw,0,0))-std::imag(analytic));
 		}
 	}
-	std::cout << "The difference between analytic and numeric FFT from k to R is " << diff << std::endl;
+	mpi.sum( diff );
+	msg << "The difference between analytic and numeric FFT from k to R is " << diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.0000001) && (diff.imag() < 0.0000001) );
 
-	gf_singleBand_.perform_R_to_k_fft();
+	gf_singleBand_.perform_space_fft();
 	diff = T(0);
-	for (size_t ikx = 0 ; ikx < kgrid[0] ; ++ikx)
+	for (size_t ik = 0 ; ik < KS_gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
 	{
-		for (size_t iky = 0 ; iky < kgrid[1] ; ++iky)
+		auto tuple = KS_gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+		for (size_t iw = 0 ; iw < nM ; ++iw)
 		{
-			for (size_t iw = 0 ; iw < nM ; ++iw)
-			{
-				T analytic = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/kgrid[0] )
-					+std::cos( (2*M_PI*iky)/kgrid[1] ))-mu;
+			T analytic = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/kgrid[0] )
+				+std::cos( (2*M_PI*iky)/kgrid[1] ))-mu;
 
-				diff += std::abs(std::real(gf_singleBand_(ikx*kgrid[1]+iky,iw,0,0))-std::real(analytic));
-				diff += std::abs(std::imag(gf_singleBand_(ikx*kgrid[1]+iky,iw,0,0))-std::imag(analytic));
-			}
+			diff += std::abs(std::real(gf_singleBand_(ik,iw,0,0))-std::real(analytic));
+			diff += T(0,std::abs(std::imag(gf_singleBand_(ik,iw,0,0))-std::imag(analytic)));
 		}
 	}
-	std::cout << "The difference between analytic and numeric FFT from R to k is " << diff << std::endl;
+	mpi.sum( diff );
+	msg << "The difference between analytic and numeric FFT from R to k is " << diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.0000001) && (diff.imag() < 0.0000001) );
+}
+
+template<typename T>
+void GreensFunctionOrbital_test<T>::test_full_loop_time_space_back()
+{
+	output::TerminalOut msg;
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	msg << "Testing the time / frequency Fourier transform for a"
+			"16x11 space grid for a single orbital free Green's function with a cosine dispersion at 500K with 2048 Matsubara points.";
+	const std::vector<size_t> dimGrid = {16,11};
+	parallel::GridDistribution<T> gd;
+	gd.distribute_grid(dimGrid);
+
+	const size_t nM = 2048;
+	const bT kb = 0.86173324 ; // meV / K
+	const bT temp = 500; // K
+	const bT beta = 1.0 / (kb * temp);
+	const bT bandwidth = 20; // meV
+	const bT mu = bandwidth*0.9;
+
+	const size_t orbitalDim = 1;
+	const bool initalizeAsTime = false;
+	const bool initalizeAsRecipr = true;
+	typename auxillary::TemplateTypedefs<T>::scallop_vector gfd;
+	gf_singleBand_.initialize(nM,dimGrid,orbitalDim,initalizeAsTime,initalizeAsRecipr,gfd);
+
+	for (size_t ik = 0 ; ik < gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+
+		for (size_t i = 0 ; i < nM ; ++i)
+			for (size_t as = 0 ; as < 4 ; ++as)
+			{
+
+				T energy = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/dimGrid[0] )
+					+std::cos( (2*M_PI*iky)/dimGrid[1] ))-mu;
+
+				int frequencyIndex =
+						(i < nM/2 ? static_cast<int>(i) : static_cast<int>(i)-static_cast<int>(nM) );
+
+				gf_singleBand_(ik,i,as,as) =
+						1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex +1  ) ) - (as<2?1.0:-1.0)*energy );
+			}
+	}
+
+	gf_singleBand_.transform_itime_Mfreq( beta );
+
+	//compare the difference with the analytic formula
+	auto fermiFunc = [] (bT energy, bT beta){ return 1.0 / ( std::exp( - beta * energy ) + 1.0 );};
+	T diff = T(0);
+
+	for (size_t ik = 0 ; ik < gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+
+		for (size_t i = 0 ; i < nM ; ++i)
+			for (size_t as = 0 ; as < 4 ; ++as)
+			{
+				bT taui = (beta*i) / nM;
+				bT energy = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/dimGrid[0] )
+					+std::cos( (2*M_PI*iky)/dimGrid[1] ))-mu;
+				T gAnalytic = -1.0*fermiFunc(energy,beta)*std::exp(-taui*energy);
+
+				diff += std::abs( std::real(gf_singleBand_(ik,i,as,as))-std::real(gAnalytic))*beta/nM;
+				diff += T(0,std::abs( std::imag(gf_singleBand_(ik,i,as,as))-std::imag(gAnalytic)))*(beta/nM);
+			}
+	}
+	mpi.sum( diff );
+	msg << "Difference between analytic and numeric Fourier transform from frequency to time of a free GF:"
+			<< diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.01) && (diff.imag() < 0.00000001) );
+
+
+	msg << "Testing the time / frequency and space Fourier transform for a"
+			"7x11x8 space grid for a single orbital free Green's function with a cosine dispersion at 500K with 2048 Matsubara points.";
+	gd.distribute_grid( {7,11,8} );
+
+	gf_singleBand_.initialize(nM,dimGrid,orbitalDim,initalizeAsTime,initalizeAsRecipr,gfd);
+
+	for (size_t ik = 0 ; ik < gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple[0];
+		size_t iky = tuple[1];
+//		size_t ikz = tuple[2];//not used at the moment
+
+		for (size_t i = 0 ; i < nM ; ++i)
+			for (size_t as = 0 ; as < 4 ; ++as)
+			{
+
+				T energy = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/dimGrid[0] )
+					+std::cos( (2*M_PI*iky)/dimGrid[1] ))-mu;
+
+				int frequencyIndex =
+						(i < nM/2 ? static_cast<int>(i) : static_cast<int>(i)-static_cast<int>(nM) );
+
+				gf_singleBand_(ik,i,as,as) =
+						1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex +1  ) ) - (as<2?1.0:-1.0)*energy );
+			}
+	}
+
+	msg << "Transforming to time ...";
+	gf_singleBand_.transform_itime_Mfreq( beta );
+
+	msg << "Transforming to R ...";
+	gf_singleBand_.perform_space_fft( );
+
+	msg << "Transforming back to k ...";
+	gf_singleBand_.perform_space_fft( );
+
+	msg << "Cross-checking the difference to the analytic function";
+	for (size_t ik = 0 ; ik < gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple[0];
+		size_t iky = tuple[1];
+
+		for (size_t i = 0 ; i < nM ; ++i)
+			for (size_t as = 0 ; as < 4 ; ++as)
+			{
+				bT taui = (beta*i) / nM;
+				bT energy = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/dimGrid[0] )
+					+std::cos( (2*M_PI*iky)/dimGrid[1] ))-mu;
+				T gAnalytic = -1.0*fermiFunc(energy,beta)*std::exp(-taui*energy);
+
+				diff += std::abs( std::real(gf_singleBand_(ik,i,as,as))-std::real(gAnalytic))*beta/nM;
+				diff += T(0,std::abs( std::imag(gf_singleBand_(ik,i,as,as))-std::imag(gAnalytic)))*(beta/nM);
+			}
+	}
+	mpi.sum( diff );
+	msg << "Difference between analytic and numeric Fourier transform from frequency to time of a free GF:"
+			<< diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.1) && (diff.imag() < 0.00000001) );
+
+	msg << "Transforming back to frequency ...";
+	gf_singleBand_.transform_itime_Mfreq( beta );
+
+	msg << "Cross-checking the difference to the analytic function";
+	for (size_t ik = 0 ; ik < gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple[0];
+		size_t iky = tuple[1];
+
+		for (size_t i = 0 ; i < nM ; ++i)
+			for (size_t as = 0 ; as < 4 ; ++as)
+			{
+				bT energy = 0.5*bandwidth*(std::cos( (2*M_PI*ikx)/dimGrid[0] )
+					+std::cos( (2*M_PI*iky)/dimGrid[1] ))-mu;
+				int frequencyIndex =
+						(i < nM/2 ? static_cast<int>(i) : static_cast<int>(i)-static_cast<int>(nM) );
+
+				T gAnalytic = 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
+
+				diff += std::abs( std::real(gf_singleBand_(ik,i,as,as))-std::real(gAnalytic))*beta/nM;
+				diff += T(0,std::abs( std::imag(gf_singleBand_(ik,i,as,as))-std::imag(gAnalytic)))*(beta/nM);
+			}
+	}
+	mpi.sum( diff );
+	msg << "Difference between analytic and numeric Fourier transform from frequency to time of a free GF:"
+			<< diff;
+	mpi.barrier();
+	assert( (diff.real() < 0.1) && (diff.imag() < 0.0001) );
 }
 
 } /* namespace test */

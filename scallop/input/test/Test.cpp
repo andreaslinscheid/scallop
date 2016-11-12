@@ -21,6 +21,7 @@
 #include "scallop/input/input.h"
 #include "scallop/output/TextFile.h"
 #include "scallop/input/test/InputBaseTest.h"
+#include "scallop/output/TerminalOut.h"
 
 namespace scallop {
 namespace input {
@@ -33,6 +34,7 @@ void Test::run_test() {
 
 void Test::test_input_file_parsing() {
 
+	output::TerminalOut msg;
 	std::string tmpFolder = "/tmp/";
 
 	//create an example input file
@@ -60,18 +62,17 @@ void Test::test_input_file_parsing() {
 	//Print unused parameters
 	std::vector<std::string> unreadOptions =
 			setup.get_parsed_input_file().get_list_unread_input_parameters();
-	std::cout << "WARNING, the following input parameters were not used: " <<std::endl;
+	msg << "Testing that the following input parameters were not used: ";
 	for ( auto &opt  : unreadOptions )
-		std::cout << '\t'<< opt << std::endl;
+		msg << '\t'<< opt;
 
-	std::cout << "Read in sizeTest : " << inputFileTest.get_sizeTest() << std::endl;
-	std::cout << "Read in doubleTest : " << inputFileTest.get_doubleTest() << std::endl;
-	std::cout << "Read in boolTest : " << std::boolalpha << inputFileTest.get_boolTest() << std::endl;
-	std::cout << "Read in vectorSizeT with the elements : ";
+	msg << "Read in sizeTest : " << inputFileTest.get_sizeTest();
+	msg << "Read in doubleTest : " << inputFileTest.get_doubleTest();
+	msg << "Read in boolTest : " << std::boolalpha << inputFileTest.get_boolTest();
+	msg << "Read in vectorSizeT with the elements : ";
 	std::vector<size_t> vect = inputFileTest.get_vectorSizeT();
 	for ( auto & e : vect )
-		std::cout << e << ", ";
-	std::cout << std::endl;
+		msg << e;
 }
 
 void Test::create_test_input_file(std::string const& fileName){
