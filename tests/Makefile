@@ -18,7 +18,8 @@ TARGET=tests.x
 
 # What compiler to use for generating dependencies: 
 # it will be invoked with -MM -MP
-CXXDEP = g++
+CXXDEP = g++-5
+CXX = g++-5
 
 # What include flags to pass to the compiler
 INCLUDES = -I./
@@ -60,7 +61,7 @@ deps.$(CFG)/%.d: %.cpp
 	@mkdir -p $(dir $@)
 	@echo Generating dependencies for $<
 	@set -e ; $(CXXDEP) $(CXXFLAGS) $(INCLUDES) -MM -MP $< > $@.$$$$; \
-	sed 's,\(.*\)\.o[ :]*,objs.$(CFG)\/$(shell echo "$@"| sed -e 's/^[^\/]*\/\(.*\)\.d$$/\1/').o $@ : ,g' < $@.$$$$ > $@;\
+	sed 's,\(.*[a-zA-Z]\)\.o[ :]*,objs.$(CFG)\/$(shell echo "$@"| sed -e 's/^[^\/]*\/\(.*\)\.d$$/\1/').o $@ : ,g' < $@.$$$$ > $@;\
 	rm -f $@.$$$$
 
 .PHONY: clean
