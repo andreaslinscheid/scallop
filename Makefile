@@ -71,8 +71,8 @@ objs.$(CFG)/%.o: %.cpp
 deps.$(CFG)/%.d: %.cpp
 	@mkdir -p $(dir $@)
 	@echo Generating dependencies for $<
-	@set -e ; $(CXXDEP) $(CXXFLAGS) $(INCLUDES) -MM -MP $< > $@.$$$$; \
-	sed 's,\(.*\)\.o[ :]*,objs.$(CFG)\/$(shell echo "$@"| sed -e 's/^[^\/]*\/\(.*\)\.d$$/\1/').o $@ : ,g' < $@.$$$$ > $@;\
+	@set -e ; $(CXXDEP) $(CXXFLAGS) $(INCLUDES) -MM -MP $< > $@.$$$$;\ 
+	sed 's,\(.*\[a-zA-Z])\.o[ :]*,objs.$(CFG)\/$(shell echo "$@"| sed -e 's/^[^\/]*\/\(.*\)\.d$$/\1/').o $@ : ,g' < $@.$$$$ > $@;\
 	rm -f $@.$$$$
 
 
