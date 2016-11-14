@@ -135,16 +135,41 @@ public:
 	 * In debug mode, this fails if the indices do not correspond to a vector in the
 	 * range of this processor.
 	 *
-	 * @param iR processor local consecutive R index.
-	 * @return vector of dimension of space containing the indices in the global R grid.
+	 * @param tuple		xyz indices of the total grid.
+	 * @return 			index in the processor local R grid.
 	 */
 	size_t R_xyz_total_to_conseq_local( std::vector<size_t> tuple ) const;
+
+	/**
+	 * Convert a tuple in the full grid to a consecutive index in the full grid.
+	 *
+	 * @param tuple		xyz indices of the total grid.
+	 * @return 			index in the full grid.
+	 */
+	size_t xyz_to_conseq_total( std::vector<size_t> tuple ) const;
 
 	size_t R_xyz_to_conseq( std::vector<size_t> const& tuple ) const;
 
 	size_t get_num_grid_total() const;
 
 	size_t get_proc_id_of_gridpoint( size_t igTotal ) const;
+
+	/**
+	 * Find the index of the inverse k vector.
+	 *
+	 * @param ik	index of the vector k
+	 * @return		consecutive index of the vector -k (+G with G such that G-k is in the first zone)
+	 */
+	size_t get_inverse_index_k( size_t ik ) const;
+
+	/**
+	 * Find the index of the inverse R vector.
+	 *
+	 * @param iR	index of the vector R
+	 * @return		consecutive index of the vector -R (+T
+	 * 				with T such that T-R is in the range of Born-von-Karman periodic boundary conditions)
+	 */
+	size_t get_inverse_index_R( size_t iR ) const;
 
 	/**
 	 * Redistributes data among processors in R/k space to the respective other space.

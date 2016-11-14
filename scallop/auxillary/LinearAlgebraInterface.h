@@ -66,8 +66,6 @@ public:
 			T const * mright,
 			T * result) const;
 
-private:
-
 	void call_gemm( bool transA, bool transB,
             int m, int n, int k,T alpha,T const * A, int lda,
             T const * B, int ldb, T beta,T* C,int ldc) const;

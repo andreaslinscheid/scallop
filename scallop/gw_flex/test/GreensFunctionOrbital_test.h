@@ -37,11 +37,17 @@ class GreensFunctionOrbital_test
 public:
 	typedef typename scallop::auxillary::TypeMapComplex<T>::type bT;
 
-	GreensFunctionOrbital_test();
-
 	void test_all();
 
+	template<class bandstructure>
+	GreensFunctionOrbital<T> construct_gf_bnd(
+			bT temperature, std::vector<size_t> spaceGrid, size_t nTimeSteps,
+			size_t nBnd,
+			bandstructure const& bnd);
+
 private:
+
+	void create_test_gfs();
 
 	void transform_reciprocal_to_realspace();
 

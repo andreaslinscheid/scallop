@@ -20,6 +20,8 @@
 #include "scallop/auxillary/LinearAlgebraInterface.h"
 #include <iostream>
 #include <complex>
+#include <assert.h>
+#include <cstdint>
 
 namespace scallop
 {
@@ -45,6 +47,17 @@ void LinearAlgebraInterface< std::complex<double> >::call_gemm(
         int m, int n, int k,std::complex<double> alpha,std::complex<double> const * A, int lda,
         std::complex<double> const * B, int ldb, std::complex<double> beta,std::complex<double> * C,int ldc) const
 {
+#ifdef DEBUG_BUILD
+	auto c_to_ptr = [] ( std::complex<double> const * ptr ) {
+		return reinterpret_cast<std::uintptr_t>(reinterpret_cast<const void*>(ptr));
+	};
+
+	//Check if all the pointers are 32 bit aligned
+	assert( (c_to_ptr(A) % 32 ) == 0 );
+	assert( (c_to_ptr(B) % 32 ) == 0 );
+	assert( (c_to_ptr(C) % 32 ) == 0 );
+#endif
+
 	cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k,
 			reinterpret_cast<const void*>(&alpha), reinterpret_cast<const void*>(A), lda,
 			reinterpret_cast<const void*>(B), ldb,

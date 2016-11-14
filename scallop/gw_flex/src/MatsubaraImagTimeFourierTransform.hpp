@@ -67,23 +67,23 @@ template<typename T>
 void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_time_freq( bT invTemp )
 {
 	const size_t nM = this->get_num_time();
-	const size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
-//	const size_t nR = this->get_spaceGrid_proc().get_num_R_grid();
+	const size_t nG = this->is_in_k_space() ?
+			this->get_spaceGrid_proc().get_num_k_grid() :
+			this->get_spaceGrid_proc().get_num_R_grid() ;
 
 	if ( this->is_in_time_space() )
 	{
-		if ( this->is_in_k_space() )
+		//Multiply the phase factor exp( \sqrt(-1) \pi i/N_mats ) from the (2n+1)
+		for (size_t ig = 0 ; ig < nG ; ++ig )
 		{
-			//Multiply the phase factor exp( \sqrt(-1) \pi i/N_mats ) from the (2n+1)
-			for (size_t ik = 0 ; ik < nK ; ++ik )
+			size_t id = this->is_in_k_space() ?
+					this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ig) :
+					this->get_spaceGrid_proc().R_conseq_local_to_data_conseq(ig) ;
+			for (size_t iw = 0 ; iw < nM ; ++iw )
 			{
-				size_t id = this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ik);
-				for (size_t iw = 0 ; iw < nM ; ++iw )
-				{
-					auto ptr_block = this->write_data_ptr_block(id,iw);
-					for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
-						ptr_block[ib] *=  std::exp( T(0, (M_PI * iw) / nM) );
-				}
+				auto ptr_block = this->write_data_ptr_block(id,iw);
+				for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+					ptr_block[ib] *=  std::exp( T(0, (M_PI * iw) / nM) );
 			}
 		}
 	}
@@ -93,25 +93,25 @@ void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_time_freq(
 
 	if ( ! this->is_in_time_space() )
 	{
-		if ( this->is_in_k_space() )
+		//Multiply prefactor that comes from the integration kernel
+		for (size_t ig = 0 ; ig < nG ; ++ig )
 		{
-			//Multiply prefactor that comes from the integration kernel
-			for (size_t ik = 0 ; ik < nK ; ++ik )
+			size_t id = this->is_in_k_space() ?
+					this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ig) :
+					this->get_spaceGrid_proc().R_conseq_local_to_data_conseq(ig) ;
+
+			for (size_t iw = 0 ; iw < nM ; ++iw )
 			{
-				size_t id = this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ik);
-				for (size_t iw = 0 ; iw < nM ; ++iw )
-				{
-					auto ptr_block = this->write_data_ptr_block(id,iw);
+				auto ptr_block = this->write_data_ptr_block(id,iw);
 
-					//remember that frequencies are stored with negative frequencies in the second half of the array
-					int frequencyIndex =
-							(iw < nM/2 ?
-									static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
+				//remember that frequencies are stored with negative frequencies in the second half of the array
+				int frequencyIndex =
+						(iw < nM/2 ?
+								static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
 
-					T phase = T(0,M_PI*(2*frequencyIndex+1));
-					for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
-						ptr_block[ib] *=  -invTemp*(1.0-std::exp(phase/bT(nM)))/phase;
-				}
+				T phase = T(0,M_PI*(2*frequencyIndex+1));
+				for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+					ptr_block[ib] *=  -invTemp*(1.0-std::exp(phase/bT(nM)))/phase;
 			}
 		}
 	}
@@ -119,27 +119,73 @@ void MatsubaraImagTimeFourierTransform<T>::fourier_transform_fermions_time_freq(
 	{
 		//Multiply the phase factor exp( - \sqrt(-1) \pi i/N_mats ) from the (2n+1)
 		// and scale by beta
-		if ( this->is_in_k_space() )
+		for (size_t ig = 0 ; ig < nG ; ++ig )
 		{
-			for (size_t ik = 0 ; ik < nK ; ++ik )
+			size_t id = this->is_in_k_space()  ?
+					this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ig) :
+					this->get_spaceGrid_proc().R_conseq_local_to_data_conseq(ig) ;
+			for (size_t iw = 0 ; iw < nM ; ++iw )
 			{
-				size_t idk = this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ik);
-				for (size_t iw = 0 ; iw < nM ; ++iw )
-				{
-					auto ptr_block = this->write_data_ptr_block(idk,iw);
-					for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
-						ptr_block[ib] *= std::exp( T(0, -(M_PI * iw) / nM ) )/invTemp;
-				}
+				auto ptr_block = this->write_data_ptr_block(id,iw);
+				for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+					ptr_block[ib] *= std::exp( T(0, -(M_PI * iw) / nM ) )/invTemp;
 			}
 		}
 	}
-
 }
 
 template<typename T>
 void MatsubaraImagTimeFourierTransform<T>::fourier_transform_bosons_time_freq( bT invTemp )
 {
+	const size_t nM = this->get_num_time();
+	const size_t nG = this->is_in_k_space() ?
+			this->get_spaceGrid_proc().get_num_k_grid() :
+			this->get_spaceGrid_proc().get_num_R_grid() ;
 
+	//frequency to time transform is a simple DFT, normalized by the inverse temperature
+	this->perform_time_fft();
+
+	if ( ! this->is_in_time_space() )
+	{
+		//Multiply prefactor that comes from the integration kernel
+		for (size_t ig = 0 ; ig < nG ; ++ig )
+		{
+			size_t id = this->is_in_k_space() ?
+					this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ig) :
+					this->get_spaceGrid_proc().R_conseq_local_to_data_conseq(ig) ;
+
+			for (size_t iw = 0 ; iw < nM ; ++iw )
+			{
+				auto ptr_block = this->write_data_ptr_block(id,iw);
+
+				//remember that frequencies are stored with negative frequencies in the second half of the array
+				int frequencyIndex =
+						(iw < nM/2 ?
+								static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
+
+				T phase = T(0,2*M_PI*frequencyIndex);
+				for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+					ptr_block[ib] *=  -invTemp*(1.0-std::exp(phase/bT(nM)))/phase;
+			}
+		}
+	}
+	else //... we are now in time space
+	{
+		//Multiply the phase factor exp( - \sqrt(-1) \pi i/N_mats ) from the (2n+1)
+		// and scale by beta
+		for (size_t ig = 0 ; ig < nG ; ++ig )
+		{
+			size_t id = this->is_in_k_space()  ?
+					this->get_spaceGrid_proc().k_conseq_local_to_data_conseq(ig) :
+					this->get_spaceGrid_proc().R_conseq_local_to_data_conseq(ig) ;
+			for (size_t iw = 0 ; iw < nM ; ++iw )
+			{
+				auto ptr_block = this->write_data_ptr_block(id,iw);
+				for ( size_t ib = 0; ib < this->get_data_block_size(); ++ib)
+					ptr_block[ib] *= 1.0/invTemp;
+			}
+		}
+	}
 }
 
 } /* namespace gw_flex */

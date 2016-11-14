@@ -36,14 +36,26 @@ public:
 
 	void initialize_layout_2pt_obj( size_t numOrbitals );
 
+	void initialize_layout_4pt_scalar_obj( size_t numOrbitals, size_t spinChargeChannels = 4 );
+
 	size_t memory_layout_2pt_obj(size_t l1, size_t a1, size_t s1, size_t l2, size_t a2, size_t s2) const;
+
+	size_t memory_layout_2pt_obj_nsc(size_t l1, size_t as1, size_t l2, size_t as2) const;
 
 	size_t memory_layout_combined_notation_2pt_obj(size_t m1, size_t m2) const;
 
+	size_t memory_layout_4pt_scalar_obj(size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const;
+
+	size_t memory_layout_combined_notation_4pt_scalar_obj(size_t j, size_t jp, size_t m1, size_t m2) const;
+
 	size_t get_nOrb() const;
+
+	size_t get_nChnls() const;
 private:
 
 	size_t numOrbitals_ = 0;
+
+	size_t spinChargeChannels_ = 0;
 };
 
 } /* namespace gw_flex */

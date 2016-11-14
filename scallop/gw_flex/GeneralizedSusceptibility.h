@@ -22,6 +22,7 @@
 
 #include "scallop/gw_flex/MatsubaraImagTimeFourierTransform.h"
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
+#include "scallop/gw_flex/MemoryLayout.h"
 
 namespace scallop
 {
@@ -29,12 +30,42 @@ namespace gw_flex
 {
 
 template<typename T>
-class GeneralizedSusceptibility : public MatsubaraImagTimeFourierTransform<T>
+class GeneralizedSusceptibility : public MatsubaraImagTimeFourierTransform<T>, private MemoryLayout
 {
 public:
+	using MemoryLayout::get_nOrb;
+	using MemoryLayout::get_nChnls;
+
 	GeneralizedSusceptibility();
 
-	void compute_from_gf(GreensFunctionOrbital<T> const & gf);
+	void compute_from_gf(GreensFunctionOrbital<T> const & GF);
+
+	T operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2) const;
+
+	T & operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2);
+
+	T operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const;
+
+	T & operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
+
+	/**
+	 *	Declare that the next compute_from_gf will have to reinitialize.
+	 */
+	void set_uninitialized();
+private:
+
+	bool isInit_ = false;
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferQ1_;
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferQ2_;
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferSBlock_;
+
+	void v_matrix_multiplication(
+			size_t j, size_t l1, size_t a1, size_t s1, size_t l2,  size_t a2, size_t s2,
+			MemoryLayout const& gf_layout,
+			size_t &gf_index, T & prefactor) const;
 };
 
 } /* namespace gw_flex */

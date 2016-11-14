@@ -34,13 +34,15 @@ namespace test
 template<typename T>
 void GreensFunctionOrbital_test<T>::test_all()
 {
+	create_test_gfs();
+
 	transform_reciprocal_to_realspace();
 
 	test_full_loop_time_space_back();
 }
 
 template<typename T>
-GreensFunctionOrbital_test<T>::GreensFunctionOrbital_test()
+void GreensFunctionOrbital_test<T>::create_test_gfs()
 {
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 	output::TerminalOut msg;
@@ -386,6 +388,47 @@ void GreensFunctionOrbital_test<T>::test_full_loop_time_space_back()
 			<< diff;
 	mpi.barrier();
 	assert( (diff.real() < 0.1) && (diff.imag() < 0.0001) );
+}
+
+
+template<typename T>
+template<class bandstructure>
+GreensFunctionOrbital<T> GreensFunctionOrbital_test<T>::construct_gf_bnd(
+		bT temperature, std::vector<size_t> spaceGrid, size_t nTimeSteps,
+		size_t nBnd,
+		bandstructure const& bnd)
+{
+	const bT kb = 0.86173324 ; // meV / K
+	const bT beta = 1.0 / (kb * temperature);
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+
+	GreensFunctionOrbital<T> gf;
+	gf.initialize(nTimeSteps,std::move(spaceGrid),nBnd,/* in time */false,/* in k */true, data );
+
+	for (size_t ik = 0 ; ik < gf.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+
+		for (size_t i = 0 ; i < nTimeSteps ; ++i)
+			for ( size_t l1 = 0 ; l1 < nBnd ; ++l1 )
+				for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
+					for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
+						for ( size_t l2 = 0 ; l2 < nBnd ; ++l2 )
+							for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
+								for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
+								{
+									bT energy = bnd(tuple,l1,a1,s1,l2,a2,s2);
+
+									int frequencyIndex =
+											(i < nTimeSteps/2 ? static_cast<int>(i) : static_cast<int>(i)-static_cast<int>(nTimeSteps) );
+
+									gf(ik,i,l1,a1,s1,l2,a2,s2) = (a1==a2? 1.0:0.0 )*( s1==s2 ? 1.0:0.0 )
+									     * 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
+								}
+	}
+
+	return gf;
 }
 
 } /* namespace test */

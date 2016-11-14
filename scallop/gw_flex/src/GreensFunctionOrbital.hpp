@@ -41,7 +41,7 @@ void GreensFunctionOrbital<T>::initialize(
 		bool initialInReciprocalDomain,
 		typename auxillary::TemplateTypedefs<T>::scallop_vector const& data)
 {
-	orbitalDim_ = orbitalDim;
+	this->initialize_layout_2pt_obj(orbitalDim);
 
 	MatsubaraImagTimeFourierTransform<T>::initialize(
 			dimImTime,
@@ -56,44 +56,28 @@ template<typename T>
 T GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
 {
-	return *(this->read_phs_grid_ptr_block(ig,it) + this->memory_layout(l1,a1,s1,l2,a2,s2) );
+	return *(this->read_phs_grid_ptr_block(ig,it) + this->memory_layout_2pt_obj(l1,a1,s1,l2,a2,s2) );
 }
 
 template<typename T>
 T & GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2)
 {
-	return *(this->write_phs_grid_ptr_block(ig,it) + this->memory_layout(l1,a1,s1,l2,a2,s2) );
+	return *(this->write_phs_grid_ptr_block(ig,it) + this->memory_layout_2pt_obj(l1,a1,s1,l2,a2,s2) );
 }
 
 template<typename T>
 T GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t m1,  size_t m2) const
 {
-	return *(this->read_phs_grid_ptr_block(ig,it) + this->memory_layout_combined_notation(m1,m2) );
+	return *(this->read_phs_grid_ptr_block(ig,it) + this->memory_layout_combined_notation_2pt_obj(m1,m2) );
 }
 
 template<typename T>
 T & GreensFunctionOrbital<T>::operator() (
 		size_t ig, size_t it, size_t m1,  size_t m2)
 {
-	return *(this->write_phs_grid_ptr_block(ig,it) + this->memory_layout_combined_notation(m1,m2) );
-}
-
-template<typename T>
-size_t GreensFunctionOrbital<T>::memory_layout(
-		size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const
-{
-	size_t m1 = (l1*2+a1)*2+s1;
-	size_t m2 = (l2*2+a2)*2+s2;
-	return this->memory_layout_combined_notation(m1,m2);
-}
-
-template<typename T>
-size_t GreensFunctionOrbital<T>::memory_layout_combined_notation( size_t m1, size_t m2) const
-{
-	auto nC = orbitalDim_*4;
-	return m1*nC+m2;
+	return *(this->write_phs_grid_ptr_block(ig,it) + this->memory_layout_combined_notation_2pt_obj(m1,m2) );
 }
 
 } /* namespace gw_flex */

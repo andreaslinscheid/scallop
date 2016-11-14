@@ -75,9 +75,9 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 		};
 
 	auxillary::LinearAlgebraInterface<T> linalg;
-	std::vector<T> bareGF(nO*4);
-	std::vector<T> conjUnitary(nO*4*nO*4);
-	std::vector<T> tmp(nO*4*nO*4);
+	typename auxillary::TemplateTypedefs<T>::scallop_vector bareGF(nO*4);
+	typename auxillary::TemplateTypedefs<T>::scallop_vector conjUnitary(nO*4*nO*4);
+	typename auxillary::TemplateTypedefs<T>::scallop_vector tmp(nO*4*nO*4);
 	for ( size_t ik = 0 ; ik < nK ; ++ik)
 	{
 		for ( size_t m1 = 0 ; m1 < nO*4 ; ++m1)

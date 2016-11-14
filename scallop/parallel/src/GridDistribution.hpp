@@ -247,6 +247,24 @@ size_t GridDistribution<T>::get_num_grid_total() const
 }
 
 template<typename T>
+size_t GridDistribution<T>::get_inverse_index_k( size_t ik ) const
+{
+	tupleBuff_ = this->k_conseq_local_to_xyz_total(ik);
+	for ( size_t i = 0; i < tupleBuff_.size(); ++i )
+		tupleBuff_[i] = static_cast<size_t>(static_cast<int>(totalGrid_[i])-static_cast<int>(tupleBuff_[i]));
+	return this->xyz_to_conseq_total( tupleBuff_ );
+}
+
+template<typename T>
+size_t GridDistribution<T>::get_inverse_index_R( size_t iR ) const
+{
+	tupleBuff_ = this->R_conseq_local_to_xyz_total(iR);
+	for ( size_t i = 0; i < tupleBuff_.size(); ++i )
+		tupleBuff_[i] = static_cast<size_t>(static_cast<int>(totalGrid_[i])-static_cast<int>(tupleBuff_[i]));
+	return this->xyz_to_conseq_total( tupleBuff_ );
+}
+
+template<typename T>
 void GridDistribution<T>::grid_data_transposition(
 		bool startFromKSpace,
 		typename auxillary::TemplateTypedefs<T>::scallop_vector & data,
