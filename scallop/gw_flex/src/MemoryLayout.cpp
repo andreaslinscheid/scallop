@@ -35,6 +35,11 @@ void MemoryLayout::initialize_layout_2pt_obj( size_t numOrbitals )
 	numOrbitals_ = numOrbitals;
 }
 
+void MemoryLayout::initialize_layout_phonon_prop( size_t numModes )
+{
+	numOrbitals_ = numModes;
+}
+
 size_t MemoryLayout::get_nOrb() const
 {
 	return numOrbitals_;
@@ -77,6 +82,11 @@ size_t MemoryLayout::memory_layout_combined_notation_4pt_scalar_obj(size_t j, si
 {
 	auto nC = numOrbitals_*numOrbitals_;
 	return ((j*spinChargeChannels_+jp)*nC+m1)*nC+m2;
+}
+
+size_t MemoryLayout::memory_layout_phonon_prop(size_t nu, size_t nup) const
+{
+	return nu*numOrbitals_ + nup;
 }
 
 } /* namespace gw_flex */

@@ -38,6 +38,8 @@ public:
 
 	void initialize_layout_4pt_scalar_obj( size_t numOrbitals, size_t spinChargeChannels = 4 );
 
+	void initialize_layout_phonon_prop( size_t numModes );
+
 	size_t memory_layout_2pt_obj(size_t l1, size_t a1, size_t s1, size_t l2, size_t a2, size_t s2) const;
 
 	size_t memory_layout_2pt_obj_nsc(size_t l1, size_t as1, size_t l2, size_t as2) const;
@@ -47,6 +49,8 @@ public:
 	size_t memory_layout_4pt_scalar_obj(size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const;
 
 	size_t memory_layout_combined_notation_4pt_scalar_obj(size_t j, size_t jp, size_t m1, size_t m2) const;
+
+	size_t memory_layout_phonon_prop(size_t nu, size_t nup) const;
 
 	size_t get_nOrb() const;
 

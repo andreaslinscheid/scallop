@@ -65,7 +65,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(GreensFunctionOrbital<T> cons
 		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
 
 		// initialize an object with data being zero
-		this->initialize( nM, grid, blocksize, /*In time space=*/ true, /*In k space=*/ true, data );
+		this->initialize( nM, grid, blocksize, /*In time space=*/ true, /*In k space=*/ false, data );
 		isInit_ = true;
 		bufferQ1_ = bufferQ2_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 4*GF.get_nOrb()*GF.get_nOrb()* nC*nC );
 		bufferSBlock_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 16*std::pow(GF.get_nOrb(),4) );
@@ -74,6 +74,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(GreensFunctionOrbital<T> cons
 	size_t nO = this->get_nOrb();
 	size_t nC = this->get_nChnls();
 
+	assert( (not this->is_in_k_space()) and this->is_in_time_space() );
 	assert( nO ==  GF.get_nOrb() );
 	assert( this->get_num_time() ==  GF.get_num_time() );
 	assert( this->get_spaceGrid_proc().get_grid() ==  GF.get_spaceGrid_proc().get_grid() );
@@ -135,7 +136,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(GreensFunctionOrbital<T> cons
 			int dimSust = static_cast<int>(4*nO*nO);
 			linalg.call_gemm(false, false,
 					dimSust,dimSust,16,
-					T(-1.0/16),	bufferQ1_.data(), 16,
+					T(-1.0/16.0),	bufferQ1_.data(), 16,
 								bufferQ2_.data(), dimSust,
 		            T(0.0),bufferSBlock_.data(),dimSust);
 

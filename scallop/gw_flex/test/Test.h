@@ -41,6 +41,9 @@ private:
 
 	void test_Susceptibility();
 
+	void test_phonon_gf();
+
+	void test_InteractionMatrix();
 };
 
 } /* namespace test */

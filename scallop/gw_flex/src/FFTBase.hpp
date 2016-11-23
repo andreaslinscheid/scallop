@@ -238,13 +238,13 @@ void FFTBase<T>::copy_or_fill_buffer_time_FFT( size_t indexBeginDataArray, bool 
 			return thisLocation;
 		};
 
+	auto it = data_.begin();
 	if ( fillBuffer )
 	{
 		for ( size_t itime = 0 ; itime < dimTimeFT_ ; ++itime )
 			for ( size_t ib = 0 ; ib < blockSize_ ; ++ib )
 			{
 				size_t index = indexBeginDataArray + itime*blockSize_+ib;
-				auto it = data_.begin();
 				( *time_FFT_layout(itime,ib) ) = *(it+index);
 			}
 	}
@@ -254,7 +254,6 @@ void FFTBase<T>::copy_or_fill_buffer_time_FFT( size_t indexBeginDataArray, bool 
 			for ( size_t ib = 0 ; ib < blockSize_ ; ++ib )
 			{
 				size_t index = indexBeginDataArray + itime*blockSize_+ib;
-				auto it = data_.begin();
 				( *(it+index) ) = ( *time_FFT_layout(itime,ib) );
 			}
 	}
@@ -355,10 +354,14 @@ void FFTBase<T>::copy_or_fill_buffer_first_FFT(size_t ikx, size_t indexTime, boo
 			if ( fillBuffer )
 			{
 				( *FFT_layout(igpts,numFFTPts,ib) ) = ( *(it+index) );
+				//In debug mode, we check for NaNs. Before ...
+				assert( (*(it+index)) == (*(it+index))  );
 			}
 			else
 			{
 				( *(it+index) ) = ( *FFT_layout(igpts,numFFTPts,ib) );
+				//and after the FFT
+				assert( (*(it+index)) == (*(it+index))  );
 			}
 		}
 	}
@@ -393,10 +396,14 @@ void FFTBase<T>::copy_or_fill_buffer_second_FFT(size_t iyz, size_t indexTime, bo
 			if ( fillBuffer )
 			{
 				( *FFT_layout(igpts,numFFTPts,ib) ) = ( *(it+index) );
+				//In debug mode, we check for NaNs, Before
+				assert( (*(it+index)) == (*(it+index))  );
 			}
 			else
 			{
 				( *(it+index) ) = ( *FFT_layout(igpts,numFFTPts,ib) );
+				//... and after the FFT
+				assert( (*(it+index)) == (*(it+index))  );
 			}
 		}
 	}
@@ -436,6 +443,10 @@ void FFTBase<T>::perform_k_to_R_fft()
 	//Normalization
 	for ( auto &d : data_ )
 		d *= 1.0/spaceGrid_.get_num_grid();
+
+	//In debug mode, we check for NaNs
+	for ( auto d : data_ )
+		assert( d == d );
 }
 
 template<typename T>

@@ -141,14 +141,20 @@ public:
 	size_t R_xyz_total_to_conseq_local( std::vector<size_t> tuple ) const;
 
 	/**
-	 * Convert a tuple in the full grid to a consecutive index in the full grid.
+	 * Convert a tuple in the full R grid to a consecutive index in the full grid.
 	 *
-	 * @param tuple		xyz indices of the total grid.
-	 * @return 			index in the full grid.
+	 * @param tuple		xyz indices of the total R grid.
+	 * @return 			index in the full R grid.
 	 */
-	size_t xyz_to_conseq_total( std::vector<size_t> tuple ) const;
-
 	size_t R_xyz_to_conseq( std::vector<size_t> const& tuple ) const;
+
+	/**
+	 * Convert a tuple in the full k grid to a consecutive index in the full grid.
+	 *
+	 * @param tuple		xyz indices of the total k grid.
+	 * @return 			index in the full k grid.
+	 */
+	size_t k_xyz_to_conseq( std::vector<size_t> const& tuple ) const;
 
 	size_t get_num_grid_total() const;
 

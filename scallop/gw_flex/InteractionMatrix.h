@@ -1,4 +1,4 @@
-/*	This file PhononGreensFunction.h is part of scallop.
+/*	This file InteractionMatrix.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,16 +13,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 14, 2016
+ *  Created on: Nov 22, 2016
  *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_PHONONGREENSFUNCTION_H_
-#define SCALLOP_GW_FLEX_PHONONGREENSFUNCTION_H_
+#ifndef SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_
+#define SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_
 
-#include "scallop/gw_flex/MatsubaraImagTimeFourierTransform.h"
+#include "scallop/auxillary/TemplateTypedefs.h"
 #include "scallop/gw_flex/MemoryLayout.h"
-
+#include <string>
 
 namespace scallop
 {
@@ -30,30 +30,28 @@ namespace gw_flex
 {
 
 template<typename T>
-class PhononGreensFunction : public MatsubaraImagTimeFourierTransform<T>, private MemoryLayout
+class InteractionMatrix : private MemoryLayout
 {
 public:
-
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
-	PhononGreensFunction();
+	using MemoryLayout::get_nOrb;
 
-	void initialize(
-			size_t dimImTime,
-			std::vector<size_t> gridDims,
-			size_t numModes,
-			bool initialInTimeDomain,
-			bool initialInReciprocalDomain,
-			typename auxillary::TemplateTypedefs<T>::scallop_vector const& data);
+	void init_file( std::string const& filename );
 
-	T operator() (size_t iq, size_t iw, size_t nu, size_t mu) const;
+	T * write_ptr();
 
-	T & operator() (size_t iq, size_t iw, size_t nu, size_t mu);
+	T const * read_ptr() const;
+
+	T & operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
+private:
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data_;
 
 };
 
 } /* namespace gw_flex */
 } /* namespace scallop */
 
-#include "scallop/gw_flex/src/PhononGreensFunction.hpp"
-#endif /* SCALLOP_GW_FLEX_PHONONGREENSFUNCTION_H_ */
+#include "scallop/gw_flex/src/InteractionMatrix.hpp"
+#endif /* SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_ */

@@ -90,7 +90,7 @@ MatsubaraImagTimeFourierTransform_test<T>::test_free_particle_greensfunction()
 		diff = T(0);
 		for (size_t i = 0 ; i < nM ; ++i)
 		{
-			bT taui = (beta*i) / nM;
+			bT taui = (beta*(i+0.5)) / nM;
 			T gAnalytic = -fermiFunc*std::exp(-taui*energy);
 			diff += std::abs( std::real(gf(0,i,0,0,0,0,0,0))-std::real(gAnalytic))*beta/nM;
 			diff += T(0,std::abs( std::imag(gf(0,i,0,0,0,0,0,0))-std::imag(gAnalytic)))*(beta/nM);

@@ -24,5 +24,45 @@ namespace scallop
 namespace gw_flex
 {
 
+template<typename T>
+PhononGreensFunction<T>::PhononGreensFunction() :
+		MatsubaraImagTimeFourierTransform<T>( /* fermionic = */ false )
+{
+
+}
+
+template<typename T>
+void PhononGreensFunction<T>::initialize(
+		size_t dimImTime,
+		std::vector<size_t> gridDims,
+		size_t numModes,
+		bool initialInTimeDomain,
+		bool initialInReciprocalDomain,
+		typename auxillary::TemplateTypedefs<T>::scallop_vector const& data)
+{
+
+	this->initialize_layout_phonon_prop(numModes);
+
+	MatsubaraImagTimeFourierTransform<T>::initialize(
+			dimImTime,
+			gridDims,
+			numModes*numModes,
+			initialInTimeDomain,
+			initialInReciprocalDomain,
+			data);
+}
+
+template<typename T>
+T PhononGreensFunction<T>::operator() (size_t iq, size_t iw, size_t nu, size_t mu) const
+{
+	return *(this->read_phs_grid_ptr_block(iq,iw) + memory_layout_phonon_prop(nu,mu));
+}
+
+template<typename T>
+T & PhononGreensFunction<T>::operator() (size_t iq, size_t iw, size_t nu, size_t mu)
+{
+	return *(this->write_phs_grid_ptr_block(iq,iw) + memory_layout_phonon_prop(nu,mu));
+}
+
 } /* namespace gw_flex */
 } /* namespace scallop */

@@ -390,6 +390,42 @@ void GreensFunctionOrbital_test<T>::test_full_loop_time_space_back()
 	assert( (diff.real() < 0.1) && (diff.imag() < 0.0001) );
 }
 
+template<typename T>
+template<class bandstructure>
+GreensFunctionOrbital<T> GreensFunctionOrbital_test<T>::construct_free_time_gf(
+		bT temperature, std::vector<size_t> spaceGrid, size_t nTimeSteps,
+		size_t nBnd,
+		bandstructure const& bnd)
+{
+	const bT kb = 0.86173324 ; // meV / K
+	const bT beta = 1.0 / (kb * temperature);
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+
+	GreensFunctionOrbital<T> gf;
+	gf.initialize(nTimeSteps,std::move(spaceGrid),nBnd,/* in time */true,/* in k */true, data );
+
+	auto fermiFunc = [] (bT energy, bT beta) {return 1.0 / ( std::exp( beta * energy ) + 1.0 ) ; };
+
+	for (size_t ik = 0 ; ik < gf.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		for (size_t i = 0 ; i < nTimeSteps ; ++i)
+			for ( size_t l1 = 0 ; l1 < nBnd ; ++l1 )
+				for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
+					for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
+						for ( size_t l2 = 0 ; l2 < nBnd ; ++l2 )
+							{
+								bT energy = bnd(tuple,l1,a1,s1,l2,a1,s1);
+								bT taui = beta*(i+0.5) / nTimeSteps;
+								bT analytic = energy > 0 ?
+										-1.0*fermiFunc(-energy,beta)*std::exp(-taui*energy) :
+										-1.0*fermiFunc(energy,beta)*std::exp((beta-taui)*energy);
+								gf(ik,i,l1,a1,s1,l2,a1,s1) = analytic;
+							}
+	}
+	return gf;
+}
 
 template<typename T>
 template<class bandstructure>

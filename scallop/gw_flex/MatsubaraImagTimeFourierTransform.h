@@ -63,14 +63,26 @@ public:
 
 private:
 
-	//If set true, it will call the time Fourier transform for Fermions, otherwise the one for Bosons
+	///If set true, it will call the time Fourier transform for Fermions, otherwise the one for Bosons
 	bool isFermi_;
 
-	void fourier_transform_fermions_time_freq( bT invTemp );
+	///Buffer for the weight factors W(n) for the transform it->w_n
+	///independent on T, this needs to be double at least
+	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector WN_;
 
-	void fourier_transform_bosons_time_freq( bT invTemp );
+	///Endpoint corrections for the transform it->w_n
+	///independent on T, this needs to be double at least
+	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector aN0_;
+	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector aN1_;
+	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector bN0_;
+	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector bN1_;
 
+	std::vector<T> buffF0_;
+	std::vector<T> buffF1_;
+	std::vector<T> buffFNMm1_;
+	std::vector<T> buffFNMm2_;
 
+	void initialize_corrections();
 };
 
 } /* namespace gw_flex */

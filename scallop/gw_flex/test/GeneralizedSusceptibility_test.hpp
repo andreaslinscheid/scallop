@@ -43,6 +43,8 @@ private:
 	GeneralizedSusceptibility<T> sust_;
 
 	void test_gf_construction();
+
+	void test_enhancement();
 };
 
 template<typename T>
@@ -52,6 +54,8 @@ void GeneralizedSusceptibility_test<T>::test_all()
 	msg << "Testing the generalized susceptibility.";
 
 	this->test_gf_construction();
+
+	this->test_enhancement();
 }
 
 template<typename T>
@@ -62,17 +66,17 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 	GreensFunctionOrbital<T> gf;
 
+	auto pauli_0 = [] (size_t i , size_t j) {return i == j ? T(1.0) 					: T(0.0);};
+	auto pauli_x = [] (size_t i , size_t j) {return i != j ? T(1.0) 					: T(0.0);};
+	auto pauli_y = [] (size_t i , size_t j) {return i != j ? (i<j?T(0,1.0)	:T(0,-1.0))	: T(0.0);};
+	auto pauli_z = [] (size_t i , size_t j) {return i == j ? (i==0?T(1.0)	:T(-1.0)) 	: T(0.0);};
+
 	if ( mpi.get_nproc() == 1 )
 	{
 		msg << "Testing for 1 space and time point if the construction works";
 
 		msg << "\nTesting the 1 orbital case. GF is set to combinations of  tau_x,y,z  sigma_0,x,y,z.";
 		auto data = typename auxillary::TemplateTypedefs<T>::scallop_vector( 16 );
-
-		auto pauli_0 = [] (size_t i , size_t j) {return i == j ? T(1.0) 					: T(0.0);};
-		auto pauli_x = [] (size_t i , size_t j) {return i != j ? T(1.0) 					: T(0.0);};
-		auto pauli_y = [] (size_t i , size_t j) {return i != j ? (i<j?T(0,1.0)	:T(0,-1.0))	: T(0.0);};
-		auto pauli_z = [] (size_t i , size_t j) {return i == j ? (i==0?T(1.0)	:T(-1.0)) 	: T(0.0);};
 
 		msg << "Testing G =  tau z  sigma_0 (the charge channel)";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -214,9 +218,57 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 							}
 	}
 
+	msg << "Testing for a grid of 4x4 with 2 time points and 1 band:";
+	msg << "\tTesting G = tau z sigma_0 (the charge channel)";
+	//We are testing the construction by making the second time value imaginary and
+	//adding a prefactor of the consecutive grid index. Thus, the susceptibility must
+	//be purely imaginary and proportional to the consequtive grid index squared
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+	gf.initialize(2, {4,4}, 1, true, false, data );
+
+	for ( size_t iR = 0 ; iR < gf.get_spaceGrid_proc().get_num_R_grid(); ++iR)
+	{
+		auto tuple = gf.get_spaceGrid_proc().R_conseq_local_to_xyz_total( iR );
+		auto grid = gf.get_spaceGrid_proc().get_grid();
+		for ( size_t it = 0 ; it < gf.get_num_time(); ++it)
+			for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
+				for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
+					for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
+						for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
+						{
+							T pref = (tuple[0]+1)+tuple[1]*grid[0];
+							pref = (it == 0? pref : T(0,1.0)*pref);
+							gf(iR,it,0,a1,s1,0,a2,s2) = pref*pauli_z(a1,a2)*pauli_0(s1,s2);
+						}
+	}
+	sust_.set_uninitialized();
+	sust_.compute_from_gf( gf );
+
+	for ( size_t iR = 0 ; iR < gf.get_spaceGrid_proc().get_num_R_grid(); ++iR)
+	{
+		auto tuple = gf.get_spaceGrid_proc().R_conseq_local_to_xyz_total( iR );
+		auto grid = gf.get_spaceGrid_proc().get_grid();
+		for ( size_t it = 0 ; it < gf.get_num_time(); ++it)
+			for ( size_t j = 0; j < 4 ; ++j)
+				for ( size_t jp = 0; jp < 4 ; ++jp)
+				{
+					T pref = tuple[0]+tuple[1]*grid[0]+1;
+					auto v =  T(0,1.0)*pref*pref;
+					assert( std::abs( -( (j==jp)? v : T(0) )/4.0 - sust_(iR,it,j,jp,0,0)  ) < 0.00000001 );
+				}
+	}
+
+	msg << "Testing to get the bare suscepibility of a cos kx + cos ky band model.";
 	const bT bandwidth = 20; // meV
-	const bT mu = bandwidth*0.45;
-	std::vector<size_t> spaceGrid = { 13, 11 };
+	const bT mu = 0; // Perfect nesting
+	const bT temperature = 0.022885	; // Temperature hand tuned to yield -0.1 to good accuracy at Q=pi,pi
+	const bT kb = 0.86173324 ; // meV / K
+	const bT beta = 1.0 / (kb * temperature);
+	const size_t nM = 128;
+
+	std::vector<size_t> spaceGrid = { 128, 128 };
+	msg << "\tThe grid is " << spaceGrid[0] << "x"<< spaceGrid[1] << " with "<< nM << " time steps (Matsubara points).";
 
 	auto cos_bnd = [&] (std::vector<size_t> const& tuple,
 			size_t l1, size_t a1, size_t s1,
@@ -226,34 +278,44 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 							+std::cos( (2*M_PI*tuple[1])/spaceGrid[1] ))-mu);
 	};
 
-	bT temperature = 1.0;
+	msg << "\tConstructing green's function in k and time domain ...";
 	GreensFunctionOrbital_test<T> gftest;
-	gf = gftest.construct_gf_bnd(
-			temperature, spaceGrid , 1,
-			1,
+	gf = gftest.construct_free_time_gf(
+			temperature, spaceGrid ,
+			nM, 1,
 			cos_bnd);
 
+	msg << "\tFT to lattice space ...";
 	gf.perform_space_fft();
 
-	const bT kb = 0.86173324 ; // meV / K
-	const bT beta = 1.0 / (kb * temperature);
-	gf.transform_itime_Mfreq(beta);
-
+	msg << "\tConstructing susceptibility ...";
 	sust_.set_uninitialized();
 	sust_.compute_from_gf( gf );
 
+	msg << "\tFT to reciprocal space ...";
 	sust_.perform_space_fft();
 
-	std::ofstream file("/home/alinsch/codes/scallop/tests/sust_test.dat");
+	msg << "\tFT to frequency space ...";
+	sust_.transform_itime_Mfreq(beta);
+
 	for (size_t ik = 0 ; ik < sust_.get_spaceGrid_proc().get_num_k_grid(); ++ik)
 	{
 		auto tuple = sust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
-		file << tuple[0] << '\t' << tuple[1] << '\t' << sust_(ik,0,0,0,0,0)<< '\t' << sust_(ik,0,1,1,0,0)
-				<< '\t' << sust_(ik,0,2,2,0,0)<< '\t' << sust_(ik,0,3,3,0,0) << '\n';
+		size_t ictotal = sust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
+		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
+		if ( ictotal == mid)
+			assert( (std::abs( std::real(sust_(ictotal,0,0,0,0,0))-0.1) < 0.000001)
+					and (std::abs( std::imag(sust_(ictotal,0,0,0,0,0)) ) < 0.000001 ) );
 	}
-	file.close();
+}
 
-	sust_.transform_itime_Mfreq(beta);
+template<typename T>
+void GeneralizedSusceptibility_test<T>::test_enhancement()
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	output::TerminalOut msg;
+
+	msg << "Testing the RPA enhancement";
 }
 
 } /* namespace test */

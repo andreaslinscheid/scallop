@@ -223,6 +223,14 @@ size_t GridDistribution<T>::R_xyz_to_conseq( std::vector<size_t> const& tuple ) 
 }
 
 template<typename T>
+size_t GridDistribution<T>::k_xyz_to_conseq( std::vector<size_t> const& tuple ) const
+{
+	size_t index;
+	this->general_xyz_to_conseq_column_major( procGridk_, tuple, index );
+	return index;
+}
+
+template<typename T>
 std::vector<size_t> & GridDistribution<T>::k_conseq_local_to_xyz_total( size_t ik ) const
 {
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();

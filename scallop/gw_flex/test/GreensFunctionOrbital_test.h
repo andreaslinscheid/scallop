@@ -45,6 +45,12 @@ public:
 			size_t nBnd,
 			bandstructure const& bnd);
 
+	template<class bandstructure>
+	GreensFunctionOrbital<T> construct_free_time_gf(
+			bT temperature, std::vector<size_t> spaceGrid, size_t nTimeSteps,
+			size_t nBnd,
+			bandstructure const& bnd);
+
 private:
 
 	void create_test_gfs();
