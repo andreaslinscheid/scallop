@@ -17,6 +17,9 @@
  *      Author: A. Linscheid
  */
 
+#ifndef SCALLOP_GW_FLEX_INTERACTIONMATRIX_TEST_H_
+#define SCALLOP_GW_FLEX_INTERACTIONMATRIX_TEST_H_
+
 #include "scallop/gw_flex/InteractionMatrix.h"
 #include <fstream>
 
@@ -32,8 +35,8 @@ class InteractionMatrix_test
 {
 public:
 	void test_all();
-private:
 	void test_init_file();
+private:
 };
 
 template<typename T>
@@ -49,12 +52,12 @@ void InteractionMatrix_test<T>::test_init_file()
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 	output::TerminalOut msg;
 
-	const std::string fname = "/tmp/test_input.dat";
+	const std::string fnameSpin = "/tmp/test_input_s.dat";
 	if ( mpi.ioproc() )
 	{
-		std::ofstream testFile( fname.c_str() );
+		std::ofstream testFile( fnameSpin.c_str() );
 		//Testing InteractionMatrix input from file:
-		testFile << "1" << '\n'; //One orbital
+		testFile << "1 4" << '\n'; //One orbital 4 channels
 		testFile << "0\t0\t0\t0\t0\t0\t1.5\t0.0" << '\n';
 		testFile << "1\t1\t0\t0\t0\t0\t3.0\t0.0" << '\n';
 		testFile << "2\t2\t0\t0\t0\t0\t4.5\t0.0" << '\n';
@@ -63,12 +66,24 @@ void InteractionMatrix_test<T>::test_init_file()
 		testFile.close();
 	}
 
+	const std::string fnameCharge = "/tmp/test_input_c.dat";
+	if ( mpi.ioproc() )
+	{
+		std::ofstream testFile( fnameCharge.c_str() );
+		//Testing InteractionMatrix input from file:
+		testFile << "1 1" << '\n'; //One orbital one channel
+		testFile << "0\t0\t0\t0\t0\t0\t9.0\t0.0" << '\n';
+		//			^j ^jp l1 l2 l3 l4 Re(I) Im(I)
+		testFile.close();
+	}
+
 	InteractionMatrix<T> interact;
-	interact.init_file( fname );
+	interact.init_file( fnameSpin );
 
 	assert( interact.get_nOrb() == 1 );
 	size_t nO = interact.get_nOrb();
 
+#ifndef NDEBUG
 	for (size_t j = 0 ; j < 4; j++)
 		for (size_t jp = 0 ; jp < 4; jp++)
 			for (size_t l1 = 0 ; l1 < nO; l1++)
@@ -79,8 +94,10 @@ void InteractionMatrix_test<T>::test_init_file()
 							T val = j==jp? 1.5*T(j+1,0) : T(0);
 							assert( interact(j,jp,l1,l2,l3,l4) == val);
 						}
+#endif
 }
 
 } /* namespace test */
 } /* namespace gw_flex */
 } /* namespace scallop */
+#endif /* SCALLOP_GW_FLEX_INTERACTIONMATRIX_TEST_H_ */

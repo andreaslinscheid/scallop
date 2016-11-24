@@ -52,16 +52,45 @@ void LinearAlgebraInterface< std::complex<double> >::call_gemm(
 		return reinterpret_cast<std::uintptr_t>(reinterpret_cast<const void*>(ptr));
 	};
 
-	//Check if all the pointers are 32 bit aligned
-	assert( (c_to_ptr(A) % 32 ) == 0 );
-	assert( (c_to_ptr(B) % 32 ) == 0 );
-	assert( (c_to_ptr(C) % 32 ) == 0 );
+	//Check if all the pointers are at least 16 bit aligned
+	assert( (c_to_ptr(A) % 16 ) == 0 );
+	assert( (c_to_ptr(B) % 16 ) == 0 );
+	assert( (c_to_ptr(C) % 16 ) == 0 );
 #endif
 
 	cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k,
 			reinterpret_cast<const void*>(&alpha), reinterpret_cast<const void*>(A), lda,
 			reinterpret_cast<const void*>(B), ldb,
 			reinterpret_cast<const void*>(&beta), reinterpret_cast<void*>(C), ldc);
+}
+
+template<>
+int LinearAlgebraInterface< std::complex<double> >::call_getri(
+		int matrix_order, int n, std::complex<double> * a, int lda,
+		const int * ipiv, std::complex<double> * work, int lwork) const
+{
+	return LAPACKE_zgetri_work(matrix_order,n,a,lda,ipiv,work,lwork);
+}
+
+template<>
+double LinearAlgebraInterface< std::complex<double> >::call_lange(
+		int matrix_order, char norm, int m, int n, const std::complex<double> * a,  int lda) const
+{
+	return LAPACKE_zlange(matrix_order,norm,m,n,a,lda);
+}
+
+template<>
+int LinearAlgebraInterface< std::complex<double> >::call_getrf(
+		int matrix_order, int m, int n, std::complex<double> * a, int lda, int * ipiv ) const
+{
+	return LAPACKE_zgetrf_work(matrix_order,m,n,a,lda,ipiv);
+}
+
+template<>
+int LinearAlgebraInterface< std::complex<double> >::call_gecon(
+		int matrix_order, char norm, int n, const std::complex<double> * a, int lda, double anorm, double * rcond ) const
+{
+	return LAPACKE_zgecon(matrix_order,norm, n, a, lda, anorm, rcond);
 }
 
 } /* namespace auxillary */

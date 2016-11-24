@@ -23,6 +23,7 @@
 #include "scallop/gw_flex/MatsubaraImagTimeFourierTransform.h"
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
 #include "scallop/gw_flex/MemoryLayout.h"
+#include "scallop/gw_flex/InteractionMatrix.h"
 
 namespace scallop
 {
@@ -33,12 +34,26 @@ template<typename T>
 class GeneralizedSusceptibility : public MatsubaraImagTimeFourierTransform<T>, private MemoryLayout
 {
 public:
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
+
 	using MemoryLayout::get_nOrb;
 	using MemoryLayout::get_nChnls;
 
 	GeneralizedSusceptibility();
 
-	void compute_from_gf(GreensFunctionOrbital<T> const & GF);
+	void compute_from_gf(GreensFunctionOrbital<T> const & GF,
+			size_t channels = 4);
+
+	void initialize_zero(
+			size_t nM,
+			size_t nO,
+			size_t channels,
+			std::vector<size_t> grid,
+			bool intimeSpace,
+			bool inKSpace);
+
+	void spin_RPA_enhancement(
+			InteractionMatrix<T> const& interMat);
 
 	T operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2) const;
 
@@ -52,6 +67,8 @@ public:
 	 *	Declare that the next compute_from_gf will have to reinitialize.
 	 */
 	void set_uninitialized();
+
+	auxillary::LinearAlgebraInterface<T> const& get_linAlg_module() const;
 private:
 
 	bool isInit_ = false;
@@ -61,6 +78,9 @@ private:
 	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferQ2_;
 
 	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferSBlock_;
+
+	///We keep a linear algebra module so that it keeps its buffers allocated
+	auxillary::LinearAlgebraInterface<T> linAlgModule_;
 
 	void v_matrix_multiplication(
 			size_t j, size_t l1, size_t a1, size_t s1, size_t l2,  size_t a2, size_t s2,

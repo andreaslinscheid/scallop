@@ -18,9 +18,11 @@
  */
 
 #include "scallop/gw_flex/GeneralizedSusceptibility.h"
+#include "scallop/gw_flex/ChargeSusceptibility.h"
 #include "scallop/output/TerminalOut.h"
 #include "scallop/parallel/MPIModule.h"
 #include "scallop/gw_flex/test/GreensFunctionOrbital_test.h"
+#include "scallop/gw_flex/test/InteractionMatrix_test.hpp"
 #include <complex>
 
 namespace scallop
@@ -41,6 +43,8 @@ public:
 private:
 
 	GeneralizedSusceptibility<T> sust_;
+
+	ChargeSusceptibility<T> csust_;
 
 	void test_gf_construction();
 
@@ -262,12 +266,12 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 	msg << "Testing to get the bare suscepibility of a cos kx + cos ky band model.";
 	const bT bandwidth = 20; // meV
 	const bT mu = 0; // Perfect nesting
-	const bT temperature = 0.022885	; // Temperature hand tuned to yield -0.1 to good accuracy at Q=pi,pi
+	const bT temperature = 0.0376875	; // Temperature hand tuned to yield -0.1 to good accuracy at Q=pi,pi
 	const bT kb = 0.86173324 ; // meV / K
 	const bT beta = 1.0 / (kb * temperature);
 	const size_t nM = 128;
 
-	std::vector<size_t> spaceGrid = { 128, 128 };
+	std::vector<size_t> spaceGrid = { 64, 64 };
 	msg << "\tThe grid is " << spaceGrid[0] << "x"<< spaceGrid[1] << " with "<< nM << " time steps (Matsubara points).";
 
 	auto cos_bnd = [&] (std::vector<size_t> const& tuple,
@@ -304,18 +308,105 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 		size_t ictotal = sust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
 		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
 		if ( ictotal == mid)
-			assert( (std::abs( std::real(sust_(ictotal,0,0,0,0,0))-0.1) < 0.000001)
-					and (std::abs( std::imag(sust_(ictotal,0,0,0,0,0)) ) < 0.000001 ) );
+		{
+			std::cout << "\tValue at Q=(pi,pi):" << sust_(ictotal,0,0,0,0,0) << std::endl;
+			assert( (std::abs( std::real(sust_(ictotal,0,0,0,0,0))+0.1) < 0.00001)
+					and (std::abs( std::imag(sust_(ictotal,0,0,0,0,0)) ) < 0.00001 ) );
+		}
+		if ( ictotal == 0 )
+		{
+			std::cout << "\tValue at Q=(0,0):" << sust_(ictotal,0,0,0,0,0) << std::endl;
+		}
 	}
 }
 
 template<typename T>
 void GeneralizedSusceptibility_test<T>::test_enhancement()
 {
-	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 	output::TerminalOut msg;
 
-	msg << "Testing the RPA enhancement";
+	msg << "Testing the copy of the charge channel";
+	csust_.copy_charge_part(sust_);
+
+	auto spaceGrid = sust_.get_spaceGrid_proc().get_k_grid();
+	for (size_t ik = 0 ; ik < csust_.get_spaceGrid_proc().get_num_k_grid(); ++ik)
+	{
+		auto tuple = csust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ictotal = csust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
+		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
+		if ( ictotal == mid)
+		{
+			std::cout << "\tValue at Q=(pi,pi):" << csust_(ictotal,0,0,0,0,0) << std::endl;
+			assert( (std::abs( std::real(csust_(ictotal,0,0,0,0,0))+0.1) < 0.00001)
+					and (std::abs( std::imag(csust_(ictotal,0,0,0,0,0)) ) < 0.00001 ) );
+		}
+		if ( ictotal == 0 )
+		{
+			std::cout << "\tValue at Q=(0,0):" << csust_(ictotal,0,0,0,0,0) << std::endl;
+		}
+	}
+
+	InteractionMatrix_test<T> interact_t;
+	interact_t.test_init_file(); // this will create the files '/tmp/test_input_s.dat' and '/tmp/test_input_c.dat'
+	InteractionMatrix<T> interactCharge;
+	interactCharge.init_file( "/tmp/test_input_c.dat" );
+
+	msg << "Testing the RPA charge enhancement";
+	csust_.charge_RPA_enhancement( interactCharge );
+	for (size_t ik = 0 ; ik < csust_.get_spaceGrid_proc().get_num_k_grid(); ++ik)
+	{
+		auto tuple = csust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ictotal = csust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
+		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
+		if ( ictotal == mid)
+		{
+			std::cout << "\tValue at Q=(pi,pi):" << csust_(ictotal,0,0,0,0,0) << std::endl;
+			assert( (std::abs( std::real(csust_(ictotal,0,0,0,0,0))+72.925) < 0.01)
+					and (std::abs( std::imag(csust_(ictotal,0,0,0,0,0)) ) < 0.001 ) );
+		}
+		if ( ictotal == 0 )
+		{
+			std::cout << "\tValue at Q=(0,0):" << csust_(ictotal,0,0,0,0,0) << std::endl;
+		}
+	}
+
+	InteractionMatrix<T> interactSpin;
+	interactSpin.init_file( "/tmp/test_input_s.dat" );
+
+	msg << "Testing the RPA spin enhancement";
+	sust_.spin_RPA_enhancement( interactSpin );
+	for (size_t ik = 0 ; ik < sust_.get_spaceGrid_proc().get_num_k_grid(); ++ik)
+	{
+		auto tuple = sust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ictotal = sust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
+		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
+		if ( ictotal == mid)
+		{
+			std::cout << "\tValues at Q=(pi,pi):\n\tjp=\t1\t2\t3\t4";
+			for (size_t j = 0 ; j < 4; ++j)
+			{
+				std::cout << "\n\tj=" << j;
+				for (size_t jp = 0 ; jp < 4; ++jp)
+				{
+					std::cout << '\t' << sust_(ictotal,0,j,jp,0,0);
+				}
+			}
+			std::cout << std::endl;
+		}
+		if ( ictotal == 0 )
+		{
+			std::cout << "\tValue at Q=(0,0):\n\tj=\t1\t2\t3\t4";
+			for (size_t j = 0 ; j < 4; ++j)
+			{
+				std::cout << "\n\tj=" << j;
+				for (size_t jp = 0 ; jp < 4; ++jp)
+				{
+					std::cout << '\t' << sust_(ictotal,0,j,jp,0,0);
+				}
+			}
+			std::cout << std::endl;
+		}
+	}
 }
 
 } /* namespace test */

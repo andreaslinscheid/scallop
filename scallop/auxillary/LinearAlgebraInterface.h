@@ -20,6 +20,8 @@
 #ifndef SCALLOP_AUXILLARY_LINEARALGEBRAINTERFACE_H_
 #define SCALLOP_AUXILLARY_LINEARALGEBRAINTERFACE_H_
 
+#include "scallop/auxillary/TypeMapComplex.h"
+#include "scallop/auxillary/TemplateTypedefs.h"
 #include <complex>
 #include <vector>
 #ifdef __MKL
@@ -52,6 +54,8 @@ class LinearAlgebraInterface
 {
 public:
 
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
+
 	void matrix_times_diagonal_matrix(
 			T const * matrix, size_t dim,
 			T const * diagonalMatrix,
@@ -70,6 +74,49 @@ public:
             int m, int n, int k,T alpha,T const * A, int lda,
             T const * B, int ldb, T beta,T* C,int ldc) const;
 
+	/**
+	 * 	Compute the eigensystem of the hermitian matrix.
+	 *
+	 *	We assume the data is located in upper(lower) triangle of the matrix if data_upper is true(false)
+	 * 	Eigenvalues will be put into 'eigenval' which will be allocated to the right size if not already done
+	 * 	If eigenvec is not empty, we compute eigenvectors
+	 * 	NOTE: The matrix will be overwritten
+	 */
+	void eigensystem(
+			bool data_upper, bool comEV,
+			std::vector<T> & matrix,
+			std::vector<bT> & eigenval) const;
+
+	/**
+	 * Replace the square 'matrix' with its inverse.
+	 *
+	 * @param matrix					Row major ordered square matrix. D must implement data() and size() similar to vector.
+	 * @param conditionNumber			If \p computeConditionNumber is true we return the condition number
+	 * @param computeConditionNumber	Decide whether or not to compute condition number (by default we do)
+	 */
+	template<class D>
+	void invert_square_matrix(D & matrix,
+			bT & conditionNumber,
+			bool computeConditionNumber = true) const;
+
+private:
+
+	mutable std::vector<int> IPIV;
+
+	mutable typename auxillary::TemplateTypedefs<T>::scallop_vector workbuffer_;
+
+	template<class D>
+	void determine_square_matrix_dim( D const& matrix, int & dim) const;
+
+	void inversion_of_matrices_info_checks( int info ) const;
+
+	int call_getri(int matrix_order, int n, T * a, int lda, const int * ipiv, T * work, int lwork) const;
+
+	bT call_lange(int matrix_order, char norm, int m, int n, const T * a,  int lda) const;
+
+	int call_getrf( int matrix_order, int m, int n, T * a, int lda, int * ipiv ) const;
+
+	int call_gecon( int matrix_order, char norm, int n, const T* a, int lda, bT anorm, bT* rcond ) const;
 };
 
 } /* namespace auxillary */

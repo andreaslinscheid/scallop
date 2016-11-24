@@ -33,13 +33,13 @@ namespace test {
 
 void Test::run_test()
 {
+	test_Susceptibility();
 	test_phonon_gf();
 	test_InteractionMatrix();
 	test_FFTBase();
 	test_time_freq_Fourier_transform();
 	test_UnitaryWannierKSBands();
 	test_GreensFunctionOrbital();
-	test_Susceptibility();
 }
 
 void Test::test_GreensFunctionOrbital()

@@ -45,31 +45,57 @@ T GeneralizedSusceptibility<T>::operator() (size_t ik, size_t iw, size_t j, size
 }
 
 template<typename T>
+T GeneralizedSusceptibility<T>::operator()
+	(size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const
+{
+	return *(this->read_phs_grid_ptr_block(ik,iw)+this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
+}
+
+template<typename T>
+T & GeneralizedSusceptibility<T>::operator()
+	(size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4)
+{
+	return *(this->write_phs_grid_ptr_block(ik,iw)+this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
+}
+
+template<typename T>
 void GeneralizedSusceptibility<T>::set_uninitialized()
 {
 	isInit_ = false;
 }
 
 template<typename T>
-void GeneralizedSusceptibility<T>::compute_from_gf(GreensFunctionOrbital<T> const & GF)
+void GeneralizedSusceptibility<T>::initialize_zero(
+		size_t nM,
+		size_t nO,
+		size_t channels,
+		std::vector<size_t> grid,
+		bool intimeSpace,
+		bool inKSpace)
+{
+	MemoryLayout::initialize_layout_4pt_scalar_obj( nO ,channels);
+	size_t nC = this->get_nChnls();
+
+	size_t blocksize = std::pow( nO , 4 )*nC*nC;
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+
+	// initialize an object with data being zero
+	this->initialize( nM, grid, blocksize, intimeSpace, inKSpace, data );
+	isInit_ = true;
+	bufferQ1_ = bufferQ2_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 4*nO*nO* nC*nC );
+	bufferSBlock_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( nC*nC*std::pow(nO,4) );
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::compute_from_gf(
+		GreensFunctionOrbital<T> const & GF,
+		size_t channels)
 {
 	//check if we need to update, or initialize
 	if ( ! isInit_ )
-	{
-		MemoryLayout::initialize_layout_4pt_scalar_obj( GF.get_nOrb() ,4);
-		size_t nC = this->get_nChnls();
-
-		size_t nM = GF.get_num_time();
-		auto grid =  GF.get_spaceGrid_proc().get_grid();
-		size_t blocksize = std::pow( GF.get_nOrb() , 4 )*nC*nC;
-		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
-
-		// initialize an object with data being zero
-		this->initialize( nM, grid, blocksize, /*In time space=*/ true, /*In k space=*/ false, data );
-		isInit_ = true;
-		bufferQ1_ = bufferQ2_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 4*GF.get_nOrb()*GF.get_nOrb()* nC*nC );
-		bufferSBlock_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 16*std::pow(GF.get_nOrb(),4) );
-	}
+		this->initialize_zero(
+				GF.get_num_time(), GF.get_nOrb(), channels, GF.get_spaceGrid_proc().get_grid(),
+				/*In time space=*/ true, /*In k space=*/ false );
 
 	size_t nO = this->get_nOrb();
 	size_t nC = this->get_nChnls();
@@ -79,8 +105,6 @@ void GeneralizedSusceptibility<T>::compute_from_gf(GreensFunctionOrbital<T> cons
 	assert( this->get_num_time() ==  GF.get_num_time() );
 	assert( this->get_spaceGrid_proc().get_grid() ==  GF.get_spaceGrid_proc().get_grid() );
 	assert( (not GF.is_in_k_space()) and GF.is_in_time_space() );
-
-	auxillary::LinearAlgebraInterface<T> linalg;
 
 	MemoryLayout gf_layout;
 	gf_layout.initialize_layout_2pt_obj( nO );
@@ -134,7 +158,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(GreensFunctionOrbital<T> cons
 									}
 
 			int dimSust = static_cast<int>(4*nO*nO);
-			linalg.call_gemm(false, false,
+			linAlgModule_.call_gemm(false, false,
 					dimSust,dimSust,16,
 					T(-1.0/16.0),	bufferQ1_.data(), 16,
 								bufferQ2_.data(), dimSust,
@@ -186,6 +210,74 @@ void GeneralizedSusceptibility<T>::v_matrix_multiplication(
 		default:
 			break;
 	}
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::spin_RPA_enhancement(
+		InteractionMatrix<T> const& interMat)
+{
+	assert( this->get_nOrb() == interMat.get_nOrb() );
+	assert( this->is_in_k_space() );
+	assert( not this->is_in_time_space() );
+
+	size_t channels =  this->get_nChnls();
+	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
+	int blockDim = static_cast<int>( std::pow(this->get_nOrb(),2) * channels );
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector chiTimesI(blockDim*blockDim,T(0));
+	auto IdPlusChiTimesIInv = chiTimesI;
+	auto enhChiTimesI = chiTimesI;
+
+	bT conditionNumber = 1.0;
+	for ( size_t ik = 0 ; ik < nK; ++ik)
+	{
+		for ( size_t iw = 0 ; iw < this->get_num_time(); ++iw)
+		{
+			auto susct = this->write_phs_grid_ptr_block(ik,iw);
+			auto interaction = interMat.read_ptr();
+
+			this->get_linAlg_module().matrix_times_matrix(
+					susct,blockDim,
+					interaction,
+					chiTimesI.data());
+
+			std::copy(chiTimesI.data(), chiTimesI.data()+chiTimesI.size(), IdPlusChiTimesIInv.data() );
+			for ( int i = 0 ; i < blockDim; ++i)
+				IdPlusChiTimesIInv[i*blockDim+i] += 1.0;
+
+			this->get_linAlg_module().invert_square_matrix(
+					IdPlusChiTimesIInv, conditionNumber, /*compute condition number=*/ true );
+
+			if ( (1.0/conditionNumber) > 100.0 )
+			{
+				auto k = this->get_spaceGrid_proc().k_conseq_local_to_xyz_total(ik);
+				std::cout << "\tApproaching instability in the charge channel (Matsubara n=" << iw << ") at k pt:\t";
+				for ( auto kxi : k )
+					std::cout << kxi << '\t';
+				std::cout << std::endl;
+			}
+
+			//double counting correction
+			for ( int i = 0 ; i < blockDim; ++i)
+				IdPlusChiTimesIInv[i*blockDim+i] -= 1.0;
+
+			this->get_linAlg_module().matrix_times_matrix(
+					IdPlusChiTimesIInv.data(),blockDim,
+					chiTimesI.data(),
+					enhChiTimesI.data() );
+
+			this->get_linAlg_module().matrix_times_matrix(
+					interaction,blockDim,
+					enhChiTimesI.data(),
+					susct );
+		}
+	}
+}
+template<typename T>
+auxillary::LinearAlgebraInterface<T> const&
+GeneralizedSusceptibility<T>::get_linAlg_module() const
+{
+	return linAlgModule_;
 }
 
 } /* namespace gw_flex */

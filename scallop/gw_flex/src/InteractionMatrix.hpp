@@ -17,6 +17,7 @@
  *      Author: A. Linscheid
  */
 
+#include "scallop/error_handling/Error.h"
 #include "scallop/gw_flex/InteractionMatrix.h"
 
 namespace scallop
@@ -57,8 +58,11 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 	std::string line;
 	std::getline(file, line);
     std::istringstream ish(line);
-    size_t nOrb;
-    ish >> nOrb;
+    size_t nOrb, channels;
+    ish >> nOrb >> channels;
+
+    if ( ! ((channels==1) || (channels==4)) )
+    	error_handling::Error( std::string("Cannot handle channel numbers other than 1 and 4 in file ")+filename,5);
 
 	std::set<matel> elements;
 	while (std::getline(file, line))
@@ -67,24 +71,24 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 	    matel m;
     	for (size_t i = 0 ; i < 6; ++i)
     		if (!(iss >> m.ind[i]))
-    			scallop::error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
+    			error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
     	bT re,im;
 		if (!(iss >> re ))
-			scallop::error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
+			error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
 		if (!(iss >> im ))
-			scallop::error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
+			error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
 		m.m = T(re,im);
 
 		auto it = elements.insert( std::move(m) );
 		if ( ! it.second )
-			scallop::error_handling::Error( std::string("Interaction matrix element defined twice in file ")+filename,5);
+			error_handling::Error( std::string("Interaction matrix element defined twice in file ")+filename,5);
 	}
 
-	this->initialize_layout_4pt_scalar_obj( nOrb, 4 );
+	this->initialize_layout_4pt_scalar_obj( nOrb, channels );
 
-	data_.assign( 16*std::pow(nOrb,4), T(0) );
-	for (size_t j = 0 ; j < 4; j++)
-		for (size_t jp = 0 ; jp < 4; jp++)
+	data_.assign( channels*channels*std::pow(nOrb,4), T(0) );
+	for (size_t j = 0 ; j < channels; j++)
+		for (size_t jp = 0 ; jp < channels; jp++)
 			for (size_t l1 = 0 ; l1 < nOrb; l1++)
 				for (size_t l2 = 0 ; l2 < nOrb; l2++)
 					for (size_t l3 = 0 ; l3 < nOrb; l3++)
