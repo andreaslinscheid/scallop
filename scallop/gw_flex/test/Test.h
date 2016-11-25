@@ -44,6 +44,8 @@ private:
 	void test_phonon_gf();
 
 	void test_InteractionMatrix();
+
+	void test_selfEnergy();
 };
 
 } /* namespace test */

@@ -74,6 +74,11 @@ public:
             int m, int n, int k,T alpha,T const * A, int lda,
             T const * B, int ldb, T beta,T* C,int ldc) const;
 
+	void call_gemv(
+			bool transA,
+	        int m, int n, T alpha,T const * A, int lda,
+	        T const * X, int incX, T beta,T * Y,int incY) const;
+
 	/**
 	 * 	Compute the eigensystem of the hermitian matrix.
 	 *

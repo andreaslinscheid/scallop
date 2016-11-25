@@ -59,12 +59,6 @@ T & GeneralizedSusceptibility<T>::operator()
 }
 
 template<typename T>
-void GeneralizedSusceptibility<T>::set_uninitialized()
-{
-	isInit_ = false;
-}
-
-template<typename T>
 void GeneralizedSusceptibility<T>::initialize_zero(
 		size_t nM,
 		size_t nO,
@@ -81,7 +75,6 @@ void GeneralizedSusceptibility<T>::initialize_zero(
 
 	// initialize an object with data being zero
 	this->initialize( nM, grid, blocksize, intimeSpace, inKSpace, data );
-	isInit_ = true;
 	bufferQ1_ = bufferQ2_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 4*nO*nO* nC*nC );
 	bufferSBlock_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( nC*nC*std::pow(nO,4) );
 }
@@ -92,7 +85,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 		size_t channels)
 {
 	//check if we need to update, or initialize
-	if ( ! isInit_ )
+	if ( ! this->is_init() )
 		this->initialize_zero(
 				GF.get_num_time(), GF.get_nOrb(), channels, GF.get_spaceGrid_proc().get_grid(),
 				/*In time space=*/ true, /*In k space=*/ false );

@@ -57,9 +57,6 @@ public:
 	T & operator() (
 			size_t ig, size_t it, size_t m1,  size_t m2);
 
-	typename std::vector<T>::iterator
-	get_iterator_at(
-			size_t ig, size_t it, size_t m1, size_t m2);
 };
 
 } /* namespace gw_flex */

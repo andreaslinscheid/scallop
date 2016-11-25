@@ -25,6 +25,7 @@
 #include "scallop/gw_flex/test/GeneralizedSusceptibility_test.hpp"
 #include "scallop/gw_flex/test/PhononGreensFunction_test.hpp"
 #include "scallop/gw_flex/test/InteractionMatrix_test.hpp"
+#include "scallop/gw_flex/test/SelfEnergy_test.hpp"
 #include <complex>
 
 namespace scallop {
@@ -33,13 +34,14 @@ namespace test {
 
 void Test::run_test()
 {
-	test_Susceptibility();
+	test_selfEnergy();
 	test_phonon_gf();
 	test_InteractionMatrix();
 	test_FFTBase();
 	test_time_freq_Fourier_transform();
 	test_UnitaryWannierKSBands();
 	test_GreensFunctionOrbital();
+	test_Susceptibility();
 }
 
 void Test::test_GreensFunctionOrbital()
@@ -87,6 +89,13 @@ void Test::test_InteractionMatrix()
 	typedef std::complex<double> T;
 	InteractionMatrix_test<T> Itest;
 	Itest.test_all();
+}
+
+void Test::test_selfEnergy()
+{
+	typedef std::complex<double> T;
+	SelfEnergy_test<T> setest;
+	setest.test_all();
 }
 
 } /* namespace test */

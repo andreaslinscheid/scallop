@@ -444,9 +444,11 @@ void FFTBase<T>::perform_k_to_R_fft()
 	for ( auto &d : data_ )
 		d *= 1.0/spaceGrid_.get_num_grid();
 
+#ifndef NDEBUG
 	//In debug mode, we check for NaNs
 	for ( auto d : data_ )
 		assert( d == d );
+#endif
 }
 
 template<typename T>
@@ -518,6 +520,12 @@ template<typename T>
 T * FFTBase<T>::write_data_ptr_block(size_t iGrid, size_t it )
 {
 	return &(data_[ (iGrid*dimTimeFT_+it)*blockSize_ ]);
+}
+
+template<typename T>
+void FFTBase<T>::set_uninitialized()
+{
+	isInit_ = false;
 }
 
 template<typename T>

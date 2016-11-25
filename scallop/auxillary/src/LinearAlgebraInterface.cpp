@@ -35,7 +35,8 @@ void LinearAlgebraInterface< std::complex<float> >::call_gemm(
         int m, int n, int k,std::complex<float> alpha,std::complex<float> const * A, int lda,
         std::complex<float> const * B, int ldb, std::complex<float> beta,std::complex<float> * C,int ldc) const
 {
-	cblas_cgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k,
+	cblas_cgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+			transB ? CblasTrans : CblasNoTrans, m, n, k,
 			reinterpret_cast<const void*>(&alpha), reinterpret_cast<const void*>(A), lda,
 			reinterpret_cast<const void*>(B), ldb,
 			reinterpret_cast<const void*>(&beta), reinterpret_cast<void*>(C), ldc);
@@ -58,10 +59,34 @@ void LinearAlgebraInterface< std::complex<double> >::call_gemm(
 	assert( (c_to_ptr(C) % 16 ) == 0 );
 #endif
 
-	cblas_zgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, k,
+	cblas_zgemm(CblasRowMajor, transA ? CblasTrans : CblasNoTrans,
+			transB ? CblasTrans : CblasNoTrans, m, n, k,
 			reinterpret_cast<const void*>(&alpha), reinterpret_cast<const void*>(A), lda,
 			reinterpret_cast<const void*>(B), ldb,
 			reinterpret_cast<const void*>(&beta), reinterpret_cast<void*>(C), ldc);
+}
+
+template<>
+void LinearAlgebraInterface< std::complex<double> >::call_gemv(
+		bool transA,
+        int m, int n, std::complex<double> alpha,std::complex<double> const * A, int lda,
+        std::complex<double> const * X, int incX, std::complex<double> beta,std::complex<double> * Y,int incY) const
+{
+#ifdef DEBUG_BUILD
+	auto c_to_ptr = [] ( std::complex<double> const * ptr ) {
+		return reinterpret_cast<std::uintptr_t>(reinterpret_cast<const void*>(ptr));
+	};
+
+	//Check if all the pointers are at least 16 bit aligned
+	assert( (c_to_ptr(A) % 16 ) == 0 );
+	assert( (c_to_ptr(X) % 16 ) == 0 );
+	assert( (c_to_ptr(Y) % 16 ) == 0 );
+#endif
+
+	cblas_zgemv(CblasRowMajor, transA ? CblasTrans : CblasNoTrans, m, n,
+			reinterpret_cast<const void*>(&alpha), reinterpret_cast<const void*>(A), lda,
+			reinterpret_cast<const void*>(X), incX,
+			reinterpret_cast<const void*>(&beta), reinterpret_cast<void*>(Y), incY);
 }
 
 template<>

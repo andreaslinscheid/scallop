@@ -63,15 +63,8 @@ public:
 
 	T & operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
 
-	/**
-	 *	Declare that the next compute_from_gf will have to reinitialize.
-	 */
-	void set_uninitialized();
-
 	auxillary::LinearAlgebraInterface<T> const& get_linAlg_module() const;
 private:
-
-	bool isInit_ = false;
 
 	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferQ1_;
 

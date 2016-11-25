@@ -361,7 +361,7 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 		if ( ictotal == mid)
 		{
 			std::cout << "\tValue at Q=(pi,pi):" << csust_(ictotal,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(csust_(ictotal,0,0,0,0,0))+72.925) < 0.01)
+			assert( (std::abs( std::real(csust_(ictotal,0,0,0,0,0))+72.95) < 0.01)
 					and (std::abs( std::imag(csust_(ictotal,0,0,0,0,0)) ) < 0.001 ) );
 		}
 		if ( ictotal == 0 )

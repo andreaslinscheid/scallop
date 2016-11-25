@@ -119,6 +119,13 @@ public:
 
 	void perform_space_fft();
 
+	/**
+	 * Flag that this object needs to be reinitialized.
+	 *
+	 * Sets isInit_ to false;
+	 */
+	void set_uninitialized();
+
 	bool is_init() const;
 
 	bool is_in_k_space() const;
