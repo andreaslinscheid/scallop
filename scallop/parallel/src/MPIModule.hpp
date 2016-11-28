@@ -457,14 +457,14 @@ struct broad_cast_impl<T, true >
 		auto data_ptr = &(*data.begin());
 		size_t sendcount = data.end() - data.begin();
 
-#ifdef DEBUG_BUILD
 		//use the single element version to check if the space is correctly allocated
 		MPIModule const& mpiobj = MPIModule::get_instance();
 		size_t rootSize = sendcount;
 		mpiobj.bcast(rootSize,proc);
-		if ( sendcount != rootSize )
-			scallop::error_handling::Error("broadcast called with inconsistently allocated container!",5);
-#endif
+		if ( (sendcount != rootSize) && (mpiobj.get_mpi_me() != proc ) )
+		{
+			data = T( rootSize );
+		}
 
 		MPITypeMap<typename T::value_type> MPITypeMap;
 		int ierr = MPI_Bcast(

@@ -25,12 +25,6 @@ namespace gw_flex
 {
 
 template<typename T>
-UnitaryWannierKSBands<T>::UnitaryWannierKSBands()
-{
-
-}
-
-template<typename T>
 void UnitaryWannierKSBands<T>::initialize_identity(
 		std::vector<size_t> spaceGrid,
 		size_t numOrbitals)
@@ -38,17 +32,26 @@ void UnitaryWannierKSBands<T>::initialize_identity(
 	this->initialize_layout_2pt_obj(numOrbitals);
 	size_t nO = this->get_nOrb();
 
-	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
-	this->initialize( data, true, false, std::move(spaceGrid), 1, 16*nO*nO );
-
-	//Since we are initializing the identity everywhere, the grid does not matter.
-	size_t nG = this->get_spaceGrid_proc().get_num_k_grid();
-
-	for ( size_t ik = 0 ; ik < nG ; ++ik)
+	gdistr_.distribute_grid( std::move(spaceGrid) );
+	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
+	data_ = typename auxillary::TemplateTypedefs<T>::scallop_vector(16*nK*nO*nO);
+	for ( size_t ik = 0 ; ik < nK ; ++ik)
 		for ( size_t m1 = 0 ; m1 < nO*4 ; ++m1)
 		{
 			(*this)(ik,m1,m1) = T(1.0);
 		}
+}
+
+template<typename T>
+void UnitaryWannierKSBands<T>::initialize(
+		std::vector<size_t> spaceGrid,
+		size_t numOrbitals,
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data)
+{
+	this->initialize_layout_2pt_obj(numOrbitals);
+
+	gdistr_.distribute_grid( std::move(spaceGrid) );
+	data_ = std::move( data );
 }
 
 template<typename T>
@@ -66,25 +69,34 @@ T & UnitaryWannierKSBands<T>::operator() (size_t ik, size_t m1, size_t m2)
 template<typename T>
 T const * UnitaryWannierKSBands<T>::read_phs_grid_ptr(size_t ik, size_t m1, size_t m2 ) const
 {
-	return FFTBase<T>::read_phs_grid_ptr_block(ik,0)+this->memory_layout_combined_notation_2pt_obj(m1,m2);
+	return this->read_phs_grid_ptr_block(ik)+this->memory_layout_combined_notation_2pt_obj(m1,m2);
 }
 
 template<typename T>
 T * UnitaryWannierKSBands<T>::write_phs_grid_ptr(size_t ik, size_t m1, size_t m2 )
 {
-	return FFTBase<T>::write_phs_grid_ptr_block(ik,0)+this->memory_layout_combined_notation_2pt_obj(m1,m2);
+	return this->write_phs_grid_ptr_block(ik)+this->memory_layout_combined_notation_2pt_obj(m1,m2);
 }
 
 template<typename T>
 T const * UnitaryWannierKSBands<T>::read_phs_grid_ptr_block(size_t ik) const
 {
-	return FFTBase<T>::read_phs_grid_ptr_block(ik,0);
+	assert(ik*this->get_nOrb()*this->get_nOrb() < data_.size() );
+	return &data_[ik*16*this->get_nOrb()*this->get_nOrb()];
 }
 
 template<typename T>
 T * UnitaryWannierKSBands<T>::write_phs_grid_ptr_block(size_t ik)
 {
-	return FFTBase<T>::write_phs_grid_ptr_block(ik,0);
+	assert(ik*this->get_nOrb()*this->get_nOrb() < data_.size() );
+	return  &data_[ik*16*this->get_nOrb()*this->get_nOrb()];
+}
+
+template<typename T>
+parallel::GridDistribution<T> const&
+UnitaryWannierKSBands<T>::get_spaceGrid_proc() const
+{
+	return gdistr_;
 }
 
 } /* namespace gw_flex */

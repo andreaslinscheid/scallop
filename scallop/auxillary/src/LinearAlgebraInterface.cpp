@@ -118,5 +118,16 @@ int LinearAlgebraInterface< std::complex<double> >::call_gecon(
 	return LAPACKE_zgecon(matrix_order,norm, n, a, lda, anorm, rcond);
 }
 
+template<>
+int LinearAlgebraInterface< std::complex<double> >::call_heev(
+		int matrix_order, char jobz, char uplo,
+		   int n, std::complex<double>  * a,
+		   int lda, double* w,
+		   std::complex<double>  * work, int lwork,
+		   double * rwork) const
+{
+	return LAPACKE_zheev_work(matrix_order,jobz, uplo, n, a, lda,w,work,lwork,rwork);
+}
+
 } /* namespace auxillary */
 } /* namespace scallop */

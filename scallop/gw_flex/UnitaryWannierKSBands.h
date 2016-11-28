@@ -20,8 +20,9 @@
 #ifndef SCALLOP_GW_FLEX_UNITARYWANNIERKSBANDS_H_
 #define SCALLOP_GW_FLEX_UNITARYWANNIERKSBANDS_H_
 
-#include "scallop/gw_flex/FFTBase.h"
 #include "scallop/gw_flex/MemoryLayout.h"
+#include "scallop/parallel/GridDistribution.h"
+#include "scallop/auxillary/TemplateTypedefs.h"
 #include <vector>
 
 namespace scallop
@@ -30,18 +31,19 @@ namespace gw_flex
 {
 
 template<typename T>
-class UnitaryWannierKSBands : private FFTBase<T>, private MemoryLayout
+class UnitaryWannierKSBands : private MemoryLayout
 {
 public:
-	using FFTBase<T>::get_spaceGrid_proc;
-	using FFTBase<T>::perform_space_fft;
 	using MemoryLayout::get_nOrb;
-
-	UnitaryWannierKSBands();
 
 	void initialize_identity(
 			std::vector<size_t> spaceGrid,
 			size_t numOrbitals);
+
+	void initialize(
+			std::vector<size_t> spaceGrid,
+			size_t numOrbitals,
+			typename auxillary::TemplateTypedefs<T>::scallop_vector data);
 
 	T operator() (size_t ik, size_t m1, size_t m2) const;
 
@@ -58,7 +60,13 @@ public:
 	T const * read_phs_grid_ptr_block(size_t ik) const;
 
 	T * write_phs_grid_ptr_block(size_t ik);
+
+	parallel::GridDistribution<T> const& get_spaceGrid_proc() const;
 private:
+
+	parallel::GridDistribution<T> gdistr_;
+
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data_;
 };
 
 } /* namespace gw_flex */

@@ -27,10 +27,8 @@ namespace scallop {
 namespace input {
 
 void InputFile::read_input_file(
-		std::string const & fileName) {
-
-	std::string infileContent;
-
+		std::string const & fileName)
+{
 	//open the file
 	std::ifstream file;
 	file.open(fileName.c_str(),std::ios::in);
@@ -40,8 +38,16 @@ void InputFile::read_input_file(
 	}
 
 	//read the file
+	this->read_input_stream(file);
+	file.close();
+}
+
+void InputFile::read_input_stream(std::istream & s)
+{
+	std::string infileContent;
+
 	std::string line;
-	while ( std::getline(file,line) ) {
+	while ( std::getline(s,line) ) {
 		//Check if the last char is \r as might occur with vim edited files
 		if (line.c_str()[line.size()-1] == '\r') {
 			line.resize(line.size () - 1);
@@ -50,11 +56,9 @@ void InputFile::read_input_file(
 		infileContent.append("\n");
 		line.clear();
 	}
-	file.close();
 
 	this->parse_input(infileContent);
 }
-
 
 //The strategy is to break the input into parts separated by '='.
 // except the first and the last element this means we have a block with

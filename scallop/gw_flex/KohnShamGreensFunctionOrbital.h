@@ -36,26 +36,24 @@ public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
 	void set_in_time_space(
-			UnitaryWannierKSBands<T> unitaryWannierBands,
-			std::vector<bT> KSBands,
+			UnitaryWannierKSBands<T> const& unitaryWannierBands,
+			typename auxillary::TemplateTypedefs<bT>::scallop_vector const& KSBands,
 			size_t timeDim,
 			bT invTemp);
 
 	void set_in_frequency_space(
-			UnitaryWannierKSBands<T> unitaryWannierBands,
-			std::vector<bT> KSBands,
+			UnitaryWannierKSBands<T> const& unitaryWannierBands,
+			typename auxillary::TemplateTypedefs<bT>::scallop_vector const& KSBands,
 			size_t freqDim,
 			bT invTemp);
 private:
 
-	UnitaryWannierKSBands<T> unitary_;
-
-	std::vector<bT> KSBands_;
-
 	void set_in_both_spaces(
 			size_t timeDim,
 			bT invTemp,
-			bool timeSpace);
+			bool timeSpace,
+			UnitaryWannierKSBands<T> const& unitary,
+			typename auxillary::TemplateTypedefs<bT>::scallop_vector const& ksBands);
 };
 
 } /* namespace gw_flex */

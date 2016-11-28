@@ -67,7 +67,7 @@ void GreensFunctionOrbital_test<T>::create_test_gfs()
 	parallel::GridDistribution<T> gd;
 	gd.distribute_grid(kgrid);
 
-	std::vector<bT> energies( gd.get_num_k_grid()*4 );
+	typename auxillary::TemplateTypedefs<bT>::scallop_vector energies( gd.get_num_k_grid()*4 );
 	for (size_t ik = 0 ; ik < gd.get_num_k_grid() ; ++ik)
 	{
 		auto tuple = gd.k_conseq_local_to_xyz_total( ik );
@@ -106,7 +106,6 @@ void GreensFunctionOrbital_test<T>::create_test_gfs()
 			}
 		}
 	}
-
 	mpi.sum( diff );
 	msg << "Difference between known form of the KS GF in frequency and the actual return of the object:" << diff;
 	mpi.barrier();

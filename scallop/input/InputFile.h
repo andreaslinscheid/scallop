@@ -67,9 +67,17 @@ public:
 	void read_input_file(std::string const& fileName);
 
 	/**
+	 * \brief Parse the content of the input stream for 'key = value' string pairs.
+	 *
+	 *	See \ref parse_input on how the parsing of the content is done.
+	 * @param s The input stream with the data.
+	 */
+	void read_input_stream(std::istream & s);
+
+	/**
 	 * \brief Parse the input string for 'key = value' string pairs.
 	 *
-	 * It ignores comments following the char '/', '!' or '#' until the end of the line '\n'
+	 * It ignores comments following the char '!' or '#' until the end of the line '\n'
 	 * @param input The string where the key = value pairs are searched in.
 	 */
 	void parse_input(std::string const&input);

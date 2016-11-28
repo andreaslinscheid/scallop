@@ -83,14 +83,13 @@ public:
 	 * 	Compute the eigensystem of the hermitian matrix.
 	 *
 	 *	We assume the data is located in upper(lower) triangle of the matrix if data_upper is true(false)
-	 * 	Eigenvalues will be put into 'eigenval' which will be allocated to the right size if not already done
-	 * 	If eigenvec is not empty, we compute eigenvectors
+	 * 	Eigenvalues will be put into 'eigenval'
 	 * 	NOTE: The matrix will be overwritten
 	 */
-	void eigensystem(
+	void hermitian_eigensystem(
 			bool data_upper, bool comEV,
-			std::vector<T> & matrix,
-			std::vector<bT> & eigenval) const;
+			T * matrix, int dim,
+			bT * eigenval) const;
 
 	/**
 	 * Replace the square 'matrix' with its inverse.
@@ -110,6 +109,8 @@ private:
 
 	mutable typename auxillary::TemplateTypedefs<T>::scallop_vector workbuffer_;
 
+	mutable typename auxillary::TemplateTypedefs<bT>::scallop_vector rWork_;
+
 	template<class D>
 	void determine_square_matrix_dim( D const& matrix, int & dim) const;
 
@@ -122,6 +123,12 @@ private:
 	int call_getrf( int matrix_order, int m, int n, T * a, int lda, int * ipiv ) const;
 
 	int call_gecon( int matrix_order, char norm, int n, const T* a, int lda, bT anorm, bT* rcond ) const;
+
+	int call_heev( int matrix_order, char jobz, char uplo,
+			   int n, T * a,
+			   int lda, double* w,
+			   T * work, int lwork,
+			   bT * rwork) const;
 };
 
 } /* namespace auxillary */

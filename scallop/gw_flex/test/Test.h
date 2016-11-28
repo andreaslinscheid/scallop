@@ -46,6 +46,8 @@ private:
 	void test_InteractionMatrix();
 
 	void test_selfEnergy();
+
+	void test_KSBandstructure();
 };
 
 } /* namespace test */

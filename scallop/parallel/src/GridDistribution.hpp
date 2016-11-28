@@ -260,7 +260,7 @@ size_t GridDistribution<T>::get_inverse_index_k( size_t ik ) const
 	tupleBuff_ = this->k_conseq_local_to_xyz_total(ik);
 	for ( size_t i = 0; i < tupleBuff_.size(); ++i )
 		tupleBuff_[i] = static_cast<size_t>(static_cast<int>(totalGrid_[i])-static_cast<int>(tupleBuff_[i]));
-	return this->xyz_to_conseq_total( tupleBuff_ );
+	return this->k_xyz_to_conseq( tupleBuff_ );
 }
 
 template<typename T>
@@ -269,7 +269,7 @@ size_t GridDistribution<T>::get_inverse_index_R( size_t iR ) const
 	tupleBuff_ = this->R_conseq_local_to_xyz_total(iR);
 	for ( size_t i = 0; i < tupleBuff_.size(); ++i )
 		tupleBuff_[i] = static_cast<size_t>(static_cast<int>(totalGrid_[i])-static_cast<int>(tupleBuff_[i]));
-	return this->xyz_to_conseq_total( tupleBuff_ );
+	return this->R_xyz_to_conseq( tupleBuff_ );
 }
 
 template<typename T>
@@ -493,6 +493,104 @@ void GridDistribution<T>::redistribute_locally(
 				buffer_.end(),
 				data.begin()+l.back().second*blockSize);
 	}
+}
+
+template<typename T>
+std::vector<size_t>
+GridDistribution<T>::get_cube_indices_surrounding(
+		bool conseqInKGrid,
+		std::vector<bT> const& v) const
+{
+	assert( v.size()== totalGrid_.size() );
+
+	std::vector<size_t> result;
+	std::vector<std::pair<size_t,size_t> > minMaxEachDim;
+	for ( size_t i = 0 ; i < v.size(); i++ )
+	{
+		//min, max index in a this->get_nk_dim(i) periodic grid
+		bT vfbz = v[i]-std::floor(v[i]);
+		int cellstart = static_cast<int>(std::floor(vfbz*totalGrid_[i]));
+		int cellend = cellstart + 1;
+		cellstart -= (cellstart/totalGrid_[i])*totalGrid_[i];
+		cellend -= (cellend/totalGrid_[i])*totalGrid_[i];
+		minMaxEachDim.push_back( std::make_pair(static_cast<size_t>(cellstart),static_cast<size_t>(cellend)));
+	}
+
+	auto xyz_to_conseq = [&] (std::vector<size_t> const& tuple )
+		{
+			return conseqInKGrid ? this->k_xyz_to_conseq( tuple )
+						: this->R_xyz_to_conseq( tuple );
+		};
+
+	//1D
+	if ( v.size() == 1 )
+	{
+		result.push_back( minMaxEachDim[0].first );
+		result.push_back( minMaxEachDim[0].second );
+		return result;
+	}
+
+	//2D counter clock wise starting at min min
+	if ( v.size() == 2 )
+	{
+		// 1 = min, min
+		std::vector<size_t> dima = { minMaxEachDim[0].first, minMaxEachDim[1].first };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 2 = max, min
+		dima = { minMaxEachDim[0].second, minMaxEachDim[1].first };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 3 = max, max
+		dima = { minMaxEachDim[0].second, minMaxEachDim[1].second };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 4 = min, max
+		dima = { minMaxEachDim[0].first, minMaxEachDim[1].second };
+		result.push_back( xyz_to_conseq( dima ) );
+		return result;
+	}
+
+	//3D counter clock wise starting at min min bottom, then clock wise top
+	if ( v.size() == 3 )
+	{
+		// 1 = min, min, min
+		std::vector<size_t> dima =
+			{ minMaxEachDim[0].first, minMaxEachDim[1].first, minMaxEachDim[2].first };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 2 = max, min , min
+		dima = { minMaxEachDim[0].second, minMaxEachDim[1].first, minMaxEachDim[2].first };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 3 = max, max, min
+		dima = { minMaxEachDim[0].second, minMaxEachDim[1].second, minMaxEachDim[2].first };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 4 = min, max, min
+		dima = { minMaxEachDim[0].first, minMaxEachDim[1].second, minMaxEachDim[2].first };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 5 = min, min, max
+		dima = { minMaxEachDim[0].first, minMaxEachDim[1].first, minMaxEachDim[2].second };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 6 = max, min, max
+		dima = { minMaxEachDim[0].second, minMaxEachDim[1].first, minMaxEachDim[2].second };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 7 = max, max, max
+		dima = { minMaxEachDim[0].second, minMaxEachDim[1].second, minMaxEachDim[2].second };
+		result.push_back( xyz_to_conseq( dima ) );
+
+		// 8 = min, max, max
+		dima = { minMaxEachDim[0].first, minMaxEachDim[1].second, minMaxEachDim[2].second };
+		result.push_back( xyz_to_conseq( dima ) );
+		return result;
+	}
+
+	error_handling::Error(">4D not implement in the k grid!",4);
+	return result;
 }
 
 } /* namespace parallel */

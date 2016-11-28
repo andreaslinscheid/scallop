@@ -21,6 +21,7 @@
 #define SCALLOP_PARALLEL_GRIDDISTRIBUTION_H_
 
 #include "scallop/auxillary/TemplateTypedefs.h"
+#include "scallop/auxillary/TypeMapComplex.h"
 #include <vector>
 #include <cstdlib>
 
@@ -44,6 +45,7 @@ template<typename T>
 class GridDistribution
 {
 public:
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
 	GridDistribution();
 
@@ -195,6 +197,20 @@ public:
 			bool startFromKSpace,
 			typename auxillary::TemplateTypedefs<T>::scallop_vector & data,
 			size_t blockSize) const;
+
+	/**
+	 * Find the consecutive indices of the corner points in the cube surrounding a vector in the regular grid.
+	 *
+	 *	The ordering of the return vector is clock-wise major, i.e. for 1D we have (min,max) for 2D we have
+	 *	 (min,min),(max,min),(min,max),(max,max) and so on
+	 *
+	 * @param conseqInKGrid	True indicates that the consequitive ordering is in k space, false is R space.
+	 * @param v				The vector in units of the cell.
+	 * @return				A vector with the indices of the corner points in the total grid.
+	 */
+	std::vector<size_t> get_cube_indices_surrounding(
+			bool conseqInKGrid,
+			std::vector<bT> const& v) const;
 private:
 
 	size_t nK_ = 0;

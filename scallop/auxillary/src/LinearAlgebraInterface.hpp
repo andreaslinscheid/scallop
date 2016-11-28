@@ -58,6 +58,57 @@ void LinearAlgebraInterface<T>::matrix_times_matrix(
 }
 
 template<typename T>
+void LinearAlgebraInterface<T>::hermitian_eigensystem(
+		bool data_upper, bool comEV,
+		T * matrix, int dim,
+		bT * eigenval) const
+{
+	char v = ( comEV ?  'v' : 'n' );
+
+	char dataLoc = ( data_upper ? 'U' : 'L' );
+
+	int rworksize = ( 3*dim-2 > 1 ? 3 * dim - 2 : 1 ) ;
+	if ( workbuffer_.size() <  static_cast<size_t>(rworksize) )
+		workbuffer_ = decltype(workbuffer_)( rworksize );
+
+	if ( rWork_.size() != static_cast<size_t>(2*dim) )
+		rWork_ = decltype(rWork_)(2 * dim);
+
+	T work_query;
+	this->call_heev(
+			LAPACK_ROW_MAJOR,
+			v, dataLoc,
+			dim, matrix, dim,
+			eigenval,&work_query,-1,rWork_.data());
+	size_t optimal_size = static_cast<size_t>( work_query.real() ) ;
+	if ( workbuffer_.size() != optimal_size )
+		workbuffer_ = decltype(workbuffer_)( optimal_size );
+
+
+	int lwork = static_cast<int>(optimal_size);
+	int info = this->call_heev(
+			LAPACK_ROW_MAJOR,
+			v, dataLoc,
+			dim, matrix, dim,
+			eigenval,
+			workbuffer_.data(),
+			lwork,
+			rWork_.data());
+
+	inversion_of_matrices_info_checks(info);
+
+	//Ensure phase convention on eigenvectors (real part of the last component is non-negative)
+	for ( int ib = 0 ; ib < dim ; ++ib )
+	{
+		if ( matrix[(dim-1)*dim + ib].real() < 0 )
+			for ( int ibp = 0 ; ibp < dim ; ++ibp )
+			{
+				matrix[ibp*dim + ib] *= T(-1.0);
+			}
+	}
+}
+
+template<typename T>
 template<class D>
 void LinearAlgebraInterface<T>::invert_square_matrix(
 		D & matrix,
