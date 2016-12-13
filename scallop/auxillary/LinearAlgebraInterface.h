@@ -126,7 +126,7 @@ private:
 
 	int call_heev( int matrix_order, char jobz, char uplo,
 			   int n, T * a,
-			   int lda, double* w,
+			   int lda, bT * w,
 			   T * work, int lwork,
 			   bT * rwork) const;
 };

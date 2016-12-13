@@ -68,11 +68,8 @@ void LinearAlgebraInterface<T>::hermitian_eigensystem(
 	char dataLoc = ( data_upper ? 'U' : 'L' );
 
 	int rworksize = ( 3*dim-2 > 1 ? 3 * dim - 2 : 1 ) ;
-	if ( workbuffer_.size() <  static_cast<size_t>(rworksize) )
-		workbuffer_ = decltype(workbuffer_)( rworksize );
-
-	if ( rWork_.size() != static_cast<size_t>(2*dim) )
-		rWork_ = decltype(rWork_)(2 * dim);
+	if ( rWork_.size() != static_cast<size_t>(rworksize) )
+		rWork_ = decltype(rWork_)(rworksize);
 
 	T work_query;
 	this->call_heev(
@@ -122,7 +119,7 @@ void LinearAlgebraInterface<T>::invert_square_matrix(
 	if ( IPIV.size() != static_cast<size_t>(dim) )
 	{
 		IPIV.assign( dim, 0);
-		std::complex<double> * work_query = new std::complex<double> [1];
+		T * work_query = new T [1];
 		info = this->call_getri(LAPACK_ROW_MAJOR,dim,NULL,dim,NULL,work_query,-1);
 		inversion_of_matrices_info_checks(info);
 		workbuffer_.assign( static_cast<int>( work_query[0].real() ) , T(0) );

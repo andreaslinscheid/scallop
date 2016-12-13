@@ -35,6 +35,13 @@ class KohnShamGreensFunctionOrbital : public GreensFunctionOrbital<T>
 public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
+	void set_from_wanHam(
+			bool timeSpace,
+			size_t timeOrFreqDim,
+			bT invTemp,
+			std::vector<size_t> grid,
+			std::string const& fileWannierHamiltonian);
+
 	void set_in_time_space(
 			UnitaryWannierKSBands<T> const& unitaryWannierBands,
 			typename auxillary::TemplateTypedefs<bT>::scallop_vector const& KSBands,

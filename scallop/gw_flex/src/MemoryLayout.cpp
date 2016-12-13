@@ -45,10 +45,20 @@ size_t MemoryLayout::get_nOrb() const
 	return numOrbitals_;
 }
 
-
 size_t MemoryLayout::get_nChnls() const
 {
 	return spinChargeChannels_;
+}
+
+size_t MemoryLayout::memory_layout_2pt_diagonal(size_t l1, size_t a1, size_t s1) const
+{
+	size_t as1 = a1*2+s1;
+	return this->memory_layout_2pt_diagonal_nsc(l1,as1);
+}
+
+size_t MemoryLayout::memory_layout_2pt_diagonal_nsc(size_t l1, size_t as1) const
+{
+	return as1*numOrbitals_+l1;
 }
 
 size_t MemoryLayout::memory_layout_2pt_obj(size_t l1, size_t a1, size_t s1, size_t l2, size_t a2, size_t s2) const

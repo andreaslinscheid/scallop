@@ -20,8 +20,12 @@
 #ifndef SCALLOP_AUXILLARY_BASICFUNCTIONS_H_
 #define SCALLOP_AUXILLARY_BASICFUNCTIONS_H_
 
-namespace scallop {
-namespace auxillary {
+#include <string>
+
+namespace scallop
+{
+namespace auxillary
+{
 
 struct BasicFunctions {
 
@@ -30,6 +34,8 @@ struct BasicFunctions {
 
 	template<typename T>
 	static T matzubara_frequency_of_index(int index, T beta);
+
+	std::string get_scallop_path() const;
 };
 
 template<typename T>

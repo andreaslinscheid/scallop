@@ -20,6 +20,7 @@
 #include "scallop/gw_flex/WannierHamiltonian.h"
 #include "scallop/parallel/MPIModule.h"
 #include "scallop/output/TerminalOut.h"
+#include "scallop/auxillary/LinearAlgebraInterface.h"
 
 namespace scallop
 {
@@ -66,6 +67,7 @@ void WannierHamiltonian<T>::load_wan_ham( std::string const & fileNameWannierHam
 				for ( auto &&rxi : R )
 					read_success = read_success && (file >> rxi);
 				read_success = read_success && (file >> mu >> nu >> hopRe >> hopImag) ;
+				//nu and mu are in the fortran convenction 1...nOrb
 				return read_success;
 			};
 
@@ -78,7 +80,7 @@ void WannierHamiltonian<T>::load_wan_ham( std::string const & fileNameWannierHam
 							+" could not be read successfully!\n Failed at iR="+std::to_string(iR)
 							+", mu="+std::to_string(mu)+", nu="+std::to_string(nu)
 							+", i.e. i="+std::to_string(i));
-				wanHam_[(iR*nOrb_+nu)*nOrb_+mu] = T(hopRe,hopImag);
+				wanHam_[(iR*nOrb_+(nu-1))*nOrb_+(mu-1)] = T(hopRe,hopImag);
 			}
 			std::copy(R.begin(),R.end(),RGrid_.begin()+iR*3);
 		}
@@ -87,19 +89,20 @@ void WannierHamiltonian<T>::load_wan_ham( std::string const & fileNameWannierHam
 	mpi.bcast(weights_, mpi.ioproc_index() );
 	mpi.bcast(RGrid_, mpi.ioproc_index() );
 	mpi.bcast(wanHam_, mpi.ioproc_index() );
+	mpi.bcast(nOrb_, mpi.ioproc_index() );
 };
 
 template<typename T>
-void WannierHamiltonian<T>::compute_at_k( vbT kpts, size_t nkpts, v & unitary, vbT & energyEV ) const
+template<class VbT, class V>
+void WannierHamiltonian<T>::compute_at_k( VbT kpts, size_t nkpts, V & unitary, VbT & energyEV ) const
 {
 	size_t dim = kpts.size()/nkpts;
-	unitary = v( nkpts*nOrb_*nOrb_ );
-	energyEV = vbT( nkpts*nOrb_ );
+	unitary = V( 16*nkpts*nOrb_*nOrb_, typename V::value_type(0) );
+	energyEV = VbT( 4*nkpts*nOrb_ );
 
-	auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector hamltonianAtK( nkpts*nOrb_*nOrb_ );
+	auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector hamltonianAtK( 16*nkpts*nOrb_*nOrb_, std::complex<double>(0) );
 	for ( size_t ik = 0 ; ik < nkpts; ++ik)
 	{
-		std::fill( hamltonianAtK.begin(), hamltonianAtK.end(), 0.0 );
 		for ( size_t iR = 0 ; iR < weights_.size() ; ++iR)
 		{
 			double dprod = 0.0;
@@ -112,6 +115,9 @@ void WannierHamiltonian<T>::compute_at_k( vbT kpts, size_t nkpts, v & unitary, v
 		}
 	}
 
+	MemoryLayout meml;
+	meml.initialize_layout_2pt_obj( nOrb_ );
+
 	auxillary::LinearAlgebraInterface<std::complex<double> > linAlgebra;
 	auxillary::TemplateTypedefs<double>::scallop_vector ev( nOrb_ );
 	for ( size_t ik = 0 ; ik < nkpts; ++ik)
@@ -120,12 +126,19 @@ void WannierHamiltonian<T>::compute_at_k( vbT kpts, size_t nkpts, v & unitary, v
 		//From here on kLocalHamiltonian contains the eigenvectors
 
 		for ( size_t mu = 0 ; mu < nOrb_; ++mu)
-			energyEV[ik*nOrb_+mu] = static_cast<bT>(ev[mu]);
+			for ( size_t a = 0 ; a < 2; ++a)
+				for ( size_t s = 0 ; s < 2; ++s)
+				energyEV[ik*4*nOrb_ + meml.memory_layout_2pt_diagonal(mu,a,s)]
+				         = 1000.0*//eV to meV
+				         	 (a == 0 ? 1.0 : -1.0 )*static_cast<bT>(ev[mu]);
 
+		auto it = &( unitary[ik*nOrb_*nOrb_*16] );
+		std::fill(it,it+nOrb_*nOrb_*16,typename V::value_type(0));
 		//Lapack return the eigenvectors in Column major.
 		for ( size_t mu = 0 ; mu < nOrb_; ++mu)
-			for ( size_t nu = 0 ; nu < nOrb_; ++nu)
-				unitary[(ik*nOrb_+mu)*nOrb_+nu] = hamltonianAtK[(ik*nOrb_+nu)*nOrb_+mu];
+			for ( size_t ns1 = 0 ; ns1 < 4; ++ns1)
+				for ( size_t nu = 0 ; nu < nOrb_; ++nu)
+					unitary[ik*nOrb_*nOrb_*16+meml.memory_layout_2pt_obj_nsc(mu,ns1,nu,ns1)] = hamltonianAtK[(ik*nOrb_+nu)*nOrb_+mu];
 	}
 }
 

@@ -1,4 +1,4 @@
-/*	This file WannierHamiltonian.h is part of scallop.
+/*	This file KPath.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,47 +13,49 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 26, 2016
+ *  Created on: Nov 27, 2016
  *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_WANNIERHAMILTONIAN_H_
-#define SCALLOP_GW_FLEX_WANNIERHAMILTONIAN_H_
+#ifndef SCALLOP_INPUT_KPATH_H_
+#define SCALLOP_INPUT_KPATH_H_
 
 namespace scallop
 {
-namespace gw_flex
+namespace input
 {
 
 template<typename T>
-class WannierHamiltonian
+class KPath
 {
 public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
-	typedef typename auxillary::TemplateTypedefs<T>::scallop_vector v;
-	typedef typename auxillary::TemplateTypedefs<bT>::scallop_vector vbT;
 
-	void load_wan_ham( std::string const & fileNameWannierHam );
+	typedef typename auxillary::TemplateTypedefs<bT>::scallop_vector V;
 
-	template<class VbT, class V>
-	void compute_at_k( VbT kpts, size_t nkpts, V & unitary, VbT & energyEV ) const;
+	void read_kpath_file( std::string const& filename );
 
-	size_t get_nOrb() const;
+	V const& get_k_path() const;
 
+	template<class DT, class OT, typename T2>
+	void band_structure_gnuplot(
+			DT const& data,
+			OT const& omega,
+			parallel::IrregularGridDistribution<T2> const& irrGrid,
+			std::string const& filename,
+			std::string quantityLabel) const;
 private:
 
-	size_t nOrb_ = 0;
+	size_t dim_ = 0;
 
-	vbT RGrid_;
+	V kptsTotal_;
 
-	vbT weights_;
-
-	v wanHam_;
-
+	//Note that we don't need labels_ on processors other than the ioproc
+	std::vector<std::pair<size_t,std::string> > labels_;
 };
 
-} /* namespace gw_flex */
+} /* namespace input */
 } /* namespace scallop */
 
-#include "scallop/gw_flex/src/WannierHamiltonian.hpp"
-#endif /* SCALLOP_GW_FLEX_WANNIERHAMILTONIAN_H_ */
+#include "scallop/input/src/KPath.hpp"
+#endif /* SCALLOP_INPUT_KPATH_H_ */

@@ -51,7 +51,33 @@ void UnitaryWannierKSBands<T>::initialize(
 	this->initialize_layout_2pt_obj(numOrbitals);
 
 	gdistr_.distribute_grid( std::move(spaceGrid) );
+
+	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
+	size_t size= 16*this->get_nOrb()*this->get_nOrb()*nK;
+	assert( data.size() == size );
 	data_ = std::move( data );
+}
+
+template<typename T>
+void UnitaryWannierKSBands<T>::initialize_spin_Nambu_degenerate(
+		std::vector<size_t> spaceGrid,
+		size_t numOrbitals,
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data)
+{
+
+	this->initialize_layout_2pt_obj(numOrbitals);
+
+	gdistr_.distribute_grid( std::move(spaceGrid) );
+
+	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
+	size_t size= this->get_nOrb()*this->get_nOrb()*nK;
+	assert( data.size() == size );
+
+	decltype(data) expData( data.size()*16, T(0) );
+	for ( size_t i = 0 ; i < data.size(); ++i)
+		for ( size_t ns = 0 ; ns < 4; ++ns)
+			expData[(i*4+ns)*4+ns] = data[i];
+	data_ = std::move( expData );
 }
 
 template<typename T>

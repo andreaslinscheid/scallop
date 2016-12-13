@@ -45,6 +45,11 @@ public:
 			size_t numOrbitals,
 			typename auxillary::TemplateTypedefs<T>::scallop_vector data);
 
+	void initialize_spin_Nambu_degenerate(
+			std::vector<size_t> spaceGrid,
+			size_t numOrbitals,
+			typename auxillary::TemplateTypedefs<T>::scallop_vector data);
+
 	T operator() (size_t ik, size_t m1, size_t m2) const;
 
 	T & operator() (size_t ik, size_t m1, size_t m2);

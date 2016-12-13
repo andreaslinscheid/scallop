@@ -90,11 +90,26 @@ void LinearAlgebraInterface< std::complex<double> >::call_gemv(
 }
 
 template<>
+int LinearAlgebraInterface< std::complex<float> >::call_getri(
+		int matrix_order, int n, std::complex<float> * a, int lda,
+		const int * ipiv, std::complex<float> * work, int lwork) const
+{
+	return LAPACKE_cgetri_work(matrix_order,n,a,lda,ipiv,work,lwork);
+}
+
+template<>
 int LinearAlgebraInterface< std::complex<double> >::call_getri(
 		int matrix_order, int n, std::complex<double> * a, int lda,
 		const int * ipiv, std::complex<double> * work, int lwork) const
 {
 	return LAPACKE_zgetri_work(matrix_order,n,a,lda,ipiv,work,lwork);
+}
+
+template<>
+float LinearAlgebraInterface< std::complex<float> >::call_lange(
+		int matrix_order, char norm, int m, int n, const std::complex<float> * a,  int lda) const
+{
+	return LAPACKE_clange(matrix_order,norm,m,n,a,lda);
 }
 
 template<>
@@ -105,6 +120,13 @@ double LinearAlgebraInterface< std::complex<double> >::call_lange(
 }
 
 template<>
+int LinearAlgebraInterface< std::complex<float> >::call_getrf(
+		int matrix_order, int m, int n, std::complex<float> * a, int lda, int * ipiv ) const
+{
+	return LAPACKE_cgetrf_work(matrix_order,m,n,a,lda,ipiv);
+}
+
+template<>
 int LinearAlgebraInterface< std::complex<double> >::call_getrf(
 		int matrix_order, int m, int n, std::complex<double> * a, int lda, int * ipiv ) const
 {
@@ -112,10 +134,28 @@ int LinearAlgebraInterface< std::complex<double> >::call_getrf(
 }
 
 template<>
+int LinearAlgebraInterface< std::complex<float> >::call_gecon(
+		int matrix_order, char norm, int n, const std::complex<float> * a, int lda, float anorm, float * rcond ) const
+{
+	return LAPACKE_cgecon(matrix_order,norm, n, a, lda, anorm, rcond);
+}
+
+template<>
 int LinearAlgebraInterface< std::complex<double> >::call_gecon(
 		int matrix_order, char norm, int n, const std::complex<double> * a, int lda, double anorm, double * rcond ) const
 {
 	return LAPACKE_zgecon(matrix_order,norm, n, a, lda, anorm, rcond);
+}
+
+template<>
+int LinearAlgebraInterface< std::complex<float> >::call_heev(
+		int matrix_order, char jobz, char uplo,
+		   int n, std::complex<float>  * a,
+		   int lda, float* w,
+		   std::complex<float>  * work, int lwork,
+		   float * rwork) const
+{
+	return LAPACKE_cheev_work(matrix_order,jobz, uplo, n, a, lda,w,work,lwork,rwork);
 }
 
 template<>

@@ -450,16 +450,13 @@ GreensFunctionOrbital<T> GreensFunctionOrbital_test<T>::construct_gf_bnd(
 				for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
 					for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
 						for ( size_t l2 = 0 ; l2 < nBnd ; ++l2 )
-							for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
-								for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 								{
-									bT energy = bnd(tuple,l1,a1,s1,l2,a2,s2);
+									bT energy = bnd(tuple,l1,a1,s1,l2,a1,s1);
 
 									int frequencyIndex =
 											(i < nTimeSteps/2 ? static_cast<int>(i) : static_cast<int>(i)-static_cast<int>(nTimeSteps) );
 
-									gf(ik,i,l1,a1,s1,l2,a2,s2) = (a1==a2? 1.0:0.0 )*( s1==s2 ? 1.0:0.0 )
-									     * 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
+									gf(ik,i,l1,a1,s1,l2,a1,s1) = 1.0 / ( T(0,M_PI / beta * ( 2*frequencyIndex+1 ) ) - energy );
 								}
 	}
 

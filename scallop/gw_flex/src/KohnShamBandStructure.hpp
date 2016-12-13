@@ -28,6 +28,11 @@ namespace gw_flex
 {
 
 template<typename T>
+KohnShamBandStructure<T>::KohnShamBandStructure()
+{
+}
+
+template<typename T>
 void KohnShamBandStructure<T>::initialize_from_file(
 		std::vector<size_t> grid,
 		std::string const & fileName )
@@ -77,6 +82,8 @@ void KohnShamBandStructure<T>::initialize_from_file(
 		this->set_model( file );
 	}
 
+	this->initialize_layout_2pt_obj( this->get_nOrb() );
+
 	typename auxillary::TemplateTypedefs<T>::scallop_vector unitary;
 	this->compute_at_k(kpoints,nK,enk_,unitary);
 
@@ -104,17 +111,30 @@ void KohnShamBandStructure<T>::set_model(std::istream & stream)
 }
 
 template<typename T>
+template<class VbT, class V>
 void KohnShamBandStructure<T>::compute_at_k(
-		vbt const& kpoints,size_t nK,vbt & enk,v unitary) const
+		VbT const& kpoints,size_t nK,VbT & enk,V & unitary) const
 {
 	if ( useModel_ )
 	{
-		model_->compute_at_k(kpoints,nK,unitary,enk);
+		vbt kpoints_cpy(kpoints.begin(),kpoints.end());
+		vbt enk_cpy;
+		v unitary_cpy;
+		model_->compute_at_k(kpoints_cpy,nK,unitary_cpy,enk_cpy);
+		enk = VbT(enk_cpy.begin(),enk_cpy.end());
+		unitary = V(unitary_cpy.begin(),unitary_cpy.end());
 	}
 	else
 	{
 		wanHam_.compute_at_k(kpoints,nK,unitary,enk);
 	}
+
+	//apply the internal chemical potential offset
+	for ( auto &e : enk )
+		e -= mu_;
+
+	assert( enk.size() == nK*this->get_nOrb()*4 );
+	assert( unitary.size() == nK*this->get_nOrb()*4*this->get_nOrb()*4 );
 }
 
 template<typename T>
@@ -127,9 +147,42 @@ size_t KohnShamBandStructure<T>::get_nOrb() const
 
 template<typename T>
 typename KohnShamBandStructure<T>::bT
-KohnShamBandStructure<T>::operator ()(size_t ik , size_t n) const
+KohnShamBandStructure<T>::operator ()(size_t ik, size_t n, size_t spinCnl, size_t phCnl) const
 {
-	return enk_[ik*this->get_nOrb()+n];
+	size_t dIndex = ik*this->get_nOrb()*4 + this->memory_layout_2pt_diagonal(n,phCnl,spinCnl);
+	ASSERT( dIndex < enk_.size(),\
+			std::string("Out of range: index is ")\
+			+std::to_string(dIndex)+" while range is "+std::to_string(enk_.size()) );
+	return enk_[dIndex];
+}
+
+template<typename T>
+UnitaryWannierKSBands<T> const &
+KohnShamBandStructure<T>::get_unitary() const
+{
+	return akil_;
+}
+
+template<typename T>
+typename KohnShamBandStructure<T>::vbt const &
+KohnShamBandStructure<T>::get_bands() const
+{
+	return enk_;
+}
+
+template<typename T>
+void KohnShamBandStructure<T>::set_chem_pot( bT chemicalPotential )
+{
+	bT shift = (chemicalPotential-mu_);
+	for ( auto &e : enk_ )
+		e -= shift;
+	mu_ = chemicalPotential;
+}
+
+template<typename T>
+void KohnShamBandStructure<T>::adjust_filling( bT numElectronPerSpin )
+{
+
 }
 
 } /* namespace gw_flex */

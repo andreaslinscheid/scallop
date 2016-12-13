@@ -493,7 +493,9 @@ T const * FFTBase<T>::read_phs_grid_ptr_block(size_t iGrid, size_t it ) const
 	if ( ! isKSpace_ )
 		igdata = spaceGrid_.R_conseq_local_to_data_conseq( iGrid );
 	size_t dIndex = (igdata*dimTimeFT_+it)*blockSize_;
-	assert( dIndex < data_.size() );
+	ASSERT( dIndex < data_.size(),\
+			std::string("Out of range: index is ")\
+			+std::to_string(dIndex)+" while range is "+std::to_string(data_.size()) );
 	return &(data_[ dIndex ]);
 }
 
@@ -506,20 +508,30 @@ T * FFTBase<T>::write_phs_grid_ptr_block(size_t iGrid, size_t it )
 	if ( ! isKSpace_ )
 		igdata = spaceGrid_.R_conseq_local_to_data_conseq( iGrid );
 	size_t dIndex = (igdata*dimTimeFT_+it)*blockSize_;
-	assert( dIndex < data_.size() );
+	ASSERT( dIndex < data_.size(),\
+			std::string("Out of range: index is ")\
+			+std::to_string(dIndex)+" while range is "+std::to_string(data_.size()) );
 	return &(data_[ dIndex ]);
 }
 
 template<typename T>
 T const * FFTBase<T>::read_data_ptr_block(size_t iGrid, size_t it ) const
 {
-	return &(data_[ (iGrid*dimTimeFT_+it)*blockSize_ ]);
+	size_t dIndex = (iGrid*dimTimeFT_+it)*blockSize_;
+	ASSERT( dIndex < data_.size(),\
+			std::string("Out of range: index is ")\
+			+std::to_string(dIndex)+" while range is "+std::to_string(data_.size()) );
+	return &(data_[ dIndex ]);
 }
 
 template<typename T>
 T * FFTBase<T>::write_data_ptr_block(size_t iGrid, size_t it )
 {
-	return &(data_[ (iGrid*dimTimeFT_+it)*blockSize_ ]);
+	size_t dIndex = (iGrid*dimTimeFT_+it)*blockSize_;
+	ASSERT( dIndex < data_.size(),\
+			std::string("Out of range: index is ")\
+			+std::to_string(dIndex)+" while range is "+std::to_string(data_.size()) );
+	return &(data_[ dIndex ]);
 }
 
 template<typename T>

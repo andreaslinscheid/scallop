@@ -18,12 +18,27 @@
  */
 
 #include "scallop/gw_flex/KohnShamGreensFunctionOrbital.h"
+#include "scallop/gw_flex/KohnShamBandStructure.h"
 #include "scallop/auxillary/LinearAlgebraInterface.h"
 
 namespace scallop
 {
 namespace gw_flex
 {
+
+template<typename T>
+void KohnShamGreensFunctionOrbital<T>::set_from_wanHam(
+		bool timeSpace,
+		size_t timeOrFreqDim,
+		bT invTemp,
+		std::vector<size_t> grid,
+		std::string const& fileWannierHamiltonian)
+{
+	KohnShamBandStructure<T> bands;
+	bands.initialize_from_file( grid, fileWannierHamiltonian );
+
+	this->set_in_both_spaces( timeOrFreqDim, invTemp, timeSpace, bands.get_unitary(), bands.get_bands());
+}
 
 template<typename T>
 void KohnShamGreensFunctionOrbital<T>::set_in_time_space(

@@ -76,7 +76,6 @@ void SelfEnergy_test<T>::creation_test()
 		GeneralizedSusceptibility<T> sust;
 		sust.compute_from_gf( gf );
 
-		se.set_to_zero();
 		se.add_electronic_selfenergy( gf , sust);
 
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )

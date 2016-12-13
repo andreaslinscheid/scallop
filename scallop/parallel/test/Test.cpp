@@ -19,6 +19,8 @@
 
 #include "scallop/parallel/test/Test.h"
 #include "scallop/parallel/test/GridDistribution_test.h"
+#include "scallop/parallel/test/MPIModule_test.hpp"
+#include "scallop/parallel/test/IrregularGridDistribution_test.hpp"
 #include <vector>
 #include <complex>
 
@@ -33,13 +35,18 @@ void Test::run_test()
 {
 	typedef std::complex<double> T;
 
+	parallel::test::MPIModule_test<T> mpitest;
+	mpitest.test_all();
+
 	//testing the scallop vector
 	auxillary::TemplateTypedefs<T>::scallop_vector aTest(5, T(0) );
-
 
 	GridDistribution_test<T> grid_test;
 	grid_test.simple_grid_3D();
 	grid_test.simple_grid_2D();
+
+	IrregularGridDistribution_test<T> irregularGridTest;
+	irregularGridTest.test_all();
 }
 
 } /* namespace test */

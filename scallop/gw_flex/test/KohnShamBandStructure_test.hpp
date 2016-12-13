@@ -71,15 +71,15 @@ void KohnShamBandStructure_test<T>::test_2_bnd_cos()
 		size_t mid = grid[1]*grid[0]/2+grid[0]/2;
 		if ( ictotal == mid)
 		{
-			std::cout << "\tValue at Q=(pi,pi): band 1:" << e(mid,0)
-						<< " band 2:" << e(mid,1)   << std::endl;
-			assert( (std::abs( e(mid,1) + 20.0) < 0.0000001) );
+			std::cout << "\tValue at Q=(pi,pi): band 1: " << e(ik,0,0,0)
+						<< "eV; band 2: " << e(ik,1,0,0) << "eV"  << std::endl;
+			assert( (std::abs( e(ik,1,0,0) + 20.0) < 0.0000001) );
 		}
 		if ( ictotal == 0 )
 		{
-			std::cout << "\tValue at Q=(0,0): band 1:" << e(0,0)
-						<< " band 2:" << e(0,1)   << std::endl;
-			assert( (std::abs( e(0,0) - 10.0) < 0.0000001) );
+			std::cout << "\tValue at Q=(0,0): band 1: " << e(0,0,0,0)
+						<< "eV; band 2: " << e(0,1,0,0) <<"eV" << std::endl;
+			assert( (std::abs( e(0,0,0,0) - 10.0) < 0.0000001) );
 		}
 	}
 }

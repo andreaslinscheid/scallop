@@ -61,7 +61,7 @@ void GridDistribution_test<T>::simple_grid_2D()
 	}
 	for ( size_t ig = 0 ; ig < gridD.get_num_k_grid(); ++ig )
 	{
-		std::vector<size_t> tuple = gridD.k_conseq_to_xyz( ig );
+		std::vector<size_t> tuple = gridD.k_local_conseq_to_xyz( ig );
 		size_t expect = tuple[0]*gridD.get_k_grid()[1]+tuple[1];
 		assert( expect == ig);
 	}
@@ -138,7 +138,7 @@ void GridDistribution_test<T>::simple_grid_2D()
 	}
 	for ( size_t ig = 0 ; ig < gridD.get_num_R_grid(); ++ig )
 	{
-		std::vector<size_t> tuple = gridD.R_conseq_to_xyz( ig );
+		std::vector<size_t> tuple = gridD.R_local_conseq_to_xyz( ig );
 		size_t expect = tuple[1]*gridD.get_R_grid()[0]+tuple[0];
 		assert( expect == ig);
 	}
@@ -282,6 +282,21 @@ void GridDistribution_test<T>::simple_grid_2D()
 
 	mpi.barrier();
 	assert( ( diff.real() < 0.00001 )&&( diff.imag() < 0.00001 ) );
+
+	msg << "Testing further grid functionality:";
+	if ( mpi.get_nproc() == 2 )
+	{
+		gridD.distribute_grid( {5, 5} );
+		std::vector<size_t> expect = {0,5,6,1};
+		if ( ! (expect == gridD.get_cube_indices_surrounding(/*in k space*/true, {0,0} ) ) )
+			error_handling::Error(std::string()+"Check failed on proc"+std::to_string( mpi.get_mpi_me() ));
+
+		if ( ! (0 == gridD.get_proc_index( true, 0 ) ) )
+			error_handling::Error(std::string()+"Check failed on proc"+std::to_string( mpi.get_mpi_me() ));
+
+		if ( ! (1 == gridD.get_proc_index( true, 15 ) ) )
+			error_handling::Error(std::string()+"Check failed on proc"+std::to_string( mpi.get_mpi_me() ));
+	}
 }
 
 template<typename T>
@@ -310,13 +325,13 @@ void GridDistribution_test<T>::simple_grid_3D()
 	}
 	for ( size_t ig = 0 ; ig < gridD.get_num_k_grid(); ++ig )
 	{
-		std::vector<size_t> tuple = gridD.k_conseq_to_xyz( ig );
+		std::vector<size_t> tuple = gridD.k_local_conseq_to_xyz( ig );
 		size_t expect = (tuple[0]*gridD.get_k_grid()[1]+tuple[1])*gridD.get_k_grid()[2]+tuple[2];
 		assert( expect == ig);
 	}
 	for ( size_t ig = 0 ; ig < gridD.get_num_R_grid(); ++ig )
 	{
-		std::vector<size_t> tuple = gridD.R_conseq_to_xyz( ig );
+		std::vector<size_t> tuple = gridD.R_local_conseq_to_xyz( ig );
 		size_t expect = (tuple[2]*gridD.get_R_grid()[1]+tuple[1])*gridD.get_R_grid()[0]+tuple[0];
 		assert( expect == ig);
 	}

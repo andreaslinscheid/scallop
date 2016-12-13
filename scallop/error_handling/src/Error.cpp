@@ -18,6 +18,7 @@
  */
 
 #include "scallop/error_handling/Error.h"
+#include "scallop/parallel/MPIModule.h"
 #include <string>
 #include <cstdlib>
 #include <iostream>
@@ -58,27 +59,28 @@ void Error::call_error_no_ref(std::string const& description,int errorCode){
 	std::cout << "ERROR occurred!";
 	if ( not description.empty() )
 		std::cout << "\tProblem description : " <<description << std::endl;
-
 	//If we are using debugging symbols generate a stack trace
 #ifdef DEBUG_BUILD
 	handler(errorCode);
 #else
-	std::exit(errorCode);
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	mpi.abort( errorCode );
 #endif
 }
 
 //backtrace and backtrace_symbols_fd do not malloc and should thus be ok to call on throw.
 void signal_handler(int signal) {
 	 void * stackEntries[20];
-	  size_t size;
+	size_t size;
 
-	  //get pointers to all entries on the stack
-	  size = backtrace(stackEntries, 20);
+	//get pointers to all entries on the stack
+	size = backtrace(stackEntries, 20);
 
-	  // print out all the frames to stderr
-	  std::cerr << "Error: signal %d:\n" << signal << std::endl;
-	  backtrace_symbols_fd(stackEntries, size, STDERR_FILENO);
-	  std::exit(1);
+	// print out all the frames to stderr
+	std::cerr << "Error: signal %d:\n" << signal << std::endl;
+	backtrace_symbols_fd(stackEntries, size, STDERR_FILENO);
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	mpi.abort( signal );
 }
 
 void Error::handler(int signal) {

@@ -1,4 +1,4 @@
-/*	This file Test.h is part of scallop.
+/*	This file DataRearrangement.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,47 +13,34 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Oct 28, 2016
- *      Author: alinsch
+ *  Created on: Dec 1, 2016
+ *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_TEST_TEST_H_
-#define SCALLOP_GW_FLEX_TEST_TEST_H_
+#ifndef SCALLOP_AUXILLARY_DATAREARRANGEMENT_H_
+#define SCALLOP_AUXILLARY_DATAREARRANGEMENT_H_
 
-namespace scallop {
-namespace gw_flex {
-namespace test {
+namespace scallop
+{
+namespace auxillary
+{
 
-class Test
+template<typename T>
+class DataRearrangement
 {
 public:
-	void run_test();
 
+	void redistribute_locally(
+			T & data,
+			std::vector<size_t> const& gridIndicesMapOldToNew,
+			size_t blockSize);
 private:
 
-	void test_time_freq_Fourier_transform();
-
-	void test_GreensFunctionOrbital();
-
-	void test_FFTBase();
-
-	void test_UnitaryWannierKSBands();
-
-	void test_Susceptibility();
-
-	void test_phonon_gf();
-
-	void test_InteractionMatrix();
-
-	void test_selfEnergy();
-
-	void test_KSBandstructure();
-
-	void test_MandyBodyBandStructure();
+	T buffer_;
 };
 
-} /* namespace test */
-} /* namespace gw_flex */
+} /* namespace auxillary */
 } /* namespace scallop */
 
-#endif /* SCALLOP_GW_FLEX_TEST_TEST_H_ */
+#include "scallop/auxillary/src/DataRearrangement.hpp"
+#endif /* SCALLOP_AUXILLARY_DATAREARRANGEMENT_H_ */

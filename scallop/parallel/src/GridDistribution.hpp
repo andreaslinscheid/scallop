@@ -22,6 +22,7 @@
 #include "scallop/parallel/MPIModule.h"
 #include "scallop/output/TerminalOut.h"
 #include <set>
+#include <assert.h>
 
 namespace scallop
 {
@@ -124,6 +125,24 @@ void GridDistribution<T>::distribute_dim(
 }
 
 template<typename T>
+void GridDistribution<T>::get_cell_vectors(
+		std::vector<bT> const& v ,
+		std::vector<bT> & lowerCorner,
+		std::vector<bT> & upperCorner ) const
+{
+	lowerCorner = upperCorner = v;
+	for ( size_t i = 0 ; i < v.size(); i++ )
+	{
+		//min, max index in a periodic grid
+		bT vfbz = v[i]-std::floor(v[i]);
+		bT vcellmin = std::floor(vfbz*totalGrid_[i])/totalGrid_[i];
+		bT vcellmax = (std::floor(vfbz*totalGrid_[i])+1.0)/totalGrid_[i];
+		lowerCorner[i]=vcellmin;
+		upperCorner[i]=vcellmax;
+	}
+}
+
+template<typename T>
 size_t GridDistribution<T>::get_dim() const
 {
 	return totalGrid_.size();
@@ -187,18 +206,46 @@ size_t GridDistribution<T>::R_conseq_local_to_data_conseq( size_t iR ) const
 	return iR;
 }
 
+
 template<typename T>
 std::vector<size_t> & GridDistribution<T>::k_conseq_to_xyz( size_t ik ) const
 {
-	this->general_conseq_to_xyz_column_major( procGridk_, tupleBuff_, ik );
+	this->general_conseq_to_xyz_column_major( totalGrid_, tupleBuff_, ik );
 	return tupleBuff_;
 }
 
 template<typename T>
 std::vector<size_t> & GridDistribution<T>::R_conseq_to_xyz( size_t iR ) const
 {
+	this->general_conseq_to_xyz_row_major( totalGrid_, tupleBuff_, iR);
+	return tupleBuff_;
+}
+
+template<typename T>
+std::vector<size_t> & GridDistribution<T>::k_local_conseq_to_xyz( size_t ik ) const
+{
+	this->general_conseq_to_xyz_column_major( procGridk_, tupleBuff_, ik );
+	return tupleBuff_;
+}
+
+template<typename T>
+std::vector<size_t> & GridDistribution<T>::R_local_conseq_to_xyz( size_t iR ) const
+{
 	this->general_conseq_to_xyz_row_major( procGridR_, tupleBuff_, iR);
 	return tupleBuff_;
+}
+
+template<typename T>
+size_t GridDistribution<T>::k_xyz_total_to_conseq_local( std::vector<size_t> tuple ) const
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	int coord = static_cast<int>(tuple.front())-static_cast<int>(parallelMapk_[ mpi.get_mpi_me() ].first);
+#ifdef DEBUG_BUILD
+	if ( (coord < 0) || (coord >= static_cast<int>(parallelMapk_[ mpi.get_mpi_me() ].second)) )
+		error_handling::Error("The tuple passed corresponds to a grid vector out of range of this processor.");
+#endif
+	tuple.front() = static_cast<size_t>(coord);
+	return this->k_xyz_to_conseq( tuple );
 }
 
 template<typename T>
@@ -218,7 +265,7 @@ template<typename T>
 size_t GridDistribution<T>::R_xyz_to_conseq( std::vector<size_t> const& tuple ) const
 {
 	size_t index;
-	this->general_xyz_to_conseq_row_major( procGridR_, tuple, index );
+	this->general_xyz_to_conseq_row_major( totalGrid_, tuple, index );
 	return index;
 }
 
@@ -226,7 +273,7 @@ template<typename T>
 size_t GridDistribution<T>::k_xyz_to_conseq( std::vector<size_t> const& tuple ) const
 {
 	size_t index;
-	this->general_xyz_to_conseq_column_major( procGridk_, tuple, index );
+	this->general_xyz_to_conseq_column_major( totalGrid_, tuple, index );
 	return index;
 }
 
@@ -234,7 +281,7 @@ template<typename T>
 std::vector<size_t> & GridDistribution<T>::k_conseq_local_to_xyz_total( size_t ik ) const
 {
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
-	tupleBuff_ = this->k_conseq_to_xyz( ik );
+	tupleBuff_ = this->k_local_conseq_to_xyz( ik );
 	tupleBuff_.front() += parallelMapk_[ mpi.get_mpi_me() ].first;
 	return tupleBuff_;
 }
@@ -243,7 +290,7 @@ template<typename T>
 std::vector<size_t> & GridDistribution<T>::R_conseq_local_to_xyz_total( size_t iR ) const
 {
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
-	tupleBuff_ = this->R_conseq_to_xyz( iR );
+	tupleBuff_ = this->R_local_conseq_to_xyz( iR );
 	tupleBuff_.back() += parallelMapR_[ mpi.get_mpi_me() ].first;
 	return tupleBuff_;
 }
@@ -304,13 +351,13 @@ void GridDistribution<T>::grid_data_transposition(
 		oldToNewAligned[ig] = newAlignedIndex;
 	}
 
-	this->redistribute_locally( data, oldToNewAligned, blockSize );
+	redistrb_.redistribute_locally( data, oldToNewAligned, blockSize );
 
 #ifdef MPI_PARALLEL
 	//Now we exchange the data among processors
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 	size_t procBlockSize = nProcGridData_*blockSize/mpi.get_nproc();
-	mpi.all_to_all<T>( data, procBlockSize );
+	mpi.all_to_all( data, procBlockSize );
 
 	//At this point, the data is incoherent. At each processor we have NProc patches of sorted data
 	//The ordering of data within such a patch is described by blockLocalGrid, the local grid
@@ -344,7 +391,7 @@ void GridDistribution<T>::grid_data_transposition(
 				mapSyncToNewLayout[count++]=(ip*nPerBlock+ib)*orderedDim+ig;
 			}
 
-	this->redistribute_locally( data, mapSyncToNewLayout, blockSize );
+	redistrb_.redistribute_locally( data, mapSyncToNewLayout, blockSize );
 
 #endif
 }
@@ -410,7 +457,7 @@ void GridDistribution<T>::general_xyz_to_conseq_column_major(
 	conseq_index = indexTouple.front();
 	for ( int i = 1; i < static_cast<int>(indexTouple.size()) ; ++i)
 	{
-		conseq_index *= procGridDatak_[i];
+		conseq_index *= grid[i];
 		conseq_index += indexTouple[i];
 	}
 }
@@ -441,61 +488,6 @@ void GridDistribution<T>::general_conseq_to_xyz_column_major(
 }
 
 template<typename T>
-void GridDistribution<T>::redistribute_locally(
-		typename auxillary::TemplateTypedefs<T>::scallop_vector & data,
-		std::vector<size_t> const& gridIndicesMapOldToNew,
-		size_t blockSize) const
-{
-	if ( buffer_.size() != blockSize )
-		buffer_ = std::vector<T>(blockSize);
-
-	//reshuffel the data according to the index map
-	std::set<size_t> mappedIndices;
-	std::vector< std::vector<std::pair<size_t,size_t> > > copyLoops;
-	for ( size_t i = 0; i < gridIndicesMapOldToNew.size(); ++i )
-	{
-		if ( mappedIndices.find(i) != mappedIndices.end() )
-			continue;
-		std::vector<std::pair<size_t,size_t> > loop;
-		size_t step = i;
-		do
-		{
-			mappedIndices.insert(step);
-			if ( step == gridIndicesMapOldToNew[step] )
-				break;
-			loop.push_back( std::make_pair(step,gridIndicesMapOldToNew[step]) );
-			step = gridIndicesMapOldToNew[step];
-		} while ( step != i );
-		if ( ! loop.empty() )
-			loop.pop_back();//we do not need the last copy that closes the loop
-
-		if ( ! loop.empty() )
-			copyLoops.push_back( std::move(loop) );
-	}
-	for ( auto l : copyLoops )
-	{
-		//fill buffer with the first target
-		std::copy( data.begin()+l.front().first*blockSize,
-				data.begin()+(l.front().first+1)*blockSize,
-				buffer_.begin());
-
-		for ( auto element : l )
-		{
-			//reshuffel data. The loop makes sure we never overwrite data
-			// that is not already copied inside the array or in the buffer.
-			std::copy( data.begin()+element.second*blockSize,
-					data.begin()+(element.second+1)*blockSize,
-					data.begin()+element.first*blockSize);
-		}
-
-		//finally, copy the buffer to the last source
-		std::copy(buffer_.begin(),
-				buffer_.end(),
-				data.begin()+l.back().second*blockSize);
-	}
-}
-
-template<typename T>
 std::vector<size_t>
 GridDistribution<T>::get_cube_indices_surrounding(
 		bool conseqInKGrid,
@@ -518,8 +510,9 @@ GridDistribution<T>::get_cube_indices_surrounding(
 
 	auto xyz_to_conseq = [&] (std::vector<size_t> const& tuple )
 		{
-			return conseqInKGrid ? this->k_xyz_to_conseq( tuple )
+			size_t r = conseqInKGrid ? this->k_xyz_to_conseq( tuple )
 						: this->R_xyz_to_conseq( tuple );
+			return r;
 		};
 
 	//1D
@@ -591,6 +584,57 @@ GridDistribution<T>::get_cube_indices_surrounding(
 
 	error_handling::Error(">4D not implement in the k grid!",4);
 	return result;
+}
+
+template<typename T>
+size_t GridDistribution<T>::get_proc_index( bool isInKSpace, size_t conseq ) const
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	size_t checkRange;
+	decltype(parallelMapk_) paraM;
+	if ( isInKSpace )
+	{
+		tupleBuff_ = this->k_conseq_to_xyz( conseq );
+		checkRange = tupleBuff_.front();
+		paraM = parallelMapk_;
+	}
+	else
+	{
+		tupleBuff_ = this->R_conseq_to_xyz( conseq );
+		checkRange = tupleBuff_.back();
+		paraM = parallelMapR_;
+	}
+	for ( size_t ip = 0 ;ip < mpi.get_nproc() ; ++ip)
+		if ( ( checkRange >= paraM[ip].first ) && ( checkRange < paraM[ip].second ) )
+			return ip;
+
+	error_handling::Error("Could not match processor");
+	return 0;
+}
+
+template<typename T>
+size_t GridDistribution<T>::conseq_full_to_conseq_local(
+		bool conseqInKGrid,
+		size_t cfg) const
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	assert( this->get_proc_index(conseqInKGrid,cfg) == mpi.get_mpi_me() );
+
+	size_t iclocal = 0;
+	if ( conseqInKGrid )
+	{
+		tupleBuff_ = this->k_conseq_to_xyz( cfg );
+		iclocal = this->k_xyz_total_to_conseq_local(tupleBuff_);
+		assert( iclocal < this->get_num_k_grid());
+	}
+	else
+	{
+		tupleBuff_ = this->R_conseq_to_xyz( cfg );
+		iclocal = this->R_xyz_total_to_conseq_local(tupleBuff_);
+		assert( iclocal < this->get_num_R_grid());
+	}
+	return iclocal;
 }
 
 } /* namespace parallel */

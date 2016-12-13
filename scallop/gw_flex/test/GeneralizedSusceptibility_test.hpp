@@ -302,20 +302,20 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 	msg << "\tFT to frequency space ...";
 	sust_.transform_itime_Mfreq(beta);
 
+	size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[1]/2;
 	for (size_t ik = 0 ; ik < sust_.get_spaceGrid_proc().get_num_k_grid(); ++ik)
 	{
 		auto tuple = sust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
 		size_t ictotal = sust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
-		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
 		if ( ictotal == mid)
 		{
-			std::cout << "\tValue at Q=(pi,pi):" << sust_(ictotal,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(sust_(ictotal,0,0,0,0,0))+0.1) < 0.00001)
-					and (std::abs( std::imag(sust_(ictotal,0,0,0,0,0)) ) < 0.00001 ) );
+			std::cout << "\tValue at Q=(pi,pi):" << sust_(ik,0,0,0,0,0) << std::endl;
+			assert( (std::abs( std::real(sust_(ik,0,0,0,0,0))+0.1) < 0.00001)
+					and (std::abs( std::imag(sust_(ik,0,0,0,0,0)) ) < 0.00001 ) );
 		}
 		if ( ictotal == 0 )
 		{
-			std::cout << "\tValue at Q=(0,0):" << sust_(ictotal,0,0,0,0,0) << std::endl;
+			std::cout << "\tValue at Q=(0,0):" << sust_(ik,0,0,0,0,0) << std::endl;
 		}
 	}
 }
@@ -328,21 +328,21 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 	msg << "Testing the copy of the charge channel";
 	csust_.copy_charge_part(sust_);
 
-	auto spaceGrid = sust_.get_spaceGrid_proc().get_k_grid();
+	auto spaceGrid = csust_.get_spaceGrid_proc().get_grid();
+	size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[1]/2;
 	for (size_t ik = 0 ; ik < csust_.get_spaceGrid_proc().get_num_k_grid(); ++ik)
 	{
 		auto tuple = csust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
 		size_t ictotal = csust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
-		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
 		if ( ictotal == mid)
 		{
-			std::cout << "\tValue at Q=(pi,pi):" << csust_(ictotal,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(csust_(ictotal,0,0,0,0,0))+0.1) < 0.00001)
-					and (std::abs( std::imag(csust_(ictotal,0,0,0,0,0)) ) < 0.00001 ) );
+			std::cout << "\tValue at Q=(pi,pi):" << csust_(ik,0,0,0,0,0) << std::endl;
+			assert( (std::abs( std::real(csust_(ik,0,0,0,0,0))+0.1) < 0.00001)
+					and (std::abs( std::imag(csust_(ik,0,0,0,0,0)) ) < 0.00001 ) );
 		}
 		if ( ictotal == 0 )
 		{
-			std::cout << "\tValue at Q=(0,0):" << csust_(ictotal,0,0,0,0,0) << std::endl;
+			std::cout << "\tValue at Q=(0,0):" << csust_(ik,0,0,0,0,0) << std::endl;
 		}
 	}
 
@@ -357,16 +357,15 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 	{
 		auto tuple = csust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
 		size_t ictotal = csust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
-		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
 		if ( ictotal == mid)
 		{
-			std::cout << "\tValue at Q=(pi,pi):" << csust_(ictotal,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(csust_(ictotal,0,0,0,0,0))+72.95) < 0.01)
-					and (std::abs( std::imag(csust_(ictotal,0,0,0,0,0)) ) < 0.001 ) );
+			std::cout << "\tValue at Q=(pi,pi):" << csust_(ik,0,0,0,0,0) << std::endl;
+			assert( (std::abs( std::real(csust_(ik,0,0,0,0,0))+72.95) < 0.01)
+					and (std::abs( std::imag(csust_(ik,0,0,0,0,0)) ) < 0.001 ) );
 		}
 		if ( ictotal == 0 )
 		{
-			std::cout << "\tValue at Q=(0,0):" << csust_(ictotal,0,0,0,0,0) << std::endl;
+			std::cout << "\tValue at Q=(0,0):" << csust_(ik,0,0,0,0,0) << std::endl;
 		}
 	}
 
@@ -379,7 +378,6 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 	{
 		auto tuple = sust_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
 		size_t ictotal = sust_.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
-		size_t mid = spaceGrid[1]*(spaceGrid[0]/2)+spaceGrid[0]/2;
 		if ( ictotal == mid)
 		{
 			std::cout << "\tValues at Q=(pi,pi):\n\tjp=\t1\t2\t3\t4";
@@ -388,7 +386,7 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 				std::cout << "\n\tj=" << j;
 				for (size_t jp = 0 ; jp < 4; ++jp)
 				{
-					std::cout << '\t' << sust_(ictotal,0,j,jp,0,0);
+					std::cout << '\t' << sust_(ik,0,j,jp,0,0);
 				}
 			}
 			std::cout << std::endl;
@@ -401,7 +399,7 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 				std::cout << "\n\tj=" << j;
 				for (size_t jp = 0 ; jp < 4; ++jp)
 				{
-					std::cout << '\t' << sust_(ictotal,0,j,jp,0,0);
+					std::cout << '\t' << sust_(ik,0,j,jp,0,0);
 				}
 			}
 			std::cout << std::endl;

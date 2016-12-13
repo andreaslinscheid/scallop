@@ -30,31 +30,40 @@ namespace gw_flex
 {
 
 template<typename T >
-class KohnShamBandStructure
+class KohnShamBandStructure : private MemoryLayout
 {
 public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 	typedef typename auxillary::TemplateTypedefs<T>::scallop_vector v;
 	typedef typename auxillary::TemplateTypedefs<bT>::scallop_vector vbt;
 
+	KohnShamBandStructure();
+
 	void initialize_from_file(
 			std::vector<size_t> grid,
 			std::string const & fileName );
 
-	bT operator() (size_t ik, size_t n) const;
+	bT operator() (size_t ik, size_t n, size_t spinCnl, size_t phCnl) const;
 
 	UnitaryWannierKSBands<T> const & get_unitary() const;
 
 	vbt const & get_bands() const;
 
-	void compute_at_k( vbt const& kpoints,size_t nK,vbt & enk_,v unitary) const;
+	template<class VbT, class V>
+	void compute_at_k( VbT const& kpoints,size_t nK,VbT & enk_,V & unitary) const;
 
 	size_t get_nOrb() const;
 
 	parallel::GridDistribution<T> const& get_spaceGrid_proc() const;
+
+	void set_chem_pot( bT chemicalPotential );
+
+	void adjust_filling( bT numElectronPerSpin );
 private:
 
 	bool useModel_ = false;
+
+	bT mu_ = 0;
 
 	vbt enk_;
 

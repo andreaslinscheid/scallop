@@ -126,5 +126,15 @@ MPIModule::~MPIModule()
 #endif
 }
 
+void MPIModule::abort(int ierr) const
+{
+#ifdef MPI_PARALLEL
+	MPI_Abort( MPI_COMM_WORLD, ierr );
+#else
+	std::exit(ierr);
+#endif
+}
+
+
 } /* namespace parallel */
 } /* namespace scallop */

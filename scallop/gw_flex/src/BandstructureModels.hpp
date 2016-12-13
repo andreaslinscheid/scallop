@@ -34,21 +34,34 @@ BandstructureModels<T>::~BandstructureModels()
 template<typename T>
 void TwoBandCosine<T>::compute_at_k( vbT kpts, size_t nkpts, v & unitary, vbT & energyEV ) const
 {
-	if ( unitary.size() != nkpts*4 )
-		unitary = v(nkpts*4);
-	if ( energyEV.size() != nkpts*2 )
-		energyEV = vbT(nkpts*2);
+	size_t block = 4*16;
+	size_t nunitary =  nkpts*block;
+	size_t nev =  nkpts*8;
+	if ( unitary.size() != nunitary )
+		unitary = v(nunitary);
+	if ( energyEV.size() != nev )
+		energyEV = vbT(nev);
+
+	MemoryLayout meml;
+	meml.initialize_layout_2pt_obj(2);
 
 	size_t dim = kpts.size()/nkpts;
 	for ( size_t ik = 0; ik < nkpts; ++ik)
 	{
 		bT kx =  kpts[ik*dim+0];
 		bT ky =  kpts[ik*dim+1];
-		energyEV[ik*2+0]=0.25*t1_*(std::cos(2.0*M_PI*kx)+std::cos(2.0*M_PI*ky)-2.0)+Eh_;
-		energyEV[ik*2+1]=0.25*t2_*(std::cos(2.0*M_PI*kx)+std::cos(2.0*M_PI*ky)+2.0)+Ee_;
-		std::fill(&(unitary[ik*4]),&(unitary[ik*4])+4, T(0) );
+		for ( size_t ns = 0 ; ns < 4 ; ++ns)
+		{
+			energyEV[ik*8+meml.memory_layout_2pt_diagonal_nsc(0,ns)]
+			         = (ns<2?1.0:-1.0) * ( 0.25*t1_*(std::cos(2.0*M_PI*kx)+std::cos(2.0*M_PI*ky)-2.0)+Eh_);
+
+			energyEV[ik*8+meml.memory_layout_2pt_diagonal_nsc(1,ns)]
+			         = (ns<2?1.0:-1.0) * ( 0.25*t2_*(std::cos(2.0*M_PI*kx)+std::cos(2.0*M_PI*ky)+2.0)+Ee_);
+		}
+		std::fill(&(unitary[ik*block]),&(unitary[ik*block])+block, T(0) );
 		for ( size_t ibnd = 0; ibnd < 2 ; ++ibnd )
-			unitary[(ik*2+ibnd)*2+ibnd] = 1.0;
+			for ( size_t ns = 0 ; ns < 4 ; ++ns)
+				unitary[ik*block + meml.memory_layout_2pt_obj_nsc(ibnd,ns,ibnd,ns)] = 1.0;
 	}
 }
 

@@ -27,6 +27,7 @@
 #include "scallop/gw_flex/test/InteractionMatrix_test.hpp"
 #include "scallop/gw_flex/test/SelfEnergy_test.hpp"
 #include "scallop/gw_flex/test/KohnShamBandStructure_test.hpp"
+#include "scallop/gw_flex/test/ManyBodyBandStructure_test.hpp"
 #include <complex>
 
 namespace scallop {
@@ -35,7 +36,7 @@ namespace test {
 
 void Test::run_test()
 {
-	test_KSBandstructure();
+	test_MandyBodyBandStructure();
 	test_phonon_gf();
 	test_InteractionMatrix();
 	test_FFTBase();
@@ -44,6 +45,7 @@ void Test::run_test()
 	test_GreensFunctionOrbital();
 	test_Susceptibility();
 	test_selfEnergy();
+	test_KSBandstructure();
 }
 
 void Test::test_GreensFunctionOrbital()
@@ -105,6 +107,12 @@ void Test::test_KSBandstructure()
 	typedef std::complex<double> T;
 	KohnShamBandStructure_test<T> kstest;
 	kstest.test_all();
+}
+
+void Test::test_MandyBodyBandStructure()
+{
+	ManyBodyBandStructure_test< std::complex<double> > mb_test;
+	mb_test.test_all();
 }
 
 } /* namespace test */

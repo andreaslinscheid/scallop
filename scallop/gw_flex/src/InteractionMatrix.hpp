@@ -28,9 +28,7 @@ namespace gw_flex
 template<typename T>
 void InteractionMatrix<T>::init_file( std::string const& filename )
 {
-	std::ifstream file( filename.c_str() );
-	if ( ! file.good() )
-		error_handling::Error( std::string("Problem opening file ")+filename,5);
+	parallel::MPIModule  const& mpi = parallel::MPIModule::get_instance();
 
 	struct matel
 	{
@@ -43,60 +41,72 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 			m = T(vRe,vIm);
 		};
 
-	    size_t ind[6];
-	    T m = T(0);
+		size_t ind[6];
+		T m = T(0);
 
-	    bool operator< ( matel const& other ) const
-	    {
-	    	for (size_t i = 0 ; i < 5; ++i)
-	    		if (ind[i] != other.ind[i] )
-	    			return ind[i]<other.ind[i];
-	    	return false;
-	    };
+		bool operator< ( matel const& other ) const
+		{
+			for (size_t i = 0 ; i < 5; ++i)
+				if (ind[i] != other.ind[i] )
+					return ind[i]<other.ind[i];
+			return false;
+		};
 	};
 
-	std::string line;
-	std::getline(file, line);
-    std::istringstream ish(line);
-    size_t nOrb, channels;
-    ish >> nOrb >> channels;
+	size_t nOrb, channels;
 
-    if ( ! ((channels==1) || (channels==4)) )
-    	error_handling::Error( std::string("Cannot handle channel numbers other than 1 and 4 in file ")+filename,5);
-
-	std::set<matel> elements;
-	while (std::getline(file, line))
+	if ( mpi.ioproc() )
 	{
-	    std::istringstream iss(line);
-	    matel m;
-    	for (size_t i = 0 ; i < 6; ++i)
-    		if (!(iss >> m.ind[i]))
-    			error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
-    	bT re,im;
-		if (!(iss >> re ))
-			error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
-		if (!(iss >> im ))
-			error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
-		m.m = T(re,im);
+		std::ifstream file( filename.c_str() );
+		if ( ! file.good() )
+			error_handling::Error( std::string("Problem opening file ")+filename,5);
 
-		auto it = elements.insert( std::move(m) );
-		if ( ! it.second )
-			error_handling::Error( std::string("Interaction matrix element defined twice in file ")+filename,5);
+		std::string line;
+		std::getline(file, line);
+		std::istringstream ish(line);
+		ish >> nOrb >> channels;
+
+		if ( ! ((channels==1) || (channels==4)) )
+			error_handling::Error( std::string("Cannot handle channel numbers other than 1 and 4 in file ")+filename,5);
+
+		std::set<matel> elements;
+		while (std::getline(file, line))
+		{
+			std::istringstream iss(line);
+			matel m;
+			for (size_t i = 0 ; i < 6; ++i)
+				if (!(iss >> m.ind[i]))
+					error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
+			bT re,im;
+			if (!(iss >> re ))
+				error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
+			if (!(iss >> im ))
+				error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
+			m.m = T(re,im);
+
+			auto it = elements.insert( std::move(m) );
+			if ( ! it.second )
+				error_handling::Error( std::string("Interaction matrix element defined twice in file ")+filename,5);
+		}
+
+		this->initialize_layout_4pt_scalar_obj( nOrb, channels );
+
+		data_.assign( channels*channels*std::pow(nOrb,4), T(0) );
+		for (size_t j = 0 ; j < channels; j++)
+			for (size_t jp = 0 ; jp < channels; jp++)
+				for (size_t l1 = 0 ; l1 < nOrb; l1++)
+					for (size_t l2 = 0 ; l2 < nOrb; l2++)
+						for (size_t l3 = 0 ; l3 < nOrb; l3++)
+							for (size_t l4 = 0 ; l4 < nOrb; l4++)
+							{
+								auto it = elements.find( matel(j,jp,l1,l2,l3,l4,bT(0),bT(0)) );
+								(*this)(j,jp,l1,l2,l3,l4) = ( it != elements.end() ? it->m : T(0) );
+							}
 	}
-
+	mpi.bcast(nOrb, mpi.ioproc_index() );
+	mpi.bcast(channels, mpi.ioproc_index() );
 	this->initialize_layout_4pt_scalar_obj( nOrb, channels );
-
-	data_.assign( channels*channels*std::pow(nOrb,4), T(0) );
-	for (size_t j = 0 ; j < channels; j++)
-		for (size_t jp = 0 ; jp < channels; jp++)
-			for (size_t l1 = 0 ; l1 < nOrb; l1++)
-				for (size_t l2 = 0 ; l2 < nOrb; l2++)
-					for (size_t l3 = 0 ; l3 < nOrb; l3++)
-						for (size_t l4 = 0 ; l4 < nOrb; l4++)
-						{
-							auto it = elements.find( matel(j,jp,l1,l2,l3,l4,bT(0),bT(0)) );
-							(*this)(j,jp,l1,l2,l3,l4) = ( it != elements.end() ? it->m : T(0) );
-						}
+	mpi.bcast(data_, mpi.ioproc_index() );
 }
 
 template<typename T>

@@ -22,6 +22,7 @@
 
 #include "scallop/auxillary/TemplateTypedefs.h"
 #include "scallop/auxillary/TypeMapComplex.h"
+#include "scallop/auxillary/DataRearrangement.h"
 #include <vector>
 #include <cstdlib>
 
@@ -87,17 +88,17 @@ public:
 
 	/**
 	 * Obtain a tuple of k grid indices for a consecutively ordered index
-	 * @param ik	consecutively ordered index
-	 * @return		reference to internal buffer with the tuple.
+	 * @param ik	consecutively ordered index in the local grid
+	 * @return		reference to internal buffer with the tuple of indices in the local grid.
 	 */
-	std::vector<size_t> & k_conseq_to_xyz( size_t ik ) const;
+	std::vector<size_t> & k_local_conseq_to_xyz( size_t ik ) const;
 
 	/**
 	 * Obtain a tuple of R grid indices for a consecutively ordered index
-	 * @param iR	consecutively ordered index
-	 * @return		reference to internal buffer with the tuple.
+	 * @param iR	consecutively ordered index in the local grid
+	 * @return		reference to internal buffer with the tuple of indices in the local grid.
 	 */
-	std::vector<size_t> & R_conseq_to_xyz( size_t iR ) const;
+	std::vector<size_t> & R_local_conseq_to_xyz( size_t iR ) const;
 
 	/**
 	 * Convert a processor local consecutive k index to a processor local data grid index.
@@ -132,6 +133,17 @@ public:
 	std::vector<size_t> & R_conseq_local_to_xyz_total( size_t iR ) const;
 
 	/**
+	 * Convert a tuple in the full k grid to a processor local consecutive index.
+	 *
+	 * In debug mode, this fails if the indices do not correspond to a vector in the
+	 * range of this processor.
+	 *
+	 * @param tuple		xyz indices of the total grid.
+	 * @return 			index in the processor local k grid.
+	 */
+	size_t k_xyz_total_to_conseq_local( std::vector<size_t> tuple ) const;
+
+	/**
 	 * Convert a tuple in the full R grid to a processor local consecutive index.
 	 *
 	 * In debug mode, this fails if the indices do not correspond to a vector in the
@@ -158,9 +170,23 @@ public:
 	 */
 	size_t k_xyz_to_conseq( std::vector<size_t> const& tuple ) const;
 
-	size_t get_num_grid_total() const;
+	/**
+	 * Obtain a tuple of k grid indices for a consecutively ordered index
+	 *
+	 * @param ik	consecutively ordered index in the full grid
+	 * @return		reference to internal buffer with the tuple of indices in the full grid.
+	 */
+	std::vector<size_t> & k_conseq_to_xyz( size_t ik ) const;
 
-	size_t get_proc_id_of_gridpoint( size_t igTotal ) const;
+	/**
+	 * Obtain a tuple of R grid indices for a consecutively ordered index
+	 *
+	 * @param iR	consecutively ordered index in the full grid
+	 * @return		reference to internal buffer with the tuple of indices in the full grid.
+	 */
+	std::vector<size_t> & R_conseq_to_xyz( size_t iR ) const;
+
+	size_t get_num_grid_total() const;
 
 	/**
 	 * Find the index of the inverse k vector.
@@ -211,6 +237,37 @@ public:
 	std::vector<size_t> get_cube_indices_surrounding(
 			bool conseqInKGrid,
 			std::vector<bT> const& v) const;
+
+
+	void distribute_dim( size_t N,
+			std::vector< std::pair<size_t,size_t> > & procDimDistribution ) const;
+
+	void get_cell_vectors(std::vector<bT> const& v ,
+			std::vector<bT> & lowerCorner,
+			std::vector<bT> & upperCorner ) const;
+	/**
+	 * Get the processor index which handels a given point.
+	 *
+	 * @param isInKSpace	If true the grid is assumed to be in k space, R otherwise.
+	 * @param conseq	consecutively ordered index in the full grid.
+	 * @return			The index of the processor assigned to this grid point.
+	 */
+	size_t get_proc_index( bool isInKSpace, size_t conseq ) const;
+
+	/**
+	 * Translate a consecutive index in the full into processor local one.
+	 *
+	 * The usage of this routine is only supported for full indices that actually map back
+	 * to the current processor.
+	 * This routine checks with assert if the full grid index is outside the processor range.
+	 *
+	 * @param conseqInKGrid		Grids are in k space if true, R otherwise.
+	 * @param cfg				consecutive index in the full grid.
+	 * @return 					consecutive index in the processor local grid.
+	 */
+	size_t conseq_full_to_conseq_local(
+			bool conseqInKGrid,
+			size_t cfg) const;
 private:
 
 	size_t nK_ = 0;
@@ -237,10 +294,7 @@ private:
 
 	mutable std::vector<size_t> tupleBuff_;
 
-	mutable std::vector<T> buffer_;
-
-	void distribute_dim( size_t N,
-			std::vector< std::pair<size_t,size_t> > & procDimDistribution ) const;
+	mutable auxillary::DataRearrangement< typename auxillary::TemplateTypedefs<T>::scallop_vector > redistrb_;
 
 	void general_xyz_to_conseq_row_major(
 			std::vector<size_t> const& grid,
@@ -263,11 +317,6 @@ private:
 			size_t conseq_index) const;
 
 	void tuple_transpose( std::vector<size_t> & tuple ) const;
-
-	void redistribute_locally(
-			typename auxillary::TemplateTypedefs<T>::scallop_vector & data,
-			std::vector<size_t> const& gridIndicesMapOldToNew,
-			size_t blockSize) const;
 };
 
 } /* namespace parallel */

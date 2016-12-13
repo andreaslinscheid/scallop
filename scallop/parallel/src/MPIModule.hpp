@@ -24,8 +24,9 @@
 #include <vector>
 #include <complex>
 #include <type_traits>
-#include <scallop/error_handling/Error.h>
 #include <algorithm>
+#include <iostream>
+#include <set>
 
 namespace scallop
 {
@@ -250,8 +251,11 @@ struct gather_impl<T, true >
 			for ( auto d : dataProc )
 				sizeactual += d;
 			if ( sizeGather != sizeactual )
-				scallop::error_handling::Error(
-						"gather: Input dimension to the target vector on the root processor must match data size!",2);
+			{
+				std::cout <<"gather: Input dimension to the target vector on the root processor must match data size!"<<std::endl;
+				mpiobj.abort(2);
+				std::exit(2);
+			}
 
 			recvcounts = new int [ mpiobj.get_nproc() ];
 			displs = new int [ mpiobj.get_nproc() ];
@@ -392,51 +396,48 @@ struct all_gather_impl
 template<class T>
 struct all_gather_impl<T, true >
 {
-	void all_gather( T & data,  T const& dataSend, size_t eleReceive, size_t blocksize )
+	void all_gather( T & data,  T const& dataSend )
 	{
 #ifdef MPI_PARALLEL
-//	This was specific to the parallization in the prelimnary version of the code. Change or remove it here.
-//		//We make an assumption about data being allocated to the
-//		//	correct total size on each proc. Then we assume that data is distributed
-//		//	among processor equally with an overhead of N elements
-//		//	placed in the first N procs
-//		MPIModule const& mpiobj = MPIModule::get_instance();
-//		int * recvcounts = NULL;
-//		int * displs = NULL;
-//
-//		auto data_ptr_rece = &(*data.begin());
-//		auto data_ptr_send = const_cast<typename T::value_type*>(&(*dataSend.begin()));
-//		size_t sendcount = dataSend.end() - dataSend.begin();
-//
-//		if ( eleReceive == 0 || eleReceive % blocksize != 0 )
-//			scallop::error_handling::Error("Problem: container not allocated correct size",5);
-//
-//		std::vector< std::pair<size_t,size_t> > distr = mpiobj.distribute(eleReceive/blocksize);
-//		recvcounts = new int [distr.size()];
-//		displs = new int [distr.size()];
-//		for ( size_t i = 0 ; i < distr.size() ; ++i )
-//		{
-//			recvcounts[i] = static_cast<size_t>(static_cast<int>(distr[i].second)
-//					-static_cast<int>(distr[i].first))*blocksize;
-//			displs[i] = distr[i].first*blocksize;
-//		}
-//
-//		MPITypeMap<typename T::value_type> MPITypeMap;
-//		int ierr = MPI_Allgatherv(
-//				data_ptr_send,
-//				sendcount,
-//				MPITypeMap.type,
-//				data_ptr_rece,
-//				recvcounts,
-//				displs,
-//				MPITypeMap.type,
-//				MPI_COMM_WORLD);
-//
-//		if ( ierr != 0 )
-//			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
-//
-//		delete [] recvcounts;
-//		delete [] displs;
+		MPIModule const& mpi = MPIModule::get_instance();
+		size_t nP = mpi.get_nproc();
+		auto data_ptr_send = const_cast<typename T::value_type*>(&(*dataSend.begin()));
+		size_t sendcount = dataSend.end() - dataSend.begin();
+
+		//Every processor tells how much data it intends to send
+		std::vector<int> recvcounts(nP);
+		recvcounts[ mpi.get_mpi_me() ] = sendcount;
+		mpi.sum(recvcounts);
+
+		//We allocate a container of the right size if data is empty
+		if ( data.size() == 0 )
+		{
+			size_t numTotal = 0;
+			for ( auto n : recvcounts )
+				numTotal += n;
+			data = T( numTotal );
+		}
+
+		auto data_ptr_rece = &(*data.begin());
+
+		auto displs = recvcounts;
+		displs[0] = 0;
+		for ( int i = 1 ; i < static_cast<int>(nP) ; ++i )
+			displs[i] = displs[i-1] + recvcounts[i-1];
+
+		MPITypeMap<typename T::value_type> MPITypeMap;
+		int ierr = MPI_Allgatherv(
+				data_ptr_send,
+				sendcount,
+				MPITypeMap.type,
+				data_ptr_rece,
+				recvcounts.data(),
+				displs.data(),
+				MPITypeMap.type,
+				MPI_COMM_WORLD);
+
+		if ( ierr != 0 )
+			std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
 #endif
 	}
 };
@@ -454,22 +455,21 @@ struct broad_cast_impl<T, true >
 	void broad_cast( T & data, size_t proc )
 	{
 #ifdef MPI_PARALLEL
-		auto data_ptr = &(*data.begin());
-		size_t sendcount = data.end() - data.begin();
-
 		//use the single element version to check if the space is correctly allocated
 		MPIModule const& mpiobj = MPIModule::get_instance();
+
+		size_t sendcount = data.end() - data.begin();
 		size_t rootSize = sendcount;
 		mpiobj.bcast(rootSize,proc);
-		if ( (sendcount != rootSize) && (mpiobj.get_mpi_me() != proc ) )
-		{
+		if (sendcount != rootSize )
 			data = T( rootSize );
-		}
+
+		auto data_ptr = &(*data.begin());
 
 		MPITypeMap<typename T::value_type> MPITypeMap;
 		int ierr = MPI_Bcast(
 				data_ptr,
-				sendcount,
+				rootSize,
 				MPITypeMap.type,
 				proc,
 				MPI_COMM_WORLD);
@@ -528,7 +528,6 @@ struct max_impl<T, false >
 #endif
 	}
 };
-
 };
 
 template<typename T>
@@ -546,11 +545,59 @@ void MPIModule::sum( T & data  ) const
 }
 
 template<typename T>
-void MPIModule::all_to_all( typename auxillary::TemplateTypedefs<T>::scallop_vector & data, size_t count) const
+void MPIModule::all_to_allv( T const& send, T & recv,
+		std::vector<size_t> const& sendcountsA) const
+{
+	MPIModule const& mpi = MPIModule::get_instance();
+	size_t nP = mpi.get_nproc() ;
+
+	std::vector<int> sendcountsi(sendcountsA.begin(),sendcountsA.end());
+	auto recvcountsi = sendcountsi;
+	mpi.all_to_all(recvcountsi,1);
+
+	auto sdisplsA = sendcountsi;
+	auto rdisplsA = recvcountsi;
+	rdisplsA[0] = sdisplsA[0] = 0;
+	for (size_t i = 1 ; i < nP; ++i )
+	{
+		sdisplsA[i] = sdisplsA[i-1] + sendcountsi[i-1];
+		rdisplsA[i] = rdisplsA[i-1] + recvcountsi[i-1];
+	}
+
+	//We allocate a container of the right size if empty
+	if ( recv.size() == 0 )
+		recv = T( rdisplsA.back()+recvcountsi.back() );
+
+	auto send_ptr = &(*send.begin());
+	auto sendc_ptr = &(*sendcountsi.begin());
+	auto recvc_ptr = &(*recvcountsi.begin());
+	auto sdispls_ptr = &(*sdisplsA.begin());
+	auto rdispls_ptr = &(*rdisplsA.begin());
+	auto recv_ptr = &(*recv.begin());
+
+	MPITypeMap< typename T::value_type > MPITypeMap;
+
+	int ierr = MPI_Alltoallv(
+			send_ptr,
+			sendc_ptr,
+			sdispls_ptr,
+			MPITypeMap.type,
+			recv_ptr,
+			recvc_ptr,
+			rdispls_ptr,
+			MPITypeMap.type,
+			MPI_COMM_WORLD);
+
+	if ( ierr != 0 )
+		std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
+}
+
+template<typename T>
+void MPIModule::all_to_all(T & data, size_t count) const
 {
 #ifdef MPI_PARALLEL
 	auto data_ptr_recv = &( *data.begin() );
-	MPITypeMap<T> MPITypeMap;
+	MPITypeMap< typename T::value_type > MPITypeMap;
 
 	int ierr = MPI_Alltoall(
 			MPI_IN_PLACE,
@@ -583,16 +630,10 @@ void MPIModule::gather(
 }
 
 template<typename T>
-void MPIModule::all_gather( T & dataReceive, T const& dataSend, size_t blocksize) const
-{
-	this->all_gather(dataReceive,dataSend,dataReceive.size(),blocksize);
-}
-
-template<typename T>
-void MPIModule::all_gather( T & dataReceive, T const& dataSend, size_t eleReceive, size_t blocksize) const
+void MPIModule::all_gather( T & dataReceive, T const& dataSend) const
 {
 	delegate::all_gather_impl<T,std::is_class<T>::value > allgatherdel;
-	allgatherdel.all_gather(dataReceive,dataSend,eleReceive,blocksize);
+	allgatherdel.all_gather(dataReceive,dataSend);
 }
 
 template<typename T>
@@ -621,6 +662,48 @@ void MPIModule::max(  T & data ) const
 {
 	size_t dummy;
 	this->max( data , dummy );
+}
+
+template<class T>
+void MPIModule::save_file_parallel(
+		T const& data,
+		std::string const& filename,
+		std::vector<size_t> ordering ) const
+{
+	size_t np = this->get_nproc();
+	if ( ordering.empty() )
+	{
+		ordering = std::vector<size_t>( np );
+		int i = 0 ;
+		for ( auto &o : ordering )
+			o = i++;
+	}
+
+	std::vector<size_t> numPerProc( np, 0 );
+	numPerProc[ ordering[ this->get_mpi_me() ] ] = data.size();
+	this->sum(numPerProc);
+	auto displ = numPerProc;
+	displ[0] = 0;
+	for ( size_t ip = 1; ip < np ; ++ip )
+		displ[ip] = displ[ip-1]+numPerProc[ip-1];
+
+	MPI_Offset offset = sizeof( typename T::value_type )*displ[ ordering[ this->get_mpi_me() ] ];
+	MPI_File file;
+	MPI_Status status;
+	MPITypeMap< typename T::value_type > MPITypeMap;
+
+	// opening a shared file and delete if already present
+    MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_CREATE|MPI_MODE_DELETE_ON_CLOSE|MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+    MPI_File_close(&file);
+    MPI_File_open(MPI_COMM_WORLD, filename.c_str(), MPI_MODE_CREATE|MPI_MODE_EXCL|MPI_MODE_WRONLY, MPI_INFO_NULL, &file);
+	MPI_File_seek(file, offset, MPI_SEEK_SET);
+
+	auto data_ptr = &( *data.begin() );
+	MPI_File_write(file,data_ptr ,
+			numPerProc[ ordering[ this->get_mpi_me() ] ],
+			MPITypeMap.type,
+			&status);
+	MPI_File_close(&file);
 }
 
 } /* namespace parallel */

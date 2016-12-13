@@ -67,7 +67,20 @@ public:
 	 * @param count		Each process is sending/receiving count elements
 	 */
 	template<typename T>
-	void all_to_all( typename auxillary::TemplateTypedefs<T>::scallop_vector & data, size_t count) const;
+	void all_to_all( T & data, size_t count) const;
+
+	/**
+	 * Performs an all-to-all vector communication.
+	 *
+	 * This high-level interface does not allow to specify displacements.
+	 *
+	 * @param send			Data to be send
+	 * @param recv			Received data goes in here. Will be allocated to the right size, if recv.size()==0.
+	 * @param sendcounts	Array of size #processors. (a=)sendcounts[n] means a elements will be send to proc n.
+	 */
+	template<typename T>
+	void all_to_allv( T const& send, T & recv,
+			std::vector<size_t> const& sendcounts) const;
 
 	//wait for everybody to get here
 	void barrier() const;
@@ -95,10 +108,7 @@ public:
 	void gather(  T & dataRoot, T const& dataAll, size_t proc = 0 ) const;
 
 	template<typename T>
-	void all_gather( T & dataReceive, T const& dataSend, size_t blocksize) const;
-
-	template<typename T>
-	void all_gather( T & dataReceive, T const& dataSend, size_t eleReceive, size_t blocksize) const;
+	void all_gather( T & dataReceive, T const& dataSend) const;
 
 	//Scatter the data in dataRoot from the proc to the other processors
 	template<typename T>
@@ -117,6 +127,22 @@ public:
 	template<typename T>
 	void max(  T & data ) const;
 
+	void abort(int ierr) const;
+
+	/**
+	 * Save distributed data to a file.
+	 *
+	 * @param data		The distributed data on each processor.
+	 * @param filename	The name of the new file.
+	 * @param ordering	Optional. An array of size of # processors,
+	 * 					selecting the order in which processor writes its data to the file.
+	 * 					By default, every processor appends the data according to its index.
+	 */
+	template<class T>
+	void save_file_parallel(
+			T const& data,
+			std::string const& filename,
+			std::vector<size_t> ordering = std::vector<size_t>() ) const;
 private:
 
 	//the rank in MPI language
