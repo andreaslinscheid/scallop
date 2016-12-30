@@ -33,32 +33,6 @@ GeneralizedSusceptibility<T>::GeneralizedSusceptibility() :
 }
 
 template<typename T>
-T & GeneralizedSusceptibility<T>::operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2)
-{
-	return *(this->write_phs_grid_ptr_block(ik,iw)+this->memory_layout_combined_notation_4pt_scalar_obj(j,jp,m1,m2));
-}
-
-template<typename T>
-T GeneralizedSusceptibility<T>::operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2) const
-{
-	return *(this->read_phs_grid_ptr_block(ik,iw)+this->memory_layout_combined_notation_4pt_scalar_obj(j,jp,m1,m2));
-}
-
-template<typename T>
-T GeneralizedSusceptibility<T>::operator()
-	(size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const
-{
-	return *(this->read_phs_grid_ptr_block(ik,iw)+this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
-}
-
-template<typename T>
-T & GeneralizedSusceptibility<T>::operator()
-	(size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4)
-{
-	return *(this->write_phs_grid_ptr_block(ik,iw)+this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
-}
-
-template<typename T>
 void GeneralizedSusceptibility<T>::initialize_zero(
 		size_t nM,
 		size_t nO,
@@ -132,7 +106,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 									for ( size_t s2 = 0 ; s2 < 2; ++s2 )
 									{
 										T prefactorG1;
-										size_t gf1_index_NS_transpose;
+										size_t gf1_index_NS_transpose = 0;
 										this->v_matrix_multiplication( j, l1, a2, s2, l2, a1, s1,
 												gf_layout,gf1_index_NS_transpose ,prefactorG1);
 
@@ -141,7 +115,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 										bufferQ1_[Q1_index] = prefactorG1*blockPtrG1[ gf1_index_NS_transpose ];
 
 										T prefactorG2;
-										size_t gf2_index_NS;
+										size_t gf2_index_NS = 0;
 										this->v_matrix_multiplication( j, l1, a1, s1, l2, a2, s2,
 												gf_layout,gf2_index_NS ,prefactorG2);
 
@@ -206,8 +180,10 @@ void GeneralizedSusceptibility<T>::v_matrix_multiplication(
 }
 
 template<typename T>
-void GeneralizedSusceptibility<T>::spin_RPA_enhancement(
-		InteractionMatrix<T> const& interMat)
+void GeneralizedSusceptibility<T>::RPA_enhancement(
+		InteractionMatrix<T> const& interMat,
+		AdiabaticUpscale & a,
+		bool pure_sust)
 {
 	assert( this->get_nOrb() == interMat.get_nOrb() );
 	assert( this->is_in_k_space() );
@@ -218,59 +194,223 @@ void GeneralizedSusceptibility<T>::spin_RPA_enhancement(
 	int blockDim = static_cast<int>( std::pow(this->get_nOrb(),2) * channels );
 
 	typename auxillary::TemplateTypedefs<T>::scallop_vector chiTimesI(blockDim*blockDim,T(0));
+	auto IdPlusChiTimesI = chiTimesI;
 	auto IdPlusChiTimesIInv = chiTimesI;
+	auto interactionScaled = chiTimesI;
 	auto enhChiTimesI = chiTimesI;
 
-	bT conditionNumber = 1.0;
+	typename auxillary::TemplateTypedefs<bT>::scallop_vector eigenvalues;
+	bool positiveDefinite;
+	bool beyondInstability = false;
+	std::vector<size_t> unstableK;
+	std::vector<bT> unstableMinEV;
+
+	auto interaction = interMat.read_ptr();
 	for ( size_t ik = 0 ; ik < nK; ++ik)
 	{
 		for ( size_t iw = 0 ; iw < this->get_num_time(); ++iw)
 		{
 			auto susct = this->write_phs_grid_ptr_block(ik,iw);
-			auto interaction = interMat.read_ptr();
+			for ( int i = 0 ; i < blockDim*blockDim; ++i )
+				interactionScaled[i] = interaction[i]*a.get_scaling();
 
-			this->get_linAlg_module().matrix_times_matrix(
-					susct,blockDim,
-					interaction,
-					chiTimesI.data());
+			linAlgModule_.call_gemm(false, false,
+					blockDim,blockDim,blockDim,
+					T(16.0),susct, blockDim,
+							interactionScaled.data(), blockDim,
+		            T(0.0),chiTimesI.data(),blockDim);
 
-			std::copy(chiTimesI.data(), chiTimesI.data()+chiTimesI.size(), IdPlusChiTimesIInv.data() );
+			std::copy(chiTimesI.data(), chiTimesI.data()+chiTimesI.size(), IdPlusChiTimesI.data() );
 			for ( int i = 0 ; i < blockDim; ++i)
-				IdPlusChiTimesIInv[i*blockDim+i] += 1.0;
+				IdPlusChiTimesI[i*blockDim+i] = 1.0+(channels==1?-1.0:1.0)*IdPlusChiTimesI[i*blockDim+i];
 
-			this->get_linAlg_module().invert_square_matrix(
-					IdPlusChiTimesIInv, conditionNumber, /*compute condition number=*/ true );
+			this->get_linAlg_module().check_definite_invert_hermitian_matrix(
+					IdPlusChiTimesI,IdPlusChiTimesIInv, positiveDefinite, eigenvalues );
 
-			if ( (1.0/conditionNumber) > 100.0 )
+			if ( not positiveDefinite )
 			{
-				auto k = this->get_spaceGrid_proc().k_conseq_local_to_xyz_total(ik);
-				std::cout << "\tApproaching instability in the charge channel (Matsubara n=" << iw << ") at k pt:\t";
-				for ( auto kxi : k )
-					std::cout << kxi << '\t';
-				std::cout << std::endl;
+				beyondInstability = true;
+				unstableK.push_back(ik);
+				auto itmin = std::min_element(eigenvalues.begin(),eigenvalues.end());
+				unstableMinEV.push_back( (*itmin) );
 			}
 
-			//double counting correction
-			for ( int i = 0 ; i < blockDim; ++i)
-				IdPlusChiTimesIInv[i*blockDim+i] -= 1.0;
+			if ( not pure_sust )
+			{
+				//double counting correction
+				for ( int i = 0 ; i < blockDim; ++i)
+					IdPlusChiTimesIInv[i*blockDim+i] -= 1.0;
 
-			this->get_linAlg_module().matrix_times_matrix(
-					IdPlusChiTimesIInv.data(),blockDim,
-					chiTimesI.data(),
-					enhChiTimesI.data() );
+				this->get_linAlg_module().matrix_times_matrix(
+						IdPlusChiTimesIInv.data(),blockDim,
+						chiTimesI.data(),
+						enhChiTimesI.data() );
 
-			this->get_linAlg_module().matrix_times_matrix(
-					interaction,blockDim,
-					enhChiTimesI.data(),
-					susct );
+				//The spin channel gets an extra minus.
+				T pref = T(16.0)*(channels==4?-1.0:1.0);
+				linAlgModule_.call_gemm(false, false,
+						blockDim,blockDim,blockDim,
+						pref,interactionScaled.data(), blockDim,
+								enhChiTimesI.data(), blockDim,
+			            T(0.0),susct,blockDim);
+			}
+			else
+			{
+				std::copy(susct,susct+blockDim*blockDim, enhChiTimesI.data() );
+
+				this->get_linAlg_module().matrix_times_matrix(
+						IdPlusChiTimesIInv.data(),blockDim,
+						enhChiTimesI.data(),
+						susct );
+			}
 		}
 	}
+
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	if ( mpi.false_on_all(  beyondInstability ) )
+	{
+		output::TerminalOut msg;
+		auto itmin = std::min_element(unstableMinEV.begin(),unstableMinEV.end());
+		bT minEV = (itmin == unstableMinEV.end() ? 1.0 : (*itmin));
+		size_t procMin;
+		mpi.min(minEV,procMin);
+		std::string type = this->get_nChnls() == 1 ? "charge" : "spin";
+		std::string line = std::string("\tInstability in the ")+type+" channel at k pt:\t";
+		std::vector<size_t> k;
+		if ( procMin == mpi.get_mpi_me() )
+		{
+			int ikm = itmin - unstableMinEV.begin();
+			assert ( (ikm >= 0) && ( static_cast<size_t>(ikm) < unstableK.size() ) );
+			k = this->get_spaceGrid_proc().k_conseq_local_to_xyz_total( unstableK[ikm] );
+		}
+		mpi.bcast(k,procMin);
+		auto grid = this->get_spaceGrid_proc().get_grid();
+		std::vector<bT> kvector(k.size());
+		for ( size_t id = 0 ; id < k.size(); ++id )
+		{
+			kvector[id] = bT(k[id])/bT(grid[id]);
+			line += std::to_string( kvector[id] ) + "\t";
+		}
+		msg << line << "\n\tSmallest eigenvalue: " << minEV;
+		//Currently we don't track the magnetic/orbital eigenvector.
+		a.track_instability(kvector,std::vector<T>(eigenvalues.size()));
+
+		if ( a.is_soft() && a.steps_ok() )
+		{
+			msg << "\tReducing the interaction by a factor " << a.get_scaling();
+		}
+		else
+		{
+			msg << "\tNo further reduction of the interaction, we are beyond the instability.";
+		}
+	}
+	else
+	{
+		if ( a.is_soft() )
+			a.set_stable();
+	}
 }
+
 template<typename T>
 auxillary::LinearAlgebraInterface<T> const&
 GeneralizedSusceptibility<T>::get_linAlg_module() const
 {
 	return linAlgModule_;
+}
+
+
+template<typename T>
+T & GeneralizedSusceptibility<T>::operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2)
+{
+	return *(this->write_phs_grid_ptr_block(ik,iw)+this->memory_layout_combined_notation_4pt_scalar_obj(j,jp,m1,m2));
+}
+
+template<typename T>
+T GeneralizedSusceptibility<T>::operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2) const
+{
+	return *(this->read_phs_grid_ptr_block(ik,iw)+this->memory_layout_combined_notation_4pt_scalar_obj(j,jp,m1,m2));
+}
+
+template<typename T>
+T GeneralizedSusceptibility<T>::operator()
+	(size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const
+{
+	return *(this->read_phs_grid_ptr_block(ik,iw)+this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
+}
+
+template<typename T>
+T & GeneralizedSusceptibility<T>::operator()
+	(size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4)
+{
+	return *(this->write_phs_grid_ptr_block(ik,iw)+this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::AdiabaticUpscale_::set(
+		bT maxScaling, size_t maxScaleResolutionSteps, size_t maxScaleSteps)
+{
+	this->reset();
+
+	maxScaling_ = maxScaling;
+	maxScaleResolutionSteps_ = maxScaleResolutionSteps;
+	maxNScale_ = maxScaleSteps;
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::AdiabaticUpscale_::reset()
+{
+	scaling_ = bT(1);
+	nscale_ = 0;
+	softKVector_ = std::vector<bT>();
+	softOrbitalVector_ = std::vector<T>();
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::AdiabaticUpscale_::get_soft_vector(
+		std::vector<bT> & softKVector, std::vector<T> & softOrbitalVector) const
+{
+	softKVector = softKVector_;
+	softOrbitalVector = softOrbitalVector_;
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::AdiabaticUpscale_::track_instability(
+		std::vector<bT> const& softKVector, std::vector<T> const& softOrbitalVector )
+{
+	softKVector_ = softKVector;
+	softOrbitalVector_ = softOrbitalVector;
+	nscaleResolutionSteps_++;
+	scaling_ = (scaling_+maxScaling_)/bT(2.0);
+}
+
+template<typename T>
+typename GeneralizedSusceptibility<T>::bT
+GeneralizedSusceptibility<T>::AdiabaticUpscale_::get_scaling() const
+{
+	return scaling_;
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::AdiabaticUpscale_::set_stable()
+{
+	if ( nscaleResolutionSteps_ > 0 )
+	{
+		nscale_++;
+	}
+	scaling_ = bT(1);
+	nscaleResolutionSteps_ = 0;
+}
+
+template<typename T>
+bool GeneralizedSusceptibility<T>::AdiabaticUpscale_::is_soft() const
+{
+	return nscaleResolutionSteps_ > 0;
+}
+
+template<typename T>
+bool GeneralizedSusceptibility<T>::AdiabaticUpscale_::steps_ok() const
+{
+	return (nscaleResolutionSteps_ < maxScaleResolutionSteps_) && (nscale_ < maxNScale_);
 }
 
 } /* namespace gw_flex */

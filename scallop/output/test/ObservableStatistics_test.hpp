@@ -1,4 +1,4 @@
-/*	This file Warning.cpp is part of scallop.
+/*	This file ObservableStatistics_test.cpp is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,22 +13,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 24, 2014
- *      Author: Andreas Linscheid
+ *  Created on: Dec 20, 2016
+ *      Author: A. Linscheid
  */
 
-#include "scallop/error_handling/Warning.h"
+#include "ObservableStatistics.h"
 
 namespace scallop
 {
-namespace error_handling
+namespace output
 {
 
-template<typename T>
-Warning& Warning::operator<< (T const& message) {
-	 _sstrBuff << message;
-	return *this;
-}
-
-} /* namespace error_handling */
+} /* namespace output */
 } /* namespace scallop */

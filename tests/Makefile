@@ -22,7 +22,7 @@ CXXDEP = g++-5
 CXX = g++-5
 
 # What include flags to pass to the compiler
-INCLUDES = -I./
+INCLUDES = -I./ -I/home/alinsch/codes/gslpp/
 
 # Separate compile options per configuration
 ifeq ($(CFG),debug)

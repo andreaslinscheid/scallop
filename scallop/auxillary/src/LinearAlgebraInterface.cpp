@@ -169,5 +169,61 @@ int LinearAlgebraInterface< std::complex<double> >::call_heev(
 	return LAPACKE_zheev_work(matrix_order,jobz, uplo, n, a, lda,w,work,lwork,rwork);
 }
 
+template<>
+int LinearAlgebraInterface< std::complex<float> >::call_geev(
+		int matrix_order, char jobvl, char jobvr,
+        int n, std::complex<float>* a,
+        int lda, std::complex<float>* w,
+        std::complex<float>* vl, int ldvl,
+        std::complex<float>* vr, int ldvr,
+        std::complex<float>* work, int lwork,
+        float* rwork) const
+{
+	return LAPACKE_cgeev_work(matrix_order,jobvl,jobvr,
+	        n,a,lda,w,vl,ldvl,vr,ldvr,work,lwork,rwork);
+}
+
+template<>
+int LinearAlgebraInterface< std::complex<double> >::call_geev(
+		int matrix_order, char jobvl, char jobvr,
+        int n, std::complex<double>* a,
+        int lda, std::complex<double>* w,
+        std::complex<double>* vl, int ldvl,
+        std::complex<double>* vr, int ldvr,
+        std::complex<double>* work, int lwork,
+        double* rwork) const
+{
+	return LAPACKE_zgeev_work(matrix_order,jobvl,jobvr,
+	        n,a,lda,w,vl,ldvl,vr,ldvr,work,lwork,rwork);
+}
+
+template <>
+int LinearAlgebraInterface< std::complex<float> >::call_potrf(
+		int matrix_order, char uplo,int n,std::complex<float> * a,int lda) const
+{
+	return LAPACKE_cpotrf(matrix_order,uplo,n,a,lda);
+}
+
+template <>
+int LinearAlgebraInterface< std::complex<double> >::call_potrf(
+		int matrix_order, char uplo,int n,std::complex<double> * a,int lda) const
+{
+	return LAPACKE_zpotrf(matrix_order,uplo,n,a,lda);
+}
+
+template <>
+int LinearAlgebraInterface< std::complex<float> >::call_potri(
+		int matrix_order, char uplo,int n,std::complex<float> * a,int lda ) const
+{
+	return LAPACKE_cpotri(matrix_order,uplo,n,a,lda);
+}
+
+template <>
+int LinearAlgebraInterface< std::complex<double> >::call_potri(
+		int matrix_order, char uplo,int n,std::complex<double> * a,int lda ) const
+{
+	return LAPACKE_zpotri(matrix_order,uplo,n,a,lda);
+}
+
 } /* namespace auxillary */
 } /* namespace scallop */

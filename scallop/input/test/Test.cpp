@@ -19,6 +19,7 @@
 
 #include "scallop/input/test/Test.h"
 #include "scallop/input/input.h"
+#include "scallop/input/InputFile.h"
 #include "scallop/output/TextFile.h"
 #include "scallop/input/test/InputBaseTest.h"
 #include "scallop/output/TerminalOut.h"
@@ -41,19 +42,12 @@ void Test::test_input_file_parsing() {
 	std::string const testInputFileName = tmpFolder+"testin.dat";
 	create_test_input_file(testInputFileName);
 
-	//do as if this file was given as a option during program start.
-	char ** argv;
-	argv = new char* [2];
-	argv[1] = new char [testInputFileName.size()+1];
-	std::copy(testInputFileName.c_str(),testInputFileName.c_str()+testInputFileName.size(),argv[1]);
-	argv[1][testInputFileName.size()] = '\0';
-
-	//test the startup routines and parse the test input file
-	Setup setup(2,argv);
+	InputFile input;
+	input.read_input_file( testInputFileName );
 
 	//get the options from the input file
 	InputBaseTest inputFileTest;
-	inputFileTest.parse_variables( setup.get_parsed_input_file() );
+	inputFileTest.parse_variables( input );
 
 	//Test the manual generation
 	std::string const testManualName = tmpFolder + "manualTest.txt";
@@ -61,7 +55,7 @@ void Test::test_input_file_parsing() {
 
 	//Print unused parameters
 	std::vector<std::string> unreadOptions =
-			setup.get_parsed_input_file().get_list_unread_input_parameters();
+			input.get_list_unread_input_parameters();
 	msg << "Testing that the following input parameters were not used: ";
 	for ( auto &opt  : unreadOptions )
 		msg << '\t'<< opt;

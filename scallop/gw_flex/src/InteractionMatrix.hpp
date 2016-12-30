@@ -84,9 +84,13 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 				error_handling::Error( std::string("Expected a 8 column file but found line ")+line,5);
 			m.m = T(re,im);
 
-			auto it = elements.insert( std::move(m) );
+			auto it = elements.insert( m );
 			if ( ! it.second )
-				error_handling::Error( std::string("Interaction matrix element defined twice in file ")+filename,5);
+				error_handling::Error( std::string("Interaction matrix element (j,jp,l1,l2,l3,l4): (")+
+						std::to_string(m.ind[0])+","+std::to_string(m.ind[1])+","+
+						std::to_string(m.ind[2])+","+std::to_string(m.ind[3])+","+
+						std::to_string(m.ind[4])+","+std::to_string(m.ind[5])+
+						") defined twice in file "+filename,5);
 		}
 
 		this->initialize_layout_4pt_scalar_obj( nOrb, channels );
@@ -100,7 +104,9 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 							for (size_t l4 = 0 ; l4 < nOrb; l4++)
 							{
 								auto it = elements.find( matel(j,jp,l1,l2,l3,l4,bT(0),bT(0)) );
-								(*this)(j,jp,l1,l2,l3,l4) = ( it != elements.end() ? it->m : T(0) );
+								//Note: the factor 1/4 is due to the input convention where we use a normalization in spin space,
+								//		not Nambu space, to be closer to previous work. This effectively scales U => U/4 internally.
+								(*this)(j,jp,l1,l2,l3,l4) = ( it != elements.end() ? it->m : T(0) ) / bT(4.0);
 							}
 	}
 	mpi.bcast(nOrb, mpi.ioproc_index() );
@@ -125,6 +131,12 @@ template<typename T>
 T const * InteractionMatrix<T>::read_ptr() const
 {
 	return data_.data();
+}
+
+template<typename T>
+bool InteractionMatrix<T>::empty() const
+{
+	return data_.empty();
 }
 
 } /* namespace gw_flex */

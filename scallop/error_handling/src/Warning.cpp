@@ -18,6 +18,7 @@
  */
 
 #include "scallop/error_handling/Warning.h"
+#include "scallop/parallel/MPIModule.h"
 #include <iostream>
 
 namespace scallop {
@@ -25,12 +26,24 @@ namespace error_handling {
 
 Warning::Warning() : _buffer(), _sstrBuff(_buffer) { };
 
-void Warning::print() const {
+void Warning::print() const
+{
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 	if ( _sstrBuff.str().empty() )
 		return;
-	std::cerr << "=====================================================\n"
-				 "||WARNING : ||\n" <<  _sstrBuff.str() <<
-				 "=====================================================\n" <<std::endl;
+
+	std::string mpStr = "";
+#ifdef MPI_PARALLEL
+	mpStr += " on processor " + std::to_string(mpi.get_mpi_me())+" of " +std::to_string(mpi.get_nproc());
+#endif
+//
+//	std::cerr << "\n\n=====================================================\n"
+//				 "||WARNING : "<<mpStr<<"||\n" <<  _sstrBuff.str() <<
+//				 "\n\n=====================================================\n" <<std::endl;
+	std::cout << "\n\n=====================================================\n"
+				 "||WARNING : "<<mpStr<<"||\n" <<  _sstrBuff.str() <<
+				 "\n\n=====================================================\n" <<std::endl;
+	std::abort();
 }
 
 Warning::~Warning() {

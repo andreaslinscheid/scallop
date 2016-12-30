@@ -6,6 +6,8 @@
 *.dat
 #documents
 *.pdf
+#output files
+*.out
 # binaries
 *.x
 #vim swap files

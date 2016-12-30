@@ -50,6 +50,10 @@ private:
 	void test_KSBandstructure();
 
 	void test_MandyBodyBandStructure();
+
+	void test_DysonEquation();
+
+	void test_ChemicalPotentialShifting();
 };
 
 } /* namespace test */

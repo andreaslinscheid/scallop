@@ -1,4 +1,4 @@
-/*	This file Warning.cpp is part of scallop.
+/*	This file ObservableStatistics.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,22 +13,33 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 24, 2014
- *      Author: Andreas Linscheid
+ *  Created on: Dec 20, 2016
+ *      Author: A. Linscheid
  */
 
-#include "scallop/error_handling/Warning.h"
+#ifndef SCALLOP_OUTPUT_OBSERVABLESTATISTICS_H_
+#define SCALLOP_OUTPUT_OBSERVABLESTATISTICS_H_
 
 namespace scallop
 {
-namespace error_handling
+namespace output
 {
 
 template<typename T>
-Warning& Warning::operator<< (T const& message) {
-	 _sstrBuff << message;
-	return *this;
-}
+class ObservableStatistics
+{
+public:
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
-} /* namespace error_handling */
+	void print_statistics( output::TerminalOut & msg,
+			gw_flex::SelfEnergy<T> const& Sigma,
+			gw_flex::KohnShamBandStructure<T> const& KS,
+			gw_flex::GreensFunctionOrbital<T> const& G,
+			bT beta) const;
+};
+
+} /* namespace output */
 } /* namespace scallop */
+
+#include "scallop/output/src/ObservableStatistics.hpp"
+#endif /* SCALLOP_OUTPUT_OBSERVABLESTATISTICS_H_ */

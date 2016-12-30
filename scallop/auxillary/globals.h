@@ -29,14 +29,19 @@ namespace auxillary
 namespace globals
 {
 
+#define SCALLOP_MAJOR_VERSION 0
+#define SCALLOP_MINOR_VERSION 1
+
 ///Set the global verbosity level of command line output.
+/// The numbers must be such that high > medium > low
 typedef enum
 {
-	high = 1000,
-	medium = 1100,
-	low = 1110
+	high = 3000,
+	medium = 2000,
+	low = 1000
 } VerbosityLvl;
 
+///Before output, compare if a local verbosity level is <= than this global number and only print if it is.
 extern VerbosityLvl vLvl;
 
 } /*namespace globals */

@@ -65,6 +65,26 @@ private:
 
 };
 
+template<typename T>
+class OneBandCosine : public BandstructureModels<T>
+{
+public:
+	using typename BandstructureModels<T>::bT;
+	using typename BandstructureModels<T>::v;
+	using typename BandstructureModels<T>::vbT;
+
+	void compute_at_k( vbT kpts, size_t nkpts, v & unitary, vbT & energyEV ) const;
+
+	size_t get_nOrb() const;
+
+	void load_model_parameters( std::istream & s );
+
+private:
+
+	bT t_ = bT(0);
+	bT tp_ = bT(0);
+};
+
 } /* namespace gw_flex */
 } /* namespace scallop */
 

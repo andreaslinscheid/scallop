@@ -17,7 +17,7 @@
  *      Author: A. Linscheid
  */
 
-#include "scallop/gw_flex/GeneralizedSusceptibility.h"
+#include "scallop/gw_flex/SpinSusceptibility.h"
 #include "scallop/gw_flex/ChargeSusceptibility.h"
 #include "scallop/output/TerminalOut.h"
 #include "scallop/parallel/MPIModule.h"
@@ -42,7 +42,7 @@ public:
 
 private:
 
-	GeneralizedSusceptibility<T> sust_;
+	SpinSusceptibility<T> sust_;
 
 	ChargeSusceptibility<T> csust_;
 
@@ -266,9 +266,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 	msg << "Testing to get the bare suscepibility of a cos kx + cos ky band model.";
 	const bT bandwidth = 20; // meV
 	const bT mu = 0; // Perfect nesting
-	const bT temperature = 0.0376875	; // Temperature hand tuned to yield -0.1 to good accuracy at Q=pi,pi
-	const bT kb = 0.86173324 ; // meV / K
-	const bT beta = 1.0 / (kb * temperature);
+	const bT temperature = 0.3; // Temperature hand tuned to yield -0.1 to good accuracy at Q=pi,pi
+	const bT beta = auxillary::BasicFunctions::inverse_temperature(temperature) ;
 	const size_t nM = 128;
 
 	std::vector<size_t> spaceGrid = { 64, 64 };
@@ -310,7 +309,7 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 		if ( ictotal == mid)
 		{
 			std::cout << "\tValue at Q=(pi,pi):" << sust_(ik,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(sust_(ik,0,0,0,0,0))+0.1) < 0.00001)
+			assert( (std::abs( std::real(sust_(ik,0,0,0,0,0))+0.42994) < 0.00001)
 					and (std::abs( std::imag(sust_(ik,0,0,0,0,0)) ) < 0.00001 ) );
 		}
 		if ( ictotal == 0 )
@@ -337,7 +336,7 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 		if ( ictotal == mid)
 		{
 			std::cout << "\tValue at Q=(pi,pi):" << csust_(ik,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(csust_(ik,0,0,0,0,0))+0.1) < 0.00001)
+			assert( (std::abs( std::real(csust_(ik,0,0,0,0,0))+0.42994) < 0.00001)
 					and (std::abs( std::imag(csust_(ik,0,0,0,0,0)) ) < 0.00001 ) );
 		}
 		if ( ictotal == 0 )
@@ -346,8 +345,34 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 		}
 	}
 
-	InteractionMatrix_test<T> interact_t;
-	interact_t.test_init_file(); // this will create the files '/tmp/test_input_s.dat' and '/tmp/test_input_c.dat'
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	const std::string fnameSpin = "/tmp/test_input_s.dat";
+	if ( mpi.ioproc() )
+	{
+		std::ofstream testFile( fnameSpin.c_str() );
+		//Testing InteractionMatrix input from file:
+		testFile << "1 4" << '\n'; //One orbital 4 channels
+		testFile << "0\t0\t0\t0\t0\t0\t0.125\t0.0" << '\n';
+		testFile << "1\t1\t0\t0\t0\t0\t0.25\t0.0" << '\n';
+		testFile << "2\t2\t0\t0\t0\t0\t0.375\t0.0" << '\n';
+		testFile << "3\t3\t0\t0\t0\t0\t0.5\t0.0" << '\n';
+		//			^j ^jp l1 l2 l3 l4 Re(I) Im(I)
+		testFile.close();
+	}
+
+	const std::string fnameCharge = "/tmp/test_input_c.dat";
+	if ( mpi.ioproc() )
+	{
+		std::ofstream testFile( fnameCharge.c_str() );
+		//Testing InteractionMatrix input from file:
+		testFile << "1 1" << '\n'; //One orbital one channel
+		testFile << "0\t0\t0\t0\t0\t0\t1.5\t0.0" << '\n';
+		//			^j ^jp l1 l2 l3 l4 Re(I) Im(I)
+		testFile.close();
+	}
+	mpi.barrier();
+
 	InteractionMatrix<T> interactCharge;
 	interactCharge.init_file( "/tmp/test_input_c.dat" );
 
@@ -360,7 +385,7 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 		if ( ictotal == mid)
 		{
 			std::cout << "\tValue at Q=(pi,pi):" << csust_(ik,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(csust_(ik,0,0,0,0,0))+72.95) < 0.01)
+			assert( (std::abs( std::real(csust_(ik,0,0,0,0,0))-11.154) < 0.01)
 					and (std::abs( std::imag(csust_(ik,0,0,0,0,0)) ) < 0.001 ) );
 		}
 		if ( ictotal == 0 )
@@ -390,6 +415,8 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 				}
 			}
 			std::cout << std::endl;
+			assert( (std::abs( std::real(sust_(ik,0,3,3,0,0))-10.5537) < 0.01)
+					and (std::abs( std::imag(sust_(ik,0,3,3,0,0)) ) < 0.001 ) );
 		}
 		if ( ictotal == 0 )
 		{
@@ -403,6 +430,8 @@ void GeneralizedSusceptibility_test<T>::test_enhancement()
 				}
 			}
 			std::cout << std::endl;
+			assert( (std::abs( std::real(sust_(ik,0,3,3,0,0))-0.265168) < 0.01)
+					and (std::abs( std::imag(sust_(ik,0,3,3,0,0)) ) < 0.001 ) );
 		}
 	}
 }

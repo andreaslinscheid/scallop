@@ -20,6 +20,8 @@
 #include "scallop/output/TerminalOut.h"
 #include "scallop/auxillary/BasicFunctions.h"
 #include <iostream>
+#include <iomanip>
+#include <ctime>
 
 namespace scallop
 {
@@ -49,7 +51,7 @@ void TerminalOut::print()
 	if ( ! mpi.ioproc() )
 		return;
 
-	if ( auxillary::globals::vLvl < verbosityLvl_ )
+	if ( ! ( verbosityLvl_<= auxillary::globals::vLvl  ) )
 		return;
 
 	if ( ! printToStdErr_ )
@@ -74,6 +76,15 @@ MessageChain::~MessageChain()
 	theMessage_.print();
 }
 
+void TerminalOut::print_startup_message()
+{
+	MessageChain msg( *this );
+	msg << "Program SCALLOP version " << SCALLOP_MAJOR_VERSION <<"."<<SCALLOP_MINOR_VERSION;
+    auto t = std::time(nullptr);
+    auto tm = *std::localtime(&t);
+	msg << "\n\tCurrent date is " << std::put_time(&tm, "%d-%B-%Y at %H:%M:%S");
+	msg << "\n\tFor publications arising from this work, please cite:\n\tWe'll see about that\n";
+}
 
 } /* namespace output */
 } /* namespace scallop */

@@ -149,6 +149,9 @@ void KPath<T>::band_structure_gnuplot(
 	mpi.save_file_parallel( dataForGP, dataFile);
 	if ( mpi.ioproc() )
 	{
+		typedef typename OT::value_type aT;
+		auto cmp = [](aT const& a, aT const& b){return std::real(a) < std::real(b);};
+		auto mm = std::minmax_element(omega.begin(), omega.end(), cmp );
 		//build the path label
 		std::string xTics;
 		for ( auto l : labels_)
@@ -171,6 +174,7 @@ void KPath<T>::band_structure_gnuplot(
 		"set xtics ("+xTics+")\n\n"
 		"set ylabel \""+quantityLabel+"\" offset 0,0,0\n"
 		"unset xlabel\n\n"
+		"set yrange ["+std::to_string(std::real(*(mm.first)))+":"+std::to_string(std::real(*(mm.second)))+"]\n\n"
 		"set arrow from 0,0 to 1,0 lw 1 lt 2 lc rgb \"black\" nohead front\n"
 		"unset colorbox\n"
 		"set pm3d map\n"
@@ -187,6 +191,13 @@ void KPath<T>::band_structure_gnuplot(
 		scriptFile << plotscript;
 		scriptFile.close();
 	}
+}
+
+template<typename T>
+size_t
+KPath<T>::get_dim() const
+{
+	return dim_;
 }
 
 } /* namespace input */

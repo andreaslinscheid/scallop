@@ -18,7 +18,6 @@
  */
 
 #include "scallop/gw_flex/KohnShamGreensFunctionOrbital.h"
-#include "scallop/gw_flex/KohnShamBandStructure.h"
 #include "scallop/auxillary/LinearAlgebraInterface.h"
 
 namespace scallop
@@ -37,7 +36,18 @@ void KohnShamGreensFunctionOrbital<T>::set_from_wanHam(
 	KohnShamBandStructure<T> bands;
 	bands.initialize_from_file( grid, fileWannierHamiltonian );
 
-	this->set_in_both_spaces( timeOrFreqDim, invTemp, timeSpace, bands.get_unitary(), bands.get_bands());
+	this->set_from_KS_bandstructure( timeOrFreqDim, invTemp, timeSpace, bands);
+}
+
+template<typename T>
+void KohnShamGreensFunctionOrbital<T>::set_from_KS_bandstructure(
+		bool timeSpace,
+		size_t timeOrFreqDim,
+		bT invTemp,
+		KohnShamBandStructure<T> const& ksBS)
+{
+	this->alter_chem_pot_no_shift( ksBS.get_chem_pot() );
+	this->set_in_both_spaces( timeOrFreqDim, invTemp, timeSpace, ksBS.get_unitary(), ksBS.get_bands());
 }
 
 template<typename T>
@@ -68,7 +78,7 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 		UnitaryWannierKSBands<T> const& unitary,
 		typename auxillary::TemplateTypedefs<bT>::scallop_vector const& ksBands)
 {
-
+	this->set_k_space( true );
 	const size_t nK = unitary.get_spaceGrid_proc().get_num_k_grid();
 	const size_t nM = timeDim;
 	const size_t nO = unitary.get_nOrb();
@@ -79,7 +89,7 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 	{
 		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
 		this->initialize(
-				timeDim, fullGrid , nO, timeSpace, true, data);
+				timeDim, fullGrid , nO, timeSpace, true, data, this->get_chem_pot() );
 	}
 
 	auto FermiFunc = [] (bT E, bT beta)
@@ -118,10 +128,9 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 				for ( size_t iMKSB = 0 ; iMKSB < nO*4 ; ++iMKSB)
 				{
 					bT e = ksBands[ik*nO*4+iMKSB];
-					int frequencyIndex =
-							(it < nM/2 ? static_cast<int>(it) : static_cast<int>(it)-static_cast<int>(nM) );
+					auto iomegan = auxillary::BasicFunctions::matzubara_frequency_of_index(it,nM,invTemp);
 
-					bareGF[iMKSB] = 1.0 / (T(0,M_PI*(2*frequencyIndex+1)/invTemp) - e);
+					bareGF[iMKSB] = 1.0 / (iomegan - e);
 				}
 			}
 			auto unitaryThisK = unitary.read_phs_grid_ptr_block(ik);
@@ -132,6 +141,7 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 		}
 	}
 }
+
 
 } /* namespace gw_flex */
 } /* namespace scallop */

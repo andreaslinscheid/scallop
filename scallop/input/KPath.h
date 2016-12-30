@@ -20,6 +20,8 @@
 #ifndef SCALLOP_INPUT_KPATH_H_
 #define SCALLOP_INPUT_KPATH_H_
 
+#include "scallop/parallel/IrregularGridDistribution.h"
+
 namespace scallop
 {
 namespace input
@@ -36,6 +38,8 @@ public:
 	void read_kpath_file( std::string const& filename );
 
 	V const& get_k_path() const;
+
+	size_t get_dim() const;
 
 	template<class DT, class OT, typename T2>
 	void band_structure_gnuplot(

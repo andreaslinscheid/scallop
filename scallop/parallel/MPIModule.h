@@ -127,6 +127,15 @@ public:
 	template<typename T>
 	void max(  T & data ) const;
 
+	//Determine the minimal value among processors and overwrite every individual value with it.
+	//Sets proc to the processor that owned the maximal value
+	template<typename T>
+	void min(  T & data, size_t & proc ) const;
+
+	//Determine the minimal value among processors and overwrite every individual value with it.
+	template<typename T>
+	void min(  T & data ) const;
+
 	void abort(int ierr) const;
 
 	/**

@@ -41,13 +41,13 @@ public:
 
 	template<typename T>
 	void insert(T const& msg);
+
+	void print_startup_message();
 private:
 
 	const bool printToStdErr_;
 
 	/// Verbosity level when the currently buffered message is printed.
-	/// 0 means low the message is always printed, while 1 will only be printed if
-	/// the global verbosity level is higher or equal than medium.
 	const auxillary::globals::VerbosityLvl verbosityLvl_;
 
 	std::stringstream sstrBuff_;

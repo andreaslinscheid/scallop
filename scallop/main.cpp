@@ -18,8 +18,10 @@
  */
 
 #include "scallop/input/input.h"
+#include "scallop/output/output.h"
 #include "scallop/error_handling/Warning.h"
 #include "scallop/eliashberg/eliashberg.h"
+#include "scallop/gw_flex/gw_flex.h"
 
 using namespace scallop;
 
@@ -28,10 +30,7 @@ int main(int argc, char *argv[])
 	//read the input file //TODO or stdin
 	input::Setup setup(argc,argv);
 
-	//Set basic configuration options
-	input::Configuration config(setup.get_parsed_input_file());
-
-	if ( config.get_method().compare("eli") == 0 )
+	if ( setup.get_config().get_method().compare("eli") == 0 )
 	{
 		//solve the Eliashberg equations
 		eliashberg::DriverImaginaryAxis<double> eliashEqDriver;
@@ -40,19 +39,18 @@ int main(int argc, char *argv[])
 
 		eliashEqDriver.solve();
 	}
-	else if ( config.get_method().compare("kgw"))
+	else if ( setup.get_config().get_method().compare("kgw") == 0 )
 	{
+		//decide the accuracy of the floating point math
+		typedef std::complex<double> T;
 
+		gw_flex::Driver<T> flex_driver( setup.get_config() );
+		flex_driver.converge();
 	}
 	else
 	{
-		error_handling::Error("unkown task");
+		error_handling::Error( std::string("unkown task : '")+setup.get_config().get_method()+"'");
 	}
-
-	//Flag a warning for all keys that have not been used, as this indicates unintended input
-	std::vector<std::string> const unusedKeys = setup.get_list_unread_input_parameters();
-	for ( auto & key : unusedKeys )
-		error_handling::Warning("Key "+ key +" defined on input has never been used!") ;
 
 	return 0;
 };

@@ -19,6 +19,9 @@
 
 #include "scallop/gw_flex/KohnShamBandStructure.h"
 
+#ifndef SCALLOP_GW_FLEX_KOHNSHAMBANDSTRUCTURE_TEST_HPP_
+#define SCALLOP_GW_FLEX_KOHNSHAMBANDSTRUCTURE_TEST_HPP_
+
 namespace scallop
 {
 namespace gw_flex
@@ -33,6 +36,8 @@ public:
 
 	void test_all();
 
+	void write_test_input_file(std::string filename);
+
 private:
 
 	void test_2_bnd_cos();
@@ -45,14 +50,10 @@ void KohnShamBandStructure_test<T>::test_all()
 }
 
 template<typename T>
-void KohnShamBandStructure_test<T>::test_2_bnd_cos()
+void KohnShamBandStructure_test<T>::write_test_input_file(std::string filename)
 {
-	KohnShamBandStructure<T> e;
-
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
-	output::TerminalOut msg;
 
-	const std::string filename = "/tmp/2bndcos.dat";
 	if ( mpi.ioproc() )
 	{
 		std::ofstream testFile( filename.c_str() );
@@ -61,6 +62,16 @@ void KohnShamBandStructure_test<T>::test_2_bnd_cos()
 		testFile << "model\nTwoBandCosine\nt1=50.9\nt2=100\nEe=-20\nEh=10.0\n";
 		testFile.close();
 	}
+}
+
+template<typename T>
+void KohnShamBandStructure_test<T>::test_2_bnd_cos()
+{
+	KohnShamBandStructure<T> e;
+
+	const std::string filename = "/tmp/2bndcos.dat";
+	this->write_test_input_file( filename );
+
 	e.initialize_from_file( {64, 64}, filename );
 
 	auto grid = e.get_spaceGrid_proc().get_grid();
@@ -87,3 +98,4 @@ void KohnShamBandStructure_test<T>::test_2_bnd_cos()
 } /* namespace test */
 } /* namespace gw_flex */
 } /* namespace scallop */
+#endif /* SCALLOP_GW_FLEX_KOHNSHAMBANDSTRUCTURE_TEST_HPP_ */

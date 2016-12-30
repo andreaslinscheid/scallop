@@ -58,7 +58,23 @@ public:
 
 	void set_chem_pot( bT chemicalPotential );
 
-	void adjust_filling( bT numElectronPerSpin );
+	bT get_chem_pot( ) const;
+
+	void adjust_filling( bT numElectrons, bT invTemp );
+
+	std::pair<bT,bT> get_band_width() const;
+
+	bT compute_N_electrons(bT invTemperature, bT add_shift_chem_pot = bT(0)) const;
+
+	void get_local_orbital_KSHam(size_t ig,
+			v & orbitalHamiltonian,
+			auxillary::LinearAlgebraInterface<T> const& linalg = auxillary::LinearAlgebraInterface<T>()
+			)const;
+
+	void get_local_orbital_KSHam(size_t ig,
+			v & orbitalHamiltonian,
+			v & buffer1, v & buffer2,
+			auxillary::LinearAlgebraInterface<T> const& linalg = auxillary::LinearAlgebraInterface<T>()) const;
 private:
 
 	bool useModel_ = false;

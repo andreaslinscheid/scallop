@@ -46,7 +46,7 @@ void TerminalOut::insert(T const& msg)
 	if ( ! mpi.ioproc() )
 		return;
 
-	if ( auxillary::globals::vLvl < verbosityLvl_ )
+	if ( ! ( verbosityLvl_<= auxillary::globals::vLvl  ) )
 		return;
 
 	sstrBuff_ << msg;

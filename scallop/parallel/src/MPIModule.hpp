@@ -658,7 +658,23 @@ void MPIModule::max(  T & data, size_t & proc ) const
 }
 
 template<typename T>
+void MPIModule::min(  T & data, size_t & proc ) const
+{
+	delegate::max_impl<T,std::is_class<T>::value > maxdel;
+	T neg = T(-1.0)*data;
+	maxdel.max_val( neg,proc);
+	data = T(-1.0)*neg;
+}
+
+template<typename T>
 void MPIModule::max(  T & data ) const
+{
+	size_t dummy;
+	this->max( data , dummy );
+}
+
+template<typename T>
+void MPIModule::min(  T & data ) const
 {
 	size_t dummy;
 	this->max( data , dummy );

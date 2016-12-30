@@ -23,8 +23,10 @@
 #include <string>
 #include <sstream>
 
-namespace scallop {
-namespace error_handling {
+namespace scallop
+{
+namespace error_handling
+{
 
 /**
  * 	\brief Collect Warnings and print them to std::cerr.
@@ -32,7 +34,8 @@ namespace error_handling {
  * 	The class collects warnings into an internal buffer that is send
  * 	to std::cerr when it goes out of scope.
  */
-class Warning {
+class Warning
+{
 public:
 
 	/**

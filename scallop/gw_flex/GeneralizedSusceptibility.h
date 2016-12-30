@@ -36,6 +36,61 @@ class GeneralizedSusceptibility : public MatsubaraImagTimeFourierTransform<T>, p
 public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
+	/**
+	 * Control the adiabatic switching on of the interaction parameter in case of an instability.
+	 *
+	 * Passing an instance of this object to RPA_enhancement
+	 * allows to modify the attempts made to circumvent an instability
+	 * by reducing the interaction homogeneously up to maxScaling.
+	 * The code will try scaleResolutionSteps to reduce the scaling each time
+	 * halving the interval from scaling to maxScaling starting with scaling=1.0.
+	 * Given the instability is avoided if the interaction is scaled down by maxScaling,
+	 * the code will try maxScaleSteps with the above procedure before giving up and
+	 * collecting the smallest eigenvalue and vector.
+	 */
+	typedef class AdiabaticUpscale_
+	{
+	public:
+
+		void set(bT maxScaling, size_t maxScaleResolutionSteps, size_t maxScaleSteps);
+
+		bool is_soft() const;
+
+		bool steps_ok() const;
+
+		void reset();
+
+		void get_soft_vector( std::vector<bT> & softKVector, std::vector<T> & softOrbitalVector) const;
+
+		void track_instability(  std::vector<bT> const& softKVector, std::vector<T> const& softOrbitalVector );
+
+		bT get_scaling() const;
+
+		//Resets the scaling, but if currently, the scaling was not 1, then we increase the nscale counter,
+		//since this means a stable susceptiblity was only possible when reducing the interaction.
+		void set_stable();
+	private:
+
+		bT maxScaling_ = bT(1);
+
+		bT scaling_ = bT(1);
+
+		size_t maxScaleResolutionSteps_ = 1;
+
+		size_t nscaleResolutionSteps_ = 0;
+
+		size_t nscale_ = 0;
+
+		size_t maxNScale_ = 0;
+
+		std::vector<bT> softKVector_;
+
+		std::vector<T> softOrbitalVector_;
+
+		bT softEV_ = bT(0);
+
+	} AdiabaticUpscale;
+
 	using MemoryLayout::get_nOrb;
 	using MemoryLayout::get_nChnls;
 
@@ -52,8 +107,15 @@ public:
 			bool intimeSpace,
 			bool inKSpace);
 
-	void spin_RPA_enhancement(
-			InteractionMatrix<T> const& interMat);
+	auxillary::LinearAlgebraInterface<T> const& get_linAlg_module() const;
+
+
+protected:
+
+	void RPA_enhancement(
+			InteractionMatrix<T> const& interMat,
+			AdiabaticUpscale & a,
+			bool pure_sust = false);
 
 	T operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2) const;
 
@@ -63,7 +125,6 @@ public:
 
 	T & operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
 
-	auxillary::LinearAlgebraInterface<T> const& get_linAlg_module() const;
 private:
 
 	typename auxillary::TemplateTypedefs<T>::scallop_vector bufferQ1_;

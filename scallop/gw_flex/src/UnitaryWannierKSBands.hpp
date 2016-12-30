@@ -52,9 +52,7 @@ void UnitaryWannierKSBands<T>::initialize(
 
 	gdistr_.distribute_grid( std::move(spaceGrid) );
 
-	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
-	size_t size= 16*this->get_nOrb()*this->get_nOrb()*nK;
-	assert( data.size() == size );
+	assert( data.size() == 16*this->get_nOrb()*this->get_nOrb()*this->get_spaceGrid_proc().get_num_k_grid() );
 	data_ = std::move( data );
 }
 

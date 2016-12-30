@@ -18,6 +18,8 @@
  */
 
 #include "scallop/gw_flex/SelfEnergy.h"
+#include "scallop/output/TerminalOut.h"
+#include "scallop/parallel/MPIModule.h"
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
 #include "scallop/gw_flex/GeneralizedSusceptibility.h"
 
@@ -38,12 +40,15 @@ private:
 
 	void creation_test();
 
+	void one_loop_z_test();
+
 };
 
 template<typename T>
 void SelfEnergy_test<T>::test_all()
 {
 	creation_test();
+	one_loop_z_test();
 }
 
 template<typename T>
@@ -73,7 +78,7 @@ void SelfEnergy_test<T>::creation_test()
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 						gf(0,0,0,a1,s1,0,a2,s2) = pauli_z(a1,a2) * pauli_0(s1,s2);
 
-		GeneralizedSusceptibility<T> sust;
+		SpinSusceptibility<T> sust;
 		sust.compute_from_gf( gf );
 
 		se.add_electronic_selfenergy( gf , sust);
@@ -82,7 +87,7 @@ void SelfEnergy_test<T>::creation_test()
 			for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
 				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
-						assert( std::abs(( ( (a1==a2) && (s1==s2) )? a1 ==0? T(-1.0):T(1.0) : T(0) ) - se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
+						assert( std::abs(( ( (a1==a2) && (s1==s2) )? a1 ==0? T(-1.0):T(1.0) : T(0) ) + se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
 
 		msg << "\t singlet SC+charge+mz green's function (without recomputing the susceptibility):";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -101,7 +106,24 @@ void SelfEnergy_test<T>::creation_test()
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 					{
 						T val = ( (a1==a2) && (s1==s2) )? a1 ==0? T(-1.0):T(1.0) : T(0) ;
-						val = ( (a1!=a2) && (s1!=s2) )? s2+a2 == s1+a1? T(0.05):T(-0.05) : val ;
+						val = -1.0*(( (a1!=a2) && (s1!=s2) )? s2+a2 == s1+a1? T(0.05):T(-0.05) : val );
+						assert( std::abs(val - se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
+					}
+
+		msg << "\tFrequency part of the green's function:";
+		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
+			for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
+				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
+					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
+						gf(0,0,0,a1,s1,0,a2,s2) = pauli_0(a1,a2) * pauli_0(s1,s2);
+		se.set_to_zero();
+		se.add_electronic_selfenergy( gf , sust);
+		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
+			for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
+				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
+					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
+					{
+						T val = -1.0*(( (a1==a2) && (s1==s2) )? -T(1.0) : T(0) );
 						assert( std::abs(val - se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
 					}
 
@@ -140,10 +162,121 @@ void SelfEnergy_test<T>::creation_test()
 							for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 							{
 								T val = ( l1 == l2?1.0:0.0 );
-								val *= -1.0*(gf(0,0,0,a1,s1,0,a2,s2)+gf(0,0,1,a1,s1,1,a2,s2));
+								val *= (gf(0,0,0,a1,s1,0,a2,s2)+gf(0,0,1,a1,s1,1,a2,s2));
 								assert( std::abs(val - se(0,0,l1,a1,s1,l2,a2,s2)  ) < 0.00000001 );
 							}
 	}
+
+}
+
+template<typename T>
+void SelfEnergy_test<T>::one_loop_z_test()
+{
+	output::TerminalOut msg;
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	msg << "Testing the frequency renormalzation part of a one band cosine model.";
+
+	auxillary::BasicFunctions bf;
+	auto scallopPath = bf.get_scallop_path();
+	std::string const filenameModel = scallopPath+"examples/oneBndCosine/model_test.dat";
+	std::string const filenameInter = scallopPath+"examples/oneBndCosine/input_data/Isf.dat";
+	if ( mpi.ioproc() )
+	{
+		std::ofstream file( filenameModel.c_str() );
+		file << "model OneBandCosine\nt=290\ntp=-37.5";
+		file.close();
+		file.open( filenameInter.c_str() );
+		file << "1 4\n"
+				"0\t0\t0\t0\t0\t0\t200.0\t0.0\n"
+				"1\t1\t0\t0\t0\t0\t200.0\t0.0\n"
+				"2\t2\t0\t0\t0\t0\t200.0\t0.0\n"
+				"3\t3\t0\t0\t0\t0\t200.0\t0.0\n";
+		file.close();
+	}
+
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
+	const bT temperature = 10;
+	const bT beta = 1.0 / (auxillary::Constants<bT>::kBoltzmannMEV * temperature);
+	const size_t nM = 512;
+
+	KohnShamBandStructure<T> ksBnd;
+	std::vector<size_t> grid = {32, 32};
+	ksBnd.initialize_from_file( grid, filenameModel );
+	ksBnd.adjust_filling(0.875,beta);
+
+	msg << "\tFilling is " << ksBnd.compute_N_electrons( beta ) << " and temperature " << temperature << "K";
+
+	KohnShamGreensFunctionOrbital<T> ksGF;
+	ksGF.set_from_KS_bandstructure(true,nM,beta,ksBnd);
+	ksGF.perform_space_fft( );
+
+	InteractionMatrix<T> Isf;
+	Isf.init_file( filenameInter );
+
+	SpinSusceptibility<T> suscSF,enhSF;
+	suscSF.compute_from_gf( ksGF );
+	suscSF.transform_itime_Mfreq( beta );
+	suscSF.perform_space_fft( );
+	enhSF = suscSF;
+	suscSF.spin_RPA_enhancement( Isf );
+	enhSF.spin_RPA_enhancement( Isf, true );
+	std::ofstream fileBla(scallopPath+"examples/oneBndCosine/output_data/bla.dat");
+	for (size_t ik = 0 ; ik < suscSF.get_spaceGrid_proc().get_num_k_grid(); ++ik)
+	{
+		auto tuple = suscSF.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		fileBla << bT(tuple[0])/bT(grid[0]) << '\t' << bT(tuple[1])/bT(grid[0]) << '\t' << std::real(enhSF(ik,0,0,0,0,0))
+			<< '\t' << std::real(enhSF(ik,0,1,1,0,0))
+			<< '\t' << std::real(enhSF(ik,0,2,2,0,0))
+			<< '\t' << std::real(enhSF(ik,0,3,3,0,0))<< std::endl;
+		if ( tuple[1]==grid[1]-1 )
+			fileBla  << std::endl;
+	}
+	fileBla.close();
+	suscSF.transform_itime_Mfreq( beta );
+	suscSF.perform_space_fft( );
+
+	SelfEnergy<T> se;
+	se.add_electronic_selfenergy(ksGF,suscSF);
+	se.transform_itime_Mfreq( beta );
+	se.perform_space_fft( );
+
+	assert( se.is_in_k_space() );
+	assert( not se.is_in_time_space() );
+
+	//Check Gamma and pi 0
+	size_t mid = grid[1]*(grid[0]/2)+0;
+	std::ofstream fileGamma(scallopPath+"examples/oneBndCosine/output_data/z_gamma.dat");
+	std::ofstream filePiPi(scallopPath+"examples/oneBndCosine/output_data/z_pi.dat");
+	for (size_t ik = 0 ; ik < se.get_spaceGrid_proc().get_num_k_grid(); ++ik)
+	{
+		auto tuple = se.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ictotal = se.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
+		if ( ictotal == 0 )
+			for (size_t iw = 0 ; iw < nM; ++iw)
+			{
+				auto ptr = se.read_phs_grid_ptr_block(ik,iw);
+				T z = T(0);
+				for (size_t ns = 0 ; ns < 4; ++ns)
+					z += 0.25*ptr[ns*4+ns];
+				z = bT(1.0)+T(0,1.0)*std::imag(z)/auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta);
+				fileGamma << std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta)) << '\t'
+						<< std::real(z) <<std::endl;
+			}
+		if ( ictotal == mid )
+			for (size_t iw = 0 ; iw < nM; ++iw)
+			{
+				auto ptr = se.read_phs_grid_ptr_block(ik,iw);
+				T z = T(0);
+				for (size_t ns = 0 ; ns < 4; ++ns)
+					z += 0.25*ptr[ns*4+ns];
+				z = bT(1.0)+T(0,1.0)*std::imag(z)/auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta);
+				filePiPi << std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta)) << '\t'
+						<< std::real(z) <<std::endl;
+			}
+	}
+	fileGamma.close();
+	filePiPi.close();
 
 }
 

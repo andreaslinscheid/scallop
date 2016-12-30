@@ -18,6 +18,7 @@
  */
 
 #include "scallop/gw_flex/ChargeSusceptibility.h"
+#include "scallop/gw_flex/GeneralizedSusceptibility.h"
 
 namespace scallop
 {
@@ -59,9 +60,19 @@ void ChargeSusceptibility<T>::copy_charge_part( GeneralizedSusceptibility<T> con
 }
 
 template<typename T>
-void ChargeSusceptibility<T>::charge_RPA_enhancement(InteractionMatrix<T> const& interMat)
+void ChargeSusceptibility<T>::charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
+		bool pure_sust)
 {
-	this->spin_RPA_enhancement(interMat);
+	typename GeneralizedSusceptibility<T>::AdiabaticUpscale a;
+	this->RPA_enhancement(interMat,a,pure_sust);
+}
+
+template<typename T>
+void ChargeSusceptibility<T>::charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
+		typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
+		bool pure_sust)
+{
+	this->RPA_enhancement(interMat,a,pure_sust);
 }
 
 template<typename T>

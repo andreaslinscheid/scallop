@@ -29,19 +29,21 @@ namespace gw_flex
 {
 
 template<typename T>
-class ChargeSusceptibility : private GeneralizedSusceptibility<T>
+class ChargeSusceptibility : public GeneralizedSusceptibility<T>
 {
 public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
-
-	using GeneralizedSusceptibility<T>::get_spaceGrid_proc;
-	using GeneralizedSusceptibility<T>::get_linAlg_module;
 
 	void compute_from_gf( GreensFunctionOrbital<T> const & GF );
 
 	void copy_charge_part( GeneralizedSusceptibility<T> const& gsust );
 
-	void charge_RPA_enhancement(InteractionMatrix<T> const& interMat);
+	void charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
+			bool pure_sust = false);
+
+	void charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
+			typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
+			bool pure_sust = false);
 
 	T operator() (size_t ik, size_t iw, size_t m1,  size_t m2) const;
 

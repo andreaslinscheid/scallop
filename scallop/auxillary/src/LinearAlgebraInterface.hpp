@@ -19,6 +19,7 @@
 
 #include "scallop/auxillary/LinearAlgebraInterface.h"
 #include "scallop/error_handling/Error.h"
+#include "scallop/error_handling/Warning.h"
 #include <iostream>
 #include <complex>
 
@@ -28,10 +29,11 @@ namespace auxillary
 {
 
 template<typename T>
+template<typename TD, typename TR>
 void LinearAlgebraInterface<T>::matrix_times_diagonal_matrix(
 		T const * matrix, size_t dim,
-		T const * diagonalMatrix,
-		T * resultMatrix) const
+		TD const * diagonalMatrix,
+		TR * resultMatrix) const
 {
 	for ( size_t i = 0; i < dim; ++i )
 		for ( size_t j=0 ; j<dim ; ++j )
@@ -39,9 +41,10 @@ void LinearAlgebraInterface<T>::matrix_times_diagonal_matrix(
 }
 
 template<typename T>
+template<typename TD>
 void LinearAlgebraInterface<T>::matrix_times_diagonal_matrix(
 		T * matrix, size_t dim,
-		T const * diagonalMatrix) const
+		TD const * diagonalMatrix) const
 {
 	for ( size_t i = 0; i < dim; ++i )
 		for ( size_t j=0 ; j<dim ; ++j )
@@ -112,6 +115,17 @@ void LinearAlgebraInterface<T>::invert_square_matrix(
 		bT & conditionNumber,
 		bool computeConditionNumber ) const
 {
+	//Check if we get a zero matrix which is a signature of a bug.
+	bool all_zero = true;
+	for ( auto mij : matrix )
+	{
+		all_zero = all_zero && ( std::abs(mij - typename D::value_type(0)) < 1e-12 );
+		if ( ! all_zero )
+			break;
+	}
+	if ( all_zero )
+		error_handling::Error("Inversion of a zero matrix requested. This is an internal logic error.");
+
 	int dim;
 	this->determine_square_matrix_dim(matrix,dim);
 
@@ -121,7 +135,7 @@ void LinearAlgebraInterface<T>::invert_square_matrix(
 		IPIV.assign( dim, 0);
 		T * work_query = new T [1];
 		info = this->call_getri(LAPACK_ROW_MAJOR,dim,NULL,dim,NULL,work_query,-1);
-		inversion_of_matrices_info_checks(info);
+		inversion_of_matrices_info_checks(info,"i 1 getri");
 		workbuffer_.assign( static_cast<int>( work_query[0].real() ) , T(0) );
 		delete [] work_query;
 	}
@@ -138,20 +152,75 @@ void LinearAlgebraInterface<T>::invert_square_matrix(
 
 	// L U factorization
 	info = this->call_getrf(LAPACK_ROW_MAJOR,dim,dim,dptr,dim,ipptr);
-	inversion_of_matrices_info_checks(info);
+	inversion_of_matrices_info_checks(info,"i getrf");
 
 	if ( computeConditionNumber )
 	{
 		//Compute the condition number
 		info = this->call_gecon(LAPACK_ROW_MAJOR,'1', dim, dptr, dim, matrixNorm, &conditionNumber);
-		inversion_of_matrices_info_checks(info);
+		inversion_of_matrices_info_checks(info,"i gecon");
 	}
 
 	//compute the inverse
 	info = this->call_getri(LAPACK_ROW_MAJOR,dim,dptr,dim,ipptr,work,lwork);
-	inversion_of_matrices_info_checks(info);
+	inversion_of_matrices_info_checks(info,"i 2 getri");
 
 }
+
+template <typename T>
+template<class D>
+void LinearAlgebraInterface<T>::invert_positive_definite_hermitian_matrix(D & matrix) const
+{
+	int dim;
+	this->determine_square_matrix_dim(matrix,dim);
+
+	// Cholesky factorization
+	int info = this->call_potrf(LAPACK_ROW_MAJOR,'u',dim,matrix.data(),dim);
+	inversion_of_matrices_info_checks(info,"i potrf");
+
+
+	//compute the inverse
+	info = this->call_potri(LAPACK_ROW_MAJOR,'u',dim,matrix.data(),dim);
+	inversion_of_matrices_info_checks(info,"i potrf");
+}
+
+template <typename T>
+template<class D, class V>
+void LinearAlgebraInterface<T>::check_definite_invert_hermitian_matrix(
+		D const& inMatrix,D & outMatrix, bool & is_pos_dev, V & eigenvalues) const
+{
+	int dim;
+	this->determine_square_matrix_dim(inMatrix,dim);
+
+	if ( outMatrix.size() != inMatrix.size() )
+	{
+		outMatrix = inMatrix;
+	}
+	else
+	{
+		std::copy(inMatrix.begin(),inMatrix.end(),outMatrix.begin());
+	}
+
+	// Cholesky factorization
+	is_pos_dev = true;
+	int info = this->call_potrf(LAPACK_ROW_MAJOR,'u',dim,outMatrix.data(),dim);
+	if ( info > 0 )
+	{
+		std::copy(inMatrix.begin(),inMatrix.end(),outMatrix.begin());
+		is_pos_dev = false;
+		if ( eigenvalues.size() != static_cast<size_t>(dim))
+			eigenvalues = V(dim);
+		this->hermitian_eigensystem(true,true,outMatrix.data(),dim,eigenvalues.data());
+	}
+	else
+	{
+		inversion_of_matrices_info_checks(info,"i potrf");
+		//compute the inverse
+		info = this->call_potri(LAPACK_ROW_MAJOR,'u',dim,outMatrix.data(),dim);
+		inversion_of_matrices_info_checks(info,"i potri");
+	}
+}
+
 
 template <typename T>
 template<class D>
@@ -163,16 +232,18 @@ void LinearAlgebraInterface<T>::determine_square_matrix_dim( D const& matrix, in
 }
 
 template <typename T>
-void LinearAlgebraInterface<T>::inversion_of_matrices_info_checks( int info ) const
+void LinearAlgebraInterface<T>::inversion_of_matrices_info_checks( int info, std::string what ) const
 {
 	if ( info == 0 )
 		return;
 
+	error_handling::Warning warn;
+
 	if ( info < 0 )
-		std::cout << "WARNING input value # " << -info << " had an illegal value !" << std::endl;
+		warn << "input "<<what<<" value # " << -info <<"  had an illegal value !";
 
 	if ( info > 0 )
-		std::cout << "WARNING LinAlg algorithm failed to converge: " << info << std::endl;
+		warn << "LinAlg algorithm "<<what<<" failed to converge: " << info ;
 }
 
 } /* namespace auxillary */

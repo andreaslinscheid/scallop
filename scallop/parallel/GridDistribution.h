@@ -246,7 +246,7 @@ public:
 			std::vector<bT> & lowerCorner,
 			std::vector<bT> & upperCorner ) const;
 	/**
-	 * Get the processor index which handels a given point.
+	 * Get the processor index which handles a given point.
 	 *
 	 * @param isInKSpace	If true the grid is assumed to be in k space, R otherwise.
 	 * @param conseq	consecutively ordered index in the full grid.

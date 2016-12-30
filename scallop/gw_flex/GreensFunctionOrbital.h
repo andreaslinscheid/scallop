@@ -33,6 +33,9 @@ class GreensFunctionOrbital : public MatsubaraImagTimeFourierTransform<T>,
 							  private MemoryLayout
 {
 public:
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
+	typedef typename auxillary::TemplateTypedefs<T>::scallop_vector V;
+
 	using MemoryLayout::get_nOrb;
 
 	GreensFunctionOrbital();
@@ -43,7 +46,14 @@ public:
 			size_t orbitalDim,
 			bool initialInTimeDomain,
 			bool initialInReciprocalDomain,
-			typename auxillary::TemplateTypedefs<T>::scallop_vector const& data);
+			typename auxillary::TemplateTypedefs<T>::scallop_vector const& data,
+			bT chemPot = bT(0));
+
+	void alter_chem_pot_no_shift( bT newChemicalPotential);
+
+	void set_chem_pot( bT newChemicalPotential);
+
+	bT get_chem_pot() const;
 
 	T operator() (
 			size_t ig, size_t it, size_t l1, size_t a1, size_t s1,  size_t l2, size_t a2, size_t s2) const;
@@ -57,6 +67,18 @@ public:
 	T & operator() (
 			size_t ig, size_t it, size_t m1,  size_t m2);
 
+	void chem_pot_adj_local_part(  bT diffMu, V & localPart) const;
+
+	using MatsubaraImagTimeFourierTransform<T>::transform_itime_Mfreq;
+
+	void transform_itime_Mfreq_subtract(
+			bT invT,
+			GreensFunctionOrbital<T> const& ksGFTime,
+			GreensFunctionOrbital<T> const& ksGFFreq );
+
+private:
+
+	bT chemPot_ = 0;
 };
 
 } /* namespace gw_flex */

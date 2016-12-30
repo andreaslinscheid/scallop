@@ -27,9 +27,10 @@ namespace gw_flex
 template<typename T>
 void SelfEnergy<T>::set_to_zero()
 {
+	if ( not this->is_init() )
+		return;
 	size_t dataDim = this->get_spaceGrid_proc().get_num_grid_data()
-					*this->get_num_time()
-					*std::pow( 4*this->get_nOrb()*this->get_nOrb(),2);
+					*this->get_num_time() *std::pow( 4*this->get_nOrb(),2);
 	std::fill( this->write_data_ptr_block(0,0),this->write_data_ptr_block(0,0)+dataDim, T(0) );
 }
 
@@ -51,11 +52,10 @@ void SelfEnergy<T>::add_electronic_selfenergy(
 	}
 
 	size_t nO = this->get_nOrb();
-	size_t nM = this->get_num_time();
 	size_t nC = sf.get_nChnls();
 
 	assert( this->is_in_time_space() );
-	assert( nM == sf.get_num_time() );
+	assert( this->get_num_time() == sf.get_num_time() );
 	assert( !this->is_in_k_space() );
 	assert( nO == sf.get_nOrb() );
 	assert( this->get_spaceGrid_proc().get_grid() == sf.get_spaceGrid_proc().get_grid() );
@@ -91,7 +91,7 @@ void SelfEnergy<T>::add_electronic_selfenergy(
 													size_t SEIndex = gf_layout.memory_layout_2pt_obj(l1,a1,s1,l2,a2,s2);
 													size_t GFIndex = gf_layout.memory_layout_2pt_obj(l3,a1,s1,l4,a2,s2);
 													size_t SustIndex = sf_layout.memory_layout_4pt_scalar_obj(j,jp,l1,l3,l2,l4);
-													blockPtrSE[SEIndex] += blockPtrSust[SustIndex]*bufferGF[GFIndex];
+													blockPtrSE[SEIndex] += (nC == 4 ? -1.0:1.0)*blockPtrSust[SustIndex]*bufferGF[GFIndex];
 												}
 				}
 		}
@@ -154,7 +154,7 @@ void SelfEnergy<T>::transform_2pto_v(
 		}
 	};
 
-	size_t s1t, s2t;
+	size_t s1t = 0, s2t = 0;
 	T prefactor1, prefactor2;
 	for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
 		for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
@@ -176,6 +176,73 @@ void SelfEnergy<T>::transform_2pto_v(
 				}
 		}
 };
+
+template<typename T>
+void SelfEnergy<T>::linear_interpolate_time( VbT const & previousGrid, VbT const & presentGrid )
+{
+	size_t nB = this->get_data_block_size();
+	size_t nG = this->is_in_k_space() ? this->get_spaceGrid_proc().get_num_k_grid() : this->get_spaceGrid_proc().get_num_R_grid();
+
+	V newData( presentGrid.size()*nB*nG );
+	for ( size_t ig = 0 ; ig < nG; ++ig)
+	{
+		for ( size_t it = 0 ; it < presentGrid.size(); ++it)
+		{
+			auto newDataPtr = &( newData[(ig*presentGrid.size()+it)*nB] );
+
+			bT Mfreq = presentGrid[it];
+			auto itl = std::lower_bound(previousGrid.begin(),previousGrid.end(),Mfreq);
+			auto itu = std::upper_bound(previousGrid.begin(),previousGrid.end(),Mfreq);
+
+			//If Mfreq is smaller than the range covered by the previous grid range
+			//we simply copy the data from the smallest point.
+			//Also if Mfreq hit the begin, exactly, we also simply copy this element
+			if ( itl == previousGrid.begin() )
+			{
+				auto oldDataPtr = this->read_phs_grid_ptr_block(ig,0);
+				std::copy(oldDataPtr,oldDataPtr+nB,newDataPtr);
+				continue;
+			}
+
+			//If Mfreq is larger than the range covered by the previous grid range
+			//we simply copy the data from the largest point.
+			//Also if freq hit the end, exactly, we also simply copy this element
+			if ( itu == previousGrid.end() )
+			{
+				auto oldDataPtr = this->read_phs_grid_ptr_block(ig, this->get_num_time()-1 );
+				std::copy(oldDataPtr,oldDataPtr+nB,newDataPtr);
+				continue;
+			}
+
+			//If the Mfreq is actually part of the previous set and in the current range,
+			//	lower and upper bound don't give the same element.
+			if ( itl != itu )
+			{
+				size_t indexOldGrid = std::distance(previousGrid.begin(),itl);
+				auto oldDataPtr = this->read_phs_grid_ptr_block(ig,indexOldGrid);
+				std::copy(oldDataPtr,oldDataPtr+nB,newDataPtr);
+				continue;
+			}
+
+			--itl;//OK since itl cannot be begin() at this point.
+			size_t indexLower = std::distance(previousGrid.begin(),itl);
+			size_t indexUpper = std::distance(previousGrid.begin(),itu);
+			bT x = (Mfreq - previousGrid[indexLower])/(previousGrid[indexUpper]-previousGrid[indexLower]);
+
+			auto ptrDatal = this->read_phs_grid_ptr_block(ig,indexLower);
+			auto ptrDatau = this->read_phs_grid_ptr_block(ig,indexUpper);
+			for ( size_t i = 0 ; i < nB; ++i)
+				newDataPtr[i] = ptrDatal[i] * (bT(1)-x) + ptrDatau[i] * x;
+		}
+	}
+
+	this->initialize( presentGrid.size(),
+			this->get_spaceGrid_proc().get_grid(),
+			this->get_nOrb(),
+			this->is_in_time_space(),
+			this->is_in_k_space(),
+			newData );
+}
 
 } /* namespace gw_flex */
 } /* namespace scallop */

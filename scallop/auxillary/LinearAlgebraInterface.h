@@ -56,14 +56,16 @@ public:
 
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
+	template<typename TD, typename TR>
 	void matrix_times_diagonal_matrix(
 			T const * matrix, size_t dim,
-			T const * diagonalMatrix,
-			T * resultMatrix) const;
+			TD const * diagonalMatrix,
+			TR * resultMatrix) const;
 
+	template<typename TD>
 	void matrix_times_diagonal_matrix(
 			T * matrix, size_t dim,
-			T const * diagonalMatrix) const;
+			TD const * diagonalMatrix) const;
 
 	void matrix_times_matrix(
 			T const * mleft, size_t dim,
@@ -91,6 +93,11 @@ public:
 			T * matrix, int dim,
 			bT * eigenval) const;
 
+	void eigensystem(
+			bool comEV,
+			T * matrix, int dim,
+			T * eigenval) const;
+
 	/**
 	 * Replace the square 'matrix' with its inverse.
 	 *
@@ -103,6 +110,26 @@ public:
 			bT & conditionNumber,
 			bool computeConditionNumber = true) const;
 
+	/**
+	 * Replace the hermitian positive definite 'matrix' with its inverse.
+	 *
+	 * @param matrix					Row major ordered square matrix. D must implement data() and size() similar to vector.
+	 */
+	template<class D>
+	void invert_positive_definite_hermitian_matrix(D & matrix) const;
+
+	/**
+	 * Check if the hermitian matrix 'matrix' is positive definite and if so replace it with its inverse or compute the eigenspectrum.
+	 *
+	 * @param inMatrix				Row major ordered input square matrix. D must implement data() and size() similar to vector.
+	 * @param outmatrix				Row major ordered output square matrix. D must implement data() and size() similar to vector.
+	 * 								Either the inverse matrix or the eigenvectors.
+	 * @param is_pos_dev			set to true if the matrix turns out to be positive definite.
+	 * @param eigenvalues			Significant if \p is_pos_dev is false. Then it contains the eigenvectors.
+	 */
+	template<class D, class V>
+	void check_definite_invert_hermitian_matrix(D const& inMatrix,D & outMatrix, bool & is_pos_dev, V & eigenvalues) const;
+
 private:
 
 	mutable std::vector<int> IPIV;
@@ -114,7 +141,7 @@ private:
 	template<class D>
 	void determine_square_matrix_dim( D const& matrix, int & dim) const;
 
-	void inversion_of_matrices_info_checks( int info ) const;
+	void inversion_of_matrices_info_checks(int info, std::string what = "" ) const;
 
 	int call_getri(int matrix_order, int n, T * a, int lda, const int * ipiv, T * work, int lwork) const;
 
@@ -129,6 +156,20 @@ private:
 			   int lda, bT * w,
 			   T * work, int lwork,
 			   bT * rwork) const;
+
+	int call_geev(  int matrix_order, char jobvl, char jobvr,
+            int n, T* a,
+            int lda, T* w,
+            T* vl, int ldvl,
+            T* vr, int ldvr,
+            T* work, int lwork,
+            bT* rwork) const;
+
+	int call_potrf(
+			int matrix_order, char uplo,int n,T * a,int lda ) const;
+
+	int call_potri(
+			int matrix_order, char uplo,int n,T * a,int lda ) const;
 };
 
 } /* namespace auxillary */

@@ -1,4 +1,4 @@
-/*	This file InteractionMatrix.h is part of scallop.
+/*	This file DysonEquation.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,47 +13,37 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 22, 2016
+ *  Created on: Dec 16, 2016
  *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_
-#define SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_
+#ifndef SCALLOP_GW_FLEX_DYSONEQUATION_H_
+#define SCALLOP_GW_FLEX_DYSONEQUATION_H_
 
+#include "scallop/gw_flex/GreensFunctionOrbital.h"
 #include "scallop/auxillary/TemplateTypedefs.h"
-#include "scallop/gw_flex/MemoryLayout.h"
-#include <string>
+#include "scallop/gw_flex/KohnShamBandStructure.h"
+#include "scallop/gw_flex/SelfEnergy.h"
 
 namespace scallop
 {
 namespace gw_flex
 {
 
-template<typename T>
-class InteractionMatrix : private MemoryLayout
+class DysonEquation
 {
 public:
-	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
-	using MemoryLayout::get_nOrb;
-
-	void init_file( std::string const& filename );
-
-	T * write_ptr();
-
-	T const * read_ptr() const;
-
-	T & operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
-
-	bool empty() const;
-private:
-
-	typename auxillary::TemplateTypedefs<T>::scallop_vector data_;
-
+	template<typename T>
+	void solve_by_inversion(
+			GreensFunctionOrbital<T> & g,
+			typename auxillary::TemplateTypedefs<T>::scallop_vector const& MatsFreqs,
+			KohnShamBandStructure<T> const& elstr,
+			SelfEnergy<T> const& sigma) const;
 };
 
 } /* namespace gw_flex */
 } /* namespace scallop */
 
-#include "scallop/gw_flex/src/InteractionMatrix.hpp"
-#endif /* SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_ */
+#include "scallop/gw_flex/src/DysonEquation.hpp"
+#endif /* SCALLOP_GW_FLEX_DYSONEQUATION_H_ */

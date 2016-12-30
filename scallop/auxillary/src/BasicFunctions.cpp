@@ -49,7 +49,7 @@ std::string BasicFunctions::get_scallop_path() const
 		pathToScallop = pathToScallop.substr(0,t);
 	}
 
-	pathToScallop = std::regex_replace(pathToScallop, std::regex("(/tests)?/bin\..*/?"), "");
+	pathToScallop = std::regex_replace(pathToScallop, std::regex("(/tests)?/bin\\..*/?"), "");
 
 	return fullFileName = pathToScallop + std::string("/");
 }

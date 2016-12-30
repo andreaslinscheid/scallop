@@ -23,6 +23,7 @@
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
 #include "scallop/gw_flex/UnitaryWannierKSBands.h"
 #include "scallop/auxillary/TypeMapComplex.h"
+#include "scallop/gw_flex/KohnShamBandStructure.h"
 
 namespace scallop
 {
@@ -41,6 +42,12 @@ public:
 			bT invTemp,
 			std::vector<size_t> grid,
 			std::string const& fileWannierHamiltonian);
+
+	void set_from_KS_bandstructure(
+			bool timeSpace,
+			size_t timeOrFreqDim,
+			bT invTemp,
+			KohnShamBandStructure<T> const& ksBS);
 
 	void set_in_time_space(
 			UnitaryWannierKSBands<T> const& unitaryWannierBands,

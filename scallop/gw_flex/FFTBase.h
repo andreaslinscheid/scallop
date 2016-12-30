@@ -133,6 +133,13 @@ public:
 	bool is_in_time_space() const;
 
 	void set_time_space(bool newState);
+
+	void set_k_space(bool newState);
+
+	bool compare_significant_digits(
+			FFTBase<T> const & other,
+			int significantDigits,
+			T thrConsiderZero) const;
 protected:
 
 	void perform_time_fft();

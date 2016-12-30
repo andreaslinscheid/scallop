@@ -21,6 +21,7 @@
 #include "scallop/parallel/MPIModule.h"
 #include "scallop/output/TerminalOut.h"
 #include "scallop/auxillary/LinearAlgebraInterface.h"
+#include <fstream>
 
 namespace scallop
 {

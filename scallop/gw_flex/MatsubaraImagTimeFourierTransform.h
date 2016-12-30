@@ -36,9 +36,8 @@ namespace gw_flex {
 template<typename T>
 class MatsubaraImagTimeFourierTransform : public FFTBase<T>
 {
-	typedef typename scallop::auxillary::TypeMapComplex<T>::type bT;
-
 public:
+	typedef typename scallop::auxillary::TypeMapComplex<T>::type bT;
 
 	MatsubaraImagTimeFourierTransform( bool Fermi );
 

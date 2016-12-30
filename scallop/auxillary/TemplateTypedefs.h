@@ -34,6 +34,8 @@ class TemplateTypedefs
 public:
 	typedef std::vector<T, auxillary::AlignmentAllocator<T,32> > scallop_vector;
 //	typedef std::vector<T> scallop_vector;
+
+	typedef T (*NambuSpinPauliMatrix)(size_t,size_t,size_t,size_t);
 };
 
 } /* namespace auxillary */

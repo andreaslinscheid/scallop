@@ -1,4 +1,4 @@
-/*	This file InteractionMatrix.h is part of scallop.
+/*	This file SpinSusceptibility.h is part of scallop.
  *
  *  scallop is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -13,16 +13,14 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Nov 22, 2016
+ *  Created on: Dec 15, 2016
  *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_
-#define SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_
+#ifndef SCALLOP_GW_FLEX_SPINSUSCEPTIBILITY_H_
+#define SCALLOP_GW_FLEX_SPINSUSCEPTIBILITY_H_
 
-#include "scallop/auxillary/TemplateTypedefs.h"
-#include "scallop/gw_flex/MemoryLayout.h"
-#include <string>
+#include "scallop/gw_flex/GeneralizedSusceptibility.h"
 
 namespace scallop
 {
@@ -30,30 +28,26 @@ namespace gw_flex
 {
 
 template<typename T>
-class InteractionMatrix : private MemoryLayout
+class SpinSusceptibility : public GeneralizedSusceptibility<T>
 {
 public:
-	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
-	using MemoryLayout::get_nOrb;
+	void compute_from_gf( GreensFunctionOrbital<T> const & GF);
 
-	void init_file( std::string const& filename );
+	using GeneralizedSusceptibility<T>::operator();
 
-	T * write_ptr();
+	void spin_RPA_enhancement(
+			InteractionMatrix<T> const& interMat,
+			bool pure_sust = false);
 
-	T const * read_ptr() const;
-
-	T & operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
-
-	bool empty() const;
-private:
-
-	typename auxillary::TemplateTypedefs<T>::scallop_vector data_;
-
+	void spin_RPA_enhancement(
+			InteractionMatrix<T> const& interMat,
+			typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
+			bool pure_sust = false);
 };
 
 } /* namespace gw_flex */
 } /* namespace scallop */
 
-#include "scallop/gw_flex/src/InteractionMatrix.hpp"
-#endif /* SCALLOP_GW_FLEX_INTERACTIONMATRIX_H_ */
+#include "scallop/gw_flex/src/SpinSusceptibility.hpp"
+#endif /* SCALLOP_GW_FLEX_SPINSUSCEPTIBILITY_H_ */

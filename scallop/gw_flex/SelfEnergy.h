@@ -21,6 +21,7 @@
 #define SCALLOP_GW_FLEX_SELFENERGY_H_
 
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
+#include "scallop/gw_flex/GeneralizedSusceptibility.h"
 
 namespace scallop
 {
@@ -31,12 +32,19 @@ template<typename T>
 class SelfEnergy : 	public GreensFunctionOrbital<T>
 {
 public:
+	typedef typename auxillary::TypeMapComplex<T>::type bT;
+
+	typedef typename auxillary::TemplateTypedefs<T>::scallop_vector V;
+
+	typedef typename auxillary::TemplateTypedefs<bT>::scallop_vector VbT;
 
 	void set_to_zero();
 
 	void add_electronic_selfenergy(
 			GreensFunctionOrbital<T> const& gf,
 			GeneralizedSusceptibility<T> const& sf);
+
+	void linear_interpolate_time( VbT const & previousGrid, VbT const & presentGrid );
 
 private:
 

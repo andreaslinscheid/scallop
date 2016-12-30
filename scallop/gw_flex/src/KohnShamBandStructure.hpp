@@ -20,7 +20,10 @@
 #include "scallop/gw_flex/KohnShamBandStructure.h"
 #include "scallop/gw_flex/WannierHamiltonian.h"
 #include "scallop/parallel/GridDistribution.h"
+#include "scallop/error_handling/Warning.h"
+#include "scallop/auxillary/BasicFunctions.h"
 #include <memory>
+#include <algorithm>
 
 namespace scallop
 {
@@ -107,6 +110,9 @@ void KohnShamBandStructure<T>::set_model(std::istream & stream)
 	if ( buffer.compare("TwoBandCosine") == 0 )
 		model_ = std::make_shared< TwoBandCosine<T> >();
 
+	if ( buffer.compare("OneBandCosine") == 0 )
+		model_ = std::make_shared< OneBandCosine<T> >();
+
 	model_->load_model_parameters( stream );
 }
 
@@ -130,8 +136,14 @@ void KohnShamBandStructure<T>::compute_at_k(
 	}
 
 	//apply the internal chemical potential offset
-	for ( auto &e : enk )
-		e -= mu_;
+	for ( size_t ik = 0 ; ik < nK ; ++ik )
+		for ( size_t ib = 0 ; ib < this->get_nOrb() ; ++ib )
+			for ( size_t a = 0 ; a < 2 ; ++a )
+				for ( size_t is = 0 ; is < 2 ; ++is )
+				{
+					size_t dIndex = ik*this->get_nOrb()*4 + this->memory_layout_2pt_diagonal(ib,a,is);
+					enk[dIndex] -= bT(a == 0 ? 1.0 :-1.0)*mu_;
+				}
 
 	assert( enk.size() == nK*this->get_nOrb()*4 );
 	assert( unitary.size() == nK*this->get_nOrb()*4*this->get_nOrb()*4 );
@@ -174,15 +186,160 @@ template<typename T>
 void KohnShamBandStructure<T>::set_chem_pot( bT chemicalPotential )
 {
 	bT shift = (chemicalPotential-mu_);
-	for ( auto &e : enk_ )
-		e -= shift;
+	size_t nK = gridDistr_.get_num_k_grid();
+	size_t nB = this->get_nOrb();
+
+	for ( size_t ik = 0 ; ik < nK ; ++ik )
+		for ( size_t ib = 0 ; ib < nB ; ++ib )
+			for ( size_t a = 0 ; a < 2 ; ++a )
+				for ( size_t is = 0 ; is < 2 ; ++is )
+				{
+					size_t dIndex = ik*this->get_nOrb()*4 + this->memory_layout_2pt_diagonal(ib,a,is);
+					enk_[dIndex] -= bT(a == 0 ? 1.0 :-1.0)*shift;
+				}
 	mu_ = chemicalPotential;
 }
 
 template<typename T>
-void KohnShamBandStructure<T>::adjust_filling( bT numElectronPerSpin )
+typename KohnShamBandStructure<T>::bT
+KohnShamBandStructure<T>::get_chem_pot( ) const
 {
+	return mu_;
+}
 
+template<typename T>
+void KohnShamBandStructure<T>::adjust_filling( bT numElectrons, bT invTemp )
+{
+	auxillary::BasicFunctions bf;
+	auto oldMu = mu_;
+
+	struct Filling
+	{
+		Filling( KohnShamBandStructure<T> * ptr, bT invTemp, bT Ne) :
+			Ne_(Ne), ptr_(ptr) , invTemp_(invTemp){};
+
+		bT operator() (bT x) const
+		{
+			ptr_->set_chem_pot( x );
+			bT nElec = ptr_->compute_N_electrons( invTemp_ );
+			return (nElec - Ne_);
+		};
+
+		bool check_conv(bT f_xn, bT f_xnp1) const
+		{
+			return std::abs(f_xn - f_xnp1) < 0.0000001;
+		};
+
+	private:
+		bT Ne_;
+		KohnShamBandStructure<T> * ptr_;
+		bT invTemp_ ;
+	};
+
+	Filling filling( this, invTemp, numElectrons );
+
+	auto energyRange = this->get_band_width();
+
+	std::pair<bool,bT> result;
+	bf.secant_method( bT((energyRange.first+energyRange.second)/2.0),
+			energyRange,
+			filling,1000,
+			result);
+
+	if ( result.first )
+	{
+		this->set_chem_pot( result.second );
+	}
+	else
+	{
+		error_handling::Warning warn( std::string("Cannot find chemical potential to yield ")
+			+std::to_string( numElectrons ) + "electrons. Using previous chemical potential ...");
+		this->set_chem_pot( oldMu );
+	}
+}
+
+template<typename T>
+std::pair<typename KohnShamBandStructure<T>::bT,typename KohnShamBandStructure<T>::bT>
+KohnShamBandStructure<T>::get_band_width() const
+{
+	auto result = std::make_pair( bT(0), bT(0) );
+	decltype(enk_) nambu11Part( enk_.size()/2 );
+	size_t nK = gridDistr_.get_num_k_grid();
+	size_t nB = this->get_nOrb();
+	size_t c =0;
+	for ( size_t ik = 0 ; ik < nK ; ++ik )
+		for ( size_t ib = 0 ; ib < nB ; ++ib )
+			for ( size_t is = 0 ; is < 2 ; ++is )
+			{
+				//We use only the Nambu 11 compontent
+				size_t dIndex = ik*this->get_nOrb()*4 + this->memory_layout_2pt_diagonal(ib,0,is);
+				nambu11Part[c++] = enk_[dIndex];
+			}
+	auto pairit = std::minmax_element( nambu11Part.begin(), nambu11Part.end() );
+	if( (!(pairit.first == nambu11Part.end())) && (!(pairit.second == nambu11Part.end())) )
+		result = std::make_pair(*pairit.first,*pairit.second);
+	return result;
+}
+
+template<typename T>
+typename KohnShamBandStructure<T>::bT
+KohnShamBandStructure<T>::compute_N_electrons(bT invTemperature, bT add_shift_chem_pot) const
+{
+	bT result = 0;
+	size_t nK = gridDistr_.get_num_k_grid();
+	size_t nB = this->get_nOrb();
+	for ( size_t ik = 0 ; ik < nK ; ++ik )
+		for ( size_t ib = 0 ; ib < nB ; ++ib )
+			for ( size_t is = 0 ; is < 2 ; ++is )
+			{
+				//We use only the Nambu 11 compontent
+				size_t dIndex = ik*this->get_nOrb()*4 + this->memory_layout_2pt_diagonal(ib,0,is);
+				bT e = enk_[dIndex] - add_shift_chem_pot;
+				result += auxillary::BasicFunctions::fermi_funcs(invTemperature,e);
+			}
+	result /= gridDistr_.get_num_grid();
+
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	mpi.sum(result);
+	return result;
+}
+
+template<typename T>
+void KohnShamBandStructure<T>::get_local_orbital_KSHam(size_t ik,
+		v & orbitalHamiltonian,
+		auxillary::LinearAlgebraInterface<T> const& linalg
+		)const
+{
+	v buffer1;
+	v buffer2;
+	this->get_local_orbital_KSHam(ik,orbitalHamiltonian,linalg,buffer1,buffer2);
+}
+
+template<typename T>
+void KohnShamBandStructure<T>::get_local_orbital_KSHam(size_t ik,
+		v & orbitalHamiltonian,
+		v & buffer1,
+		v & buffer2,
+		auxillary::LinearAlgebraInterface<T> const& linalg) const
+{
+	size_t nB = std::pow(this->get_nOrb()*4,2);
+
+	if ( orbitalHamiltonian.size() != nB)
+		orbitalHamiltonian = v(nB);
+
+	if ( buffer1.size() != nB)
+		buffer1 = v(nB);
+
+	if ( buffer2.size() != nB)
+		buffer2 = v(nB);
+
+	//Construct the KS bands in Orbital space at this k pt
+	for ( size_t m1 = 0 ; m1 < nB ; ++m1)
+		for ( size_t m2 = 0 ; m2 < nB ; ++m2)
+			buffer1[m1*nB+m2] = std::conj(akil_(ik,m1,m2));
+
+	linalg.matrix_times_diagonal_matrix( akil_.read_phs_grid_ptr_block(ik), nB, &( enk_[ik*nB] ), buffer2.data() );
+	linalg.matrix_times_matrix( buffer1.data(), nB, buffer2.data(), orbitalHamiltonian.data() );
 }
 
 } /* namespace gw_flex */

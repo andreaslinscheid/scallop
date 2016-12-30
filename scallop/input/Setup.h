@@ -21,6 +21,7 @@
 #define SCALLOP_INPUT_SETUP_H_
 
 #include "scallop/input/InputFile.h"
+#include "scallop/input/Configuration.h"
 #include <string>
 #include <map>
 
@@ -60,8 +61,18 @@ public:
 	 * @return A list of keys in the input file that have not been referenced.
 	 */
 	std::vector<std::string> get_list_unread_input_parameters() const;
+
+	/**
+	 * \brief Obtain the general configuration parameter read from the input.
+	 *
+	 * @return Object with the configuration.
+	 */
+	Configuration const& get_config() const;
 private:
+
 	InputFile _inputFile;
+
+	Configuration config_;
 
 };
 

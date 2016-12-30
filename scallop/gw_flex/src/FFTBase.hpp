@@ -19,6 +19,7 @@
 
 #include "scallop/gw_flex/FFTBase.h"
 #include "scallop/parallel/MPIModule.h"
+#include <gslpp/float_comparison/FloatComparison.h>
 #include <fftw3.h>
 #include <assert.h>
 
@@ -565,6 +566,12 @@ void FFTBase<T>::set_time_space(bool newState)
 }
 
 template<typename T>
+void FFTBase<T>::set_k_space(bool newState)
+{
+	isKSpace_ = newState;
+}
+
+template<typename T>
 void FFTBase<T>::perform_time_fft()
 {
 	if ( isTimeSpace_ )
@@ -596,6 +603,29 @@ void FFTBase<T>::perform_space_fft()
 		this->perform_R_to_k_fft();
 
 	isKSpace_ = ! isKSpace_;
+}
+
+
+template<typename T>
+bool FFTBase<T>::compare_significant_digits(
+		FFTBase<T> const & other,
+		int significantDigits,
+		T thrConsiderZero) const
+{
+	if ( data_.size() != other.data_.size() )
+		return false;
+
+	for ( size_t i = 0 ; i < data_.size(); ++i )
+	{
+		if ( !
+				gslpp::float_comparison::equal_up_to_significant_digits_decimal_above_threshold(
+						data_[i],other.data_[i], significantDigits, thrConsiderZero) )
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
 } /* namespace gw_flex */
