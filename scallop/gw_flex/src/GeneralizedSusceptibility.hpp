@@ -214,15 +214,16 @@ void GeneralizedSusceptibility<T>::RPA_enhancement(
 			for ( int i = 0 ; i < blockDim*blockDim; ++i )
 				interactionScaled[i] = interaction[i]*a.get_scaling();
 
+			T pref = (channels==4 ? T(4.0) : T(-16.0) );
 			linAlgModule_.call_gemm(false, false,
 					blockDim,blockDim,blockDim,
-					T(16.0),susct, blockDim,
+					pref,susct, blockDim,
 							interactionScaled.data(), blockDim,
 		            T(0.0),chiTimesI.data(),blockDim);
 
 			std::copy(chiTimesI.data(), chiTimesI.data()+chiTimesI.size(), IdPlusChiTimesI.data() );
 			for ( int i = 0 ; i < blockDim; ++i)
-				IdPlusChiTimesI[i*blockDim+i] = 1.0+(channels==1?-1.0:1.0)*IdPlusChiTimesI[i*blockDim+i];
+				IdPlusChiTimesI[i*blockDim+i] = 1.0+IdPlusChiTimesI[i*blockDim+i];
 
 			this->get_linAlg_module().check_definite_invert_hermitian_matrix(
 					IdPlusChiTimesI,IdPlusChiTimesIInv, positiveDefinite, eigenvalues );
@@ -247,7 +248,7 @@ void GeneralizedSusceptibility<T>::RPA_enhancement(
 						enhChiTimesI.data() );
 
 				//The spin channel gets an extra minus.
-				T pref = T(16.0)*(channels==4?-1.0:1.0);
+				T pref = (channels==4 ? T(1.0) : T(-16.0) );
 				linAlgModule_.call_gemm(false, false,
 						blockDim,blockDim,blockDim,
 						pref,interactionScaled.data(), blockDim,
@@ -380,7 +381,7 @@ void GeneralizedSusceptibility<T>::AdiabaticUpscale_::track_instability(
 	softKVector_ = softKVector;
 	softOrbitalVector_ = softOrbitalVector;
 	nscaleResolutionSteps_++;
-	scaling_ = (scaling_+maxScaling_)/bT(2.0);
+	scaling_ = bT(1.0)+bT(maxScaling_-1.0)*bT(nscaleResolutionSteps_)/bT(maxScaleResolutionSteps_);
 }
 
 template<typename T>

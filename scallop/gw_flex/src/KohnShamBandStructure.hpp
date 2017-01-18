@@ -278,6 +278,11 @@ KohnShamBandStructure<T>::get_band_width() const
 	auto pairit = std::minmax_element( nambu11Part.begin(), nambu11Part.end() );
 	if( (!(pairit.first == nambu11Part.end())) && (!(pairit.second == nambu11Part.end())) )
 		result = std::make_pair(*pairit.first,*pairit.second);
+
+	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
+	mpi.min( result.first );
+	mpi.max( result.second );
+
 	return result;
 }
 

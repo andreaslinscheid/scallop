@@ -104,9 +104,10 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 							for (size_t l4 = 0 ; l4 < nOrb; l4++)
 							{
 								auto it = elements.find( matel(j,jp,l1,l2,l3,l4,bT(0),bT(0)) );
-								//Note: the factor 1/4 is due to the input convention where we use a normalization in spin space,
-								//		not Nambu space, to be closer to previous work. This effectively scales U => U/4 internally.
-								(*this)(j,jp,l1,l2,l3,l4) = ( it != elements.end() ? it->m : T(0) ) / bT(4.0);
+								//Note: the factor 1/4 in the spin channel is due to the input convention where
+								// we use a normalization in spin space, not Nambu space, to be
+								// closer to previous work. This way we use the normalization of the bare Coulomb matrix elements.
+								(*this)(j,jp,l1,l2,l3,l4) = ( it != elements.end() ? it->m : T(0) ) ;
 							}
 	}
 	mpi.bcast(nOrb, mpi.ioproc_index() );

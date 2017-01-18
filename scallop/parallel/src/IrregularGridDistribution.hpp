@@ -383,8 +383,10 @@ void IrregularGridDistribution<T>::proc_sync_data(
 	for ( auto & s : sendcountBlock)
 		s *= blocksizePerGridPt;
 
+#ifndef NDEBUG
 	for ( auto s: sendbuffer)
 		assert( s == s);
+#endif
 
 	mpi.all_to_allv( sendbuffer, dReqGrid, sendcountBlock );
 

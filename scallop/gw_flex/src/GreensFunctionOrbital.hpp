@@ -187,9 +187,10 @@ void GreensFunctionOrbital<T>::chem_pot_adj_local_part(
 			std::copy( ptr, ptr+nB, localBlock.begin());
 			linalg.invert_square_matrix(localBlock,dummy,false);
 			for ( size_t iO = 0; iO < nO; ++iO)
-				for ( size_t ns = 0; ns < 4; ++ns)
-					localBlock[gflayout.memory_layout_2pt_obj_nsc(iO,ns,iO,ns)] -=
-							(ns < 2? bT(-1.0):bT(1.0))*diffMu;
+				for ( size_t a = 0; a < 2; ++a)
+					for ( size_t s = 0; s < 2; ++s)
+						localBlock[gflayout.memory_layout_2pt_obj(iO,a,s,iO,a,s)] -=
+							(a == 1? bT(-1.0):bT(1.0))*diffMu;
 			linalg.invert_square_matrix(localBlock,dummy,false);
 			std::copy( localBlock.begin(), localBlock.end(), localPart.begin()+iw*nB );
 		}

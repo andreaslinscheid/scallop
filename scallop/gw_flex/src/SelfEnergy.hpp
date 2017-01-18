@@ -178,28 +178,55 @@ void SelfEnergy<T>::transform_2pto_v(
 };
 
 template<typename T>
-void SelfEnergy<T>::linear_interpolate_time( VbT const & previousGrid, VbT const & presentGrid )
+void SelfEnergy<T>::linear_interpolate_frequency( V const & previousGrid, V const & presentGrid )
 {
+	assert( not this->is_in_time_space() );
 	size_t nB = this->get_data_block_size();
 	size_t nG = this->is_in_k_space() ? this->get_spaceGrid_proc().get_num_k_grid() : this->get_spaceGrid_proc().get_num_R_grid();
 
-	V newData( presentGrid.size()*nB*nG );
+	assert( previousGrid.size() > 0 );
+	VbT imagPreviousGrid( previousGrid.size() );
+	for ( size_t i = 0 ; i < previousGrid.size(); ++i)
+	{
+		imagPreviousGrid[i] = i < previousGrid.size()/2 ?
+				std::imag(previousGrid[i+previousGrid.size()/2]) :
+				std::imag(previousGrid[static_cast<int>(i)-static_cast<int>(previousGrid.size()/2)]);
+	}
+	assert( presentGrid.size() > 0 );
+	VbT imagPresentGrid( presentGrid.size() );
+	for ( size_t i = 0 ; i < presentGrid.size(); ++i)
+	{
+		imagPresentGrid[i] = i < presentGrid.size()/2 ?
+				std::imag(presentGrid[i+presentGrid.size()/2]) :
+				std::imag(presentGrid[static_cast<int>(i)-static_cast<int>(presentGrid.size()/2)]);
+	}
+
+	auto map_fourier_order_back = [] (size_t i, size_t dim) {
+		size_t r = i < dim/2 ?
+				static_cast<int>(i)+dim/2
+			    :static_cast<int>(i)-static_cast<int>(dim/2);
+		assert( r < dim );
+		return r;
+	};
+
+	V newData( imagPresentGrid.size()*nB*nG );
 	for ( size_t ig = 0 ; ig < nG; ++ig)
 	{
-		for ( size_t it = 0 ; it < presentGrid.size(); ++it)
+		for ( size_t it = 0 ; it < imagPresentGrid.size(); ++it)
 		{
-			auto newDataPtr = &( newData[(ig*presentGrid.size()+it)*nB] );
+			size_t index = map_fourier_order_back(it, imagPresentGrid.size() );
+			auto newDataPtr = &( newData[(ig*imagPresentGrid.size()+index)*nB] );
 
-			bT Mfreq = presentGrid[it];
-			auto itl = std::lower_bound(previousGrid.begin(),previousGrid.end(),Mfreq);
-			auto itu = std::upper_bound(previousGrid.begin(),previousGrid.end(),Mfreq);
+			bT Mfreq = imagPresentGrid[ it ];
+			auto itl = std::lower_bound(imagPreviousGrid.begin(),imagPreviousGrid.end(),Mfreq);
+			auto itu = std::upper_bound(imagPreviousGrid.begin(),imagPreviousGrid.end(),Mfreq);
 
 			//If Mfreq is smaller than the range covered by the previous grid range
 			//we simply copy the data from the smallest point.
 			//Also if Mfreq hit the begin, exactly, we also simply copy this element
-			if ( itl == previousGrid.begin() )
+			if ( itl == imagPreviousGrid.begin() )
 			{
-				auto oldDataPtr = this->read_phs_grid_ptr_block(ig,0);
+				auto oldDataPtr = this->read_phs_grid_ptr_block(ig,this->get_num_time()/2);
 				std::copy(oldDataPtr,oldDataPtr+nB,newDataPtr);
 				continue;
 			}
@@ -207,9 +234,9 @@ void SelfEnergy<T>::linear_interpolate_time( VbT const & previousGrid, VbT const
 			//If Mfreq is larger than the range covered by the previous grid range
 			//we simply copy the data from the largest point.
 			//Also if freq hit the end, exactly, we also simply copy this element
-			if ( itu == previousGrid.end() )
+			if ( itu == imagPreviousGrid.end() )
 			{
-				auto oldDataPtr = this->read_phs_grid_ptr_block(ig, this->get_num_time()-1 );
+				auto oldDataPtr = this->read_phs_grid_ptr_block(ig, this->get_num_time()/2-1);
 				std::copy(oldDataPtr,oldDataPtr+nB,newDataPtr);
 				continue;
 			}
@@ -218,30 +245,33 @@ void SelfEnergy<T>::linear_interpolate_time( VbT const & previousGrid, VbT const
 			//	lower and upper bound don't give the same element.
 			if ( itl != itu )
 			{
-				size_t indexOldGrid = std::distance(previousGrid.begin(),itl);
+				size_t indexOldGrid = std::distance(imagPreviousGrid.begin(),itl);
 				auto oldDataPtr = this->read_phs_grid_ptr_block(ig,indexOldGrid);
 				std::copy(oldDataPtr,oldDataPtr+nB,newDataPtr);
 				continue;
 			}
 
 			--itl;//OK since itl cannot be begin() at this point.
-			size_t indexLower = std::distance(previousGrid.begin(),itl);
-			size_t indexUpper = std::distance(previousGrid.begin(),itu);
-			bT x = (Mfreq - previousGrid[indexLower])/(previousGrid[indexUpper]-previousGrid[indexLower]);
+			size_t indexLower = std::distance(imagPreviousGrid.begin(),itl);
+			size_t indexUpper = std::distance(imagPreviousGrid.begin(),itu);
+			assert( indexLower < imagPreviousGrid.size() );
+			assert( indexUpper < imagPreviousGrid.size() );
+			bT x = (Mfreq - imagPreviousGrid[indexLower])/(imagPreviousGrid[indexUpper]-imagPreviousGrid[indexLower]);
+			assert( (x >= 0) && (x < 1.0) );
 
-			auto ptrDatal = this->read_phs_grid_ptr_block(ig,indexLower);
-			auto ptrDatau = this->read_phs_grid_ptr_block(ig,indexUpper);
+			auto ptrDatal = this->read_phs_grid_ptr_block(ig,map_fourier_order_back(indexLower,imagPreviousGrid.size()));
+			auto ptrDatau = this->read_phs_grid_ptr_block(ig,map_fourier_order_back(indexUpper,imagPreviousGrid.size()));
 			for ( size_t i = 0 ; i < nB; ++i)
 				newDataPtr[i] = ptrDatal[i] * (bT(1)-x) + ptrDatau[i] * x;
 		}
 	}
 
-	this->initialize( presentGrid.size(),
+	MatsubaraImagTimeFourierTransform<T>::initialize( imagPresentGrid.size(),
 			this->get_spaceGrid_proc().get_grid(),
-			this->get_nOrb(),
+			this->get_nOrb()*16,
 			this->is_in_time_space(),
 			this->is_in_k_space(),
-			newData );
+			newData);
 }
 
 } /* namespace gw_flex */

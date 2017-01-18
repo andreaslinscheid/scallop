@@ -106,8 +106,8 @@ void ChemicalPotentialShifting<T>::compute_N_elec_mB(
 		for ( size_t iO = 0; iO < nO; ++iO)
 			for ( size_t a = 0; a < 2; ++a)
 				for ( size_t s = 0; s < 2; ++s)
-				tmp += (0.5/beta)*(buffer1_[iw*nB+gfl.memory_layout_2pt_obj(iO,a,s,iO,a,s)]
-				           - buffer2_[iw*nB+gfl.memory_layout_2pt_obj(iO,a,s,iO,a,s)]);
+					tmp += (a==0?1.0:-1.0)*(0.5/beta)*(buffer1_[iw*nB+gfl.memory_layout_2pt_obj(iO,a,s,iO,a,s)]
+							   - buffer2_[iw*nB+gfl.memory_layout_2pt_obj(iO,a,s,iO,a,s)]);
 	nElec += std::real(tmp);
 
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();

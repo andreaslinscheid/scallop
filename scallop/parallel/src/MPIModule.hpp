@@ -677,7 +677,7 @@ template<typename T>
 void MPIModule::min(  T & data ) const
 {
 	size_t dummy;
-	this->max( data , dummy );
+	this->min( data , dummy );
 }
 
 template<class T>

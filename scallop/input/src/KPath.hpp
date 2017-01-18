@@ -103,6 +103,7 @@ void KPath<T>::read_kpath_file( std::string const& filename )
 		std::copy(kpath.begin(),kpath.end(),kptsTotal_.begin());
 	}
 	mpi.bcast(kptsTotal_, mpi.ioproc_index() );
+	mpi.bcast(dim_, mpi.ioproc_index() );
 }
 
 template<typename T>

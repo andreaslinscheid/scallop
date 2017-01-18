@@ -37,7 +37,7 @@ Driver<T>::Driver(input::Configuration config) : config_(std::move(config))
 }
 
 template<typename T>
-void Driver<T>::initialize( double temp, double & Ne)
+void Driver<T>::initialize_this_T_N( double temp, double & Ne)
 {
 	iter_ = 0;
 
@@ -65,30 +65,13 @@ void Driver<T>::initialize( double temp, double & Ne)
 		msg << "Choosing a cutoff of " << mCutoff << " meV as 1.5 x max energy.";
 	}
 
+	//If the self energy is initialized, we need to save the frequency array
+	prevMatsFreq_ = matsFreq_;
+
 	size_t nM = 2*std::floor( mCutoff / ( 2.0*M_PI / beta ) - 0.5 );
 	matsFreq_ = V(nM);
 	for ( size_t n = 0 ; n < nM; ++n)
 		matsFreq_[n] = auxillary::BasicFunctions::matzubara_frequency_of_index(n,nM,beta);
-
-	if ( ! se_.is_init() )
-	{
-		V data;
-		se_.initialize(
-				matsFreq_.size(),
-				config_.get_grid(),
-				elstr_.get_nOrb(),
-				/* init in time=*/ true,
-				/* init in k spcae=*/ false,
-				data );
-
-		seL_ = se_;
-	}
-	else
-	{
-		//We possibly need to interpolate in frequency
-		//and we need to update the number of electrons from a possible
-		//non-zero self energy
-	}
 }
 
 template<typename T>
@@ -108,16 +91,19 @@ void Driver<T>::converge()
 		Ic_.init_file( config_.get_f_c() );
 	}
 
-	for ( auto temp : config_.get_temp() )
+	bool initialize_GF_from_KS = true;
+	for ( auto Ne : config_.get_nelec() )
 	{
-		for ( auto Ne : config_.get_nelec() )
+		for ( auto temp : config_.get_temp() )
 		{
 			output::TerminalOut msgDetailed( auxillary::globals::VerbosityLvl::high );
 			std::string electrons;
 			if ( Ne > 0 )
 				electrons = std::string()+" with Ne=" + std::to_string(Ne)+" e/spin/U.C.  in the system";
 			msg << "\nRunning at temperature T=" << temp << "K"+electrons+"\n";
-			this->initialize(temp,Ne);
+			this->initialize_this_T_N(temp,Ne);
+
+			bool initialize_GF_from_SE = not initialize_GF_from_KS;
 
 			msgDetailed << "Number of Matsubara frequencies is " << matsFreq_.size();
 			while ( true )
@@ -125,13 +111,20 @@ void Driver<T>::converge()
 				iter_++;
 				auto beta = auxillary::BasicFunctions::inverse_temperature( temp );
 				msgDetailed << "\tStarting iteration " << iter_ << ":" ;
-				this->prepare_iteration(temp);
 
 				if ( config_.get_adj_mu() && iter_ > 1 )
 				{
 					msgDetailed << "\tAdjusting the chemical potential ...";
 					this->shift_chemical_pot(temp,Ne);
 				}
+
+				//We start each iteration in real space and frequency
+				this->prepare_iteration(temp,initialize_GF_from_KS,initialize_GF_from_SE);
+
+				//Now we iteration without resetting the GF
+				initialize_GF_from_KS = false;
+				initialize_GF_from_SE = false;
+
 				G_.transform_itime_Mfreq_subtract(beta, ksGT_, ksGF_ );
 				//Now G is in real space and time
 				assert( G_.is_in_time_space() and (not G_.is_in_k_space()) );
@@ -177,7 +170,25 @@ void Driver<T>::converge()
 }
 
 template<typename T>
-void Driver<T>::prepare_iteration( double temp)
+void Driver<T>::shift_chemical_pot( double temp, double Ne  )
+{
+	std::pair<bool,bT> result;
+	auto beta = auxillary::BasicFunctions::inverse_temperature( temp );
+	chmpot_.determine_new_chemPot( Ne, beta, elstr_, ksGF_, G_, result);
+	if ( result.first )
+	{
+		bT old_mu = elstr_.get_chem_pot();
+		elstr_.set_chem_pot( result.second );
+		ksGF_.set_chem_pot( result.second );
+		G_.set_chem_pot( result.second );
+
+		output::TerminalOut msg( auxillary::globals::VerbosityLvl::medium );
+		msg << "\tShifting the chemical potential by " << result.second - old_mu << " meV";
+	}
+}
+
+template<typename T>
+void Driver<T>::prepare_iteration( double temp, bool set_GF_from_KS, bool set_GF_from_SE )
 {
 	spinAdiabaticScale_.set(
 			config_.get_maxDownscale(),
@@ -202,34 +213,44 @@ void Driver<T>::prepare_iteration( double temp)
 				elstr_ );
 		ksGT_.perform_space_fft();
 	}
-
-	//We start each iteration in space and frequency
-	if (iter_ == 1)
+	if ( ! se_.is_init() )
 	{
-		G_ = ksGF_;
+		//First time we set the SE.
+		V data;
+		se_.initialize(
+				matsFreq_.size(),
+				config_.get_grid(),
+				elstr_.get_nOrb(),
+				/* init in time=*/ true,
+				/* init in k spcae=*/ false,
+				data );
+		seL_ = se_;
 	}
 
+	//Are we resetting the GF?
+	if ( set_GF_from_KS or set_GF_from_SE )
+		G_ = ksGF_;
+
+	//It may be that we enter with a non-zero self-energy.
+	//Here, we solve the Dyson equation to transform this
+	// information into the GF. The self-energy is set to 0 later.
+	// We do keep the interpolated SE for convergence checks, though.
+	if ( set_GF_from_SE)
+	{
+		//We possibly need to interpolate in frequency
+		assert( se_.is_init() );
+		se_.linear_interpolate_frequency(prevMatsFreq_,matsFreq_);
+		seL_ = se_;
+		seL_.transform_itime_Mfreq( beta );
+		seL_.perform_space_fft();
+		this->solve_Dyson();
+		G_.perform_space_fft();
+	}
+
+	assert( (  seL_.is_in_time_space())  && (! seL_.is_in_k_space()) );
 	assert( (! G_.is_in_time_space())    && (! G_.is_in_k_space()) );
 	assert( (! ksGF_.is_in_time_space()) && (! ksGF_.is_in_k_space()) );
 	assert( (  ksGT_.is_in_time_space()) && (! ksGT_.is_in_k_space()) );
-}
-
-template<typename T>
-void Driver<T>::shift_chemical_pot( double temp, double Ne  )
-{
-	std::pair<bool,bT> result;
-	auto beta = auxillary::BasicFunctions::inverse_temperature( temp );
-	chmpot_.determine_new_chemPot( Ne, beta, elstr_, ksGF_, G_, result);
-	if ( result.first )
-	{
-		bT old_mu = elstr_.get_chem_pot();
-		elstr_.set_chem_pot( result.second );
-		ksGF_.set_chem_pot( result.second );
-		G_.set_chem_pot( result.second );
-
-		output::TerminalOut msg( auxillary::globals::VerbosityLvl::medium );
-		msg << "\tShifting the chemical potential by " << result.second - old_mu << " meV";
-	}
 }
 
 template<typename T>

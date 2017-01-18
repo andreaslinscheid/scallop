@@ -62,7 +62,7 @@ void ObservableStatistics<T>::print_statistics( output::TerminalOut & msg,
 			totalN += std::real(sum);
 			line += std::string("\t")+std::to_string( std::real(sum) );
 		}
-	msg << line;
+//	msg << line;
 //	msg << "\tTotal filling " << totalN;
 
 //	msg << "\tMagnetiszation per orbital: (l=0..."+std::to_string( G.get_nOrb() - 1)+")";
@@ -106,22 +106,52 @@ void ObservableStatistics<T>::print_statistics( output::TerminalOut & msg,
 	// this stores for each k pt and orbital, the projections onto the
 	// input orbitals and the frequency renormalization Z(k,l).
 	std::vector<VbT> kResolvedZ0( nO, VbT(nK, bT(0)) );
+	std::vector<VbT> kResolvedX0( nO, VbT(nK, bT(0)) );
+	std::vector<VbT> kResolvedSGap0( nO, VbT(nK, bT(0)) );
+	std::vector<VbT> kResolvedTGap0( nO, VbT(nK, bT(0)) );
 	for ( size_t ik = 0; ik < nK ; ++ik)
 	{
 		auto lowestMFreqs = Sigma.read_data_ptr_block(ik,0);
 		for ( size_t l1 = 0 ; l1 < nO; ++l1)
 			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+			{
 				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+				{
 					kResolvedZ0[l1][ik] += 0.25*std::imag(lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,s1,l1,a1,s1)]);
+					kResolvedX0[l1][ik] += 0.25*(a1==0?1.0:-1.0)*
+							std::real(lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,s1,l1,a1,s1)]);
+					auto a = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,s1,l1,(a1+1)%2,(s1+1)%2)];
+					kResolvedSGap0[l1][ik] += 0.25*(s1==0?1.0:-1.0)*std::abs(a);
+				}
+
+				auto tx = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,0,l1,(a1+1)%2,1)]
+				          +lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,1,l1,(a1+1)%2,0)];
+				auto ty = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,1,l1,(a1+1)%2,1)]
+				          +lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,0,l1,(a1+1)%2,0)];
+				auto tz = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,0,l1,(a1+1)%2,0)]
+				          -lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,1,l1,(a1+1)%2,1)];
+				kResolvedTGap0[l1][ik] += 0.25*(std::abs(tx)+std::abs(ty)+std::abs(tz));
+			}
 	}
 
 	for ( size_t io = 0; io < nO ; ++io)
 	{
 		auto itkm = std::max_element(kResolvedZ0[io].begin(),kResolvedZ0[io].end());
-		bT Z = bT(1.0)+ (*itkm)	/ std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(0,nM,beta));
+		bT Z = bT(1.0)- (*itkm)	/ std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(0,nM,beta));
 
-		msg << "\tMax Z("<<io<<",ik) = "<<Z;
+		auto itkmx = std::max_element(kResolvedX0[io].begin(),kResolvedX0[io].end());
+		bT X = (*itkmx);
+
+		auto itkmds = std::max_element(kResolvedSGap0[io].begin(),kResolvedSGap0[io].end());
+		bT DeltaS = (*itkmds);
+
+		auto itkmdt = std::max_element(kResolvedTGap0[io].begin(),kResolvedTGap0[io].end());
+		bT DeltaT = (*itkmdt);
+		msg << "\tMax Z("<<io<<",ik) = "<< Z << "; Max X("<<io<<",ik) = "<<X
+				<<"; Max DeltaS("<<io<<",ik) = "<<DeltaS <<"; Max DeltaT("<<io<<",ik) = "<<DeltaT ;
 	}
+
+	msg << "\tEstimating gap factor per orbital (lowest Matsubara frequency of Delta):";
 }
 
 } /* namespace output */

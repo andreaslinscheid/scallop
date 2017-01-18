@@ -58,10 +58,11 @@ void ManyBodyBandStructure<T>::compute_spectral_function(
 	typedef typename detail::defined_container_type<B,D>::type container_type;
 
 	size_t nM = MatsGrid.size();
+#ifndef NDEBUG
 	size_t nGR = inInKSpace ? rGrid.get_num_k_grid() : rGrid.get_num_R_grid();
-	size_t nDPts = nGR*nM*blockD;
-	assert( nDPts == regularGridData.size() );
+	assert( nGR*nM*blockD == regularGridData.size() );
 	assert( path.get_spaceGrid_proc().get_grid() == rGrid.get_grid() );
+#endif
 
 	container_type dataForThisPts;
 	path.proc_sync_data(inInKSpace, regularGridData,  dataForThisPts, nM*blockD );

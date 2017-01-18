@@ -109,7 +109,8 @@ void GreensFunctionOrbital_test<T>::create_test_gfs()
 	mpi.sum( diff );
 	msg << "Difference between known form of the KS GF in frequency and the actual return of the object:" << diff;
 	mpi.barrier();
-	assert( (diff.real() < 0.0000001 ) && (diff.imag() < 0.0000001 ) );
+	if( not ((diff.real() < 0.0000001) && (diff.imag() < 0.0000001)) )
+		error_handling::Error("Test failed");
 
 	//fill with the GF with data for the single band
 	KS_gf_singleBand_.set_in_time_space( std::move(unitary), std::move(energies), nMKS, beta);
@@ -136,7 +137,8 @@ void GreensFunctionOrbital_test<T>::create_test_gfs()
 	mpi.sum( diff );
 	msg << "Difference between known form of the KS GF in time and the actual return of the object:" << diff;
 	mpi.barrier();
-	assert( (diff.real() < 0.0000001) && (diff.imag() < 0.0000001) );
+	if( not ((diff.real() < 0.0000001) && (diff.imag() < 0.0000001)) )
+		error_handling::Error("Test failed");
 
 	//initialize empty greens function for this grid
 	typename auxillary::TemplateTypedefs<T>::scallop_vector gfd;
@@ -195,7 +197,8 @@ void GreensFunctionOrbital_test<T>::transform_reciprocal_to_realspace()
 	mpi.sum( diff );
 	msg << "The difference between analytic and numeric FFT from k to R is " << diff;
 	mpi.barrier();
-	assert( (diff.real() < 0.0000001) && (diff.imag() < 0.0000001) );
+	if( not ((diff.real() < 0.0000001) && (diff.imag() < 0.0000001)) )
+		error_handling::Error("Test failed");
 
 	gf_singleBand_.perform_space_fft();
 	diff = T(0);
@@ -216,7 +219,28 @@ void GreensFunctionOrbital_test<T>::transform_reciprocal_to_realspace()
 	mpi.sum( diff );
 	msg << "The difference between analytic and numeric FFT from R to k is " << diff;
 	mpi.barrier();
-	assert( (diff.real() < 0.0000001) && (diff.imag() < 0.0000001) );
+	if( not ((diff.real() < 0.0000001) && (diff.imag() < 0.0000001)) )
+		error_handling::Error("Test failed");
+
+	//Overwrite by calling initialize
+	const size_t nM2 = gf_singleBand_.get_num_time()/2;
+	typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+	gf_singleBand_.initialize(
+			nM2, kgrid , 1,
+			gf_singleBand_.is_in_time_space(),
+			gf_singleBand_.is_in_k_space(), data );
+	for (size_t ik = 0 ; ik < gf_singleBand_.get_spaceGrid_proc().get_num_k_grid() ; ++ik)
+	{
+		auto tuple = gf_singleBand_.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ikx = tuple.front();
+		size_t iky = tuple.back();
+		for (size_t iw = 0 ; iw < gf_singleBand_.get_num_time() ; ++iw)
+			for (size_t sa = 0 ; sa < 4 ; ++sa)
+				gf_singleBand_(ik,iw,sa,sa) = (sa < 2 ? 1.0:-1.0 )*
+									0.5*bandwidth*(std::cos( (2*M_PI*ikx)/kgrid[0] )
+										+std::cos( (2*M_PI*iky)/kgrid[1] ))-mu;
+	}
+	gf_singleBand_.perform_space_fft();
 }
 
 template<typename T>

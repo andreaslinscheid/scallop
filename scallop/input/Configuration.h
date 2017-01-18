@@ -182,8 +182,8 @@ public:
 	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
 			scale_res,
 			"see 'maxDownscale'",
-			"4",
-			4,
+			"10",
+			10,
 			size_t);
 
 	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(

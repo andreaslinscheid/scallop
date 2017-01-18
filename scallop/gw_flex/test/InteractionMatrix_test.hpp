@@ -92,7 +92,7 @@ void InteractionMatrix_test<T>::test_init_file()
 						for (size_t l4 = 0 ; l4 < nO; l4++)
 						{
 							T val = j==jp? 1.5*T(j+1,0) : T(0);
-							assert( interact(j,jp,l1,l2,l3,l4) == val/4.0);
+							assert( interact(j,jp,l1,l2,l3,l4) == val);
 						}
 #endif
 }

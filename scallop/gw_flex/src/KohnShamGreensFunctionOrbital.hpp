@@ -85,7 +85,11 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 
 	auto fullGrid = unitary.get_spaceGrid_proc().get_grid();
 
-	if ( ! this->is_init() )
+	//initialize on empty object or if the data requirement changes
+	size_t oldDataLength = this->get_spaceGrid_proc().get_num_k_grid()
+						  *this->get_data_block_size()*this->get_num_time();
+	size_t newDataLength = nK*nO*16*nM;
+	if ( (! this->is_init()) || ( oldDataLength != newDataLength) )
 	{
 		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
 		this->initialize(

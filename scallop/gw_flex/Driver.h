@@ -56,6 +56,7 @@ private:
 	KohnShamBandStructure<T> elstr_;
 
 	V matsFreq_;
+	V prevMatsFreq_;
 
 	InteractionMatrix<T> Isf_;
 
@@ -79,9 +80,9 @@ private:
 
 	typename GeneralizedSusceptibility<T>::AdiabaticUpscale spinAdiabaticScale_;
 
-	void initialize( double temp, double & Ne );
+	void initialize_this_T_N( double temp, double & Ne );
 
-	void prepare_iteration( double temp );
+	void prepare_iteration( double temp, bool set_GF_from_KS, bool set_GF_from_SE );
 
 	void shift_chemical_pot( double temp, double Ne );
 

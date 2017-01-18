@@ -618,8 +618,10 @@ size_t GridDistribution<T>::conseq_full_to_conseq_local(
 		bool conseqInKGrid,
 		size_t cfg) const
 {
+#ifndef NDEBUG
 	parallel::MPIModule const& mpi = parallel::MPIModule::get_instance();
 	assert( this->get_proc_index(conseqInKGrid,cfg) == mpi.get_mpi_me() );
+#endif
 
 	size_t iclocal = 0;
 	if ( conseqInKGrid )

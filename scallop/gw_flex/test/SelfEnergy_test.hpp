@@ -42,12 +42,15 @@ private:
 
 	void one_loop_z_test();
 
+	void interpolate_test();
+
 };
 
 template<typename T>
 void SelfEnergy_test<T>::test_all()
 {
 	creation_test();
+	interpolate_test();
 	one_loop_z_test();
 }
 
@@ -278,6 +281,57 @@ void SelfEnergy_test<T>::one_loop_z_test()
 	fileGamma.close();
 	filePiPi.close();
 
+}
+
+template<typename T>
+void SelfEnergy_test<T>::interpolate_test()
+{
+	output::TerminalOut msg;
+	msg << "Testing frequency interpolation of the self-energy";
+
+	parallel::MPIModule const & mpi = parallel::MPIModule::get_instance();
+
+	if ( mpi.get_nproc() == 1 )
+	{
+		size_t const nM = 10;
+		auto beta = auxillary::BasicFunctions::inverse_temperature( 10.0 );
+		auto firstGrid = auxillary::BasicFunctions::matzubara_frequency_array(nM,beta);
+		std::vector<size_t> grid = { 1, 1 };
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data(nM*4*4);
+		for ( size_t n = 0 ; n < nM ; ++n)
+		{
+			int i = n < nM/2 ? n : static_cast<int>(n)-static_cast<int>(nM);
+			data[n*16] = i;
+		}
+		SelfEnergy<T> se;
+		se.initialize(
+				nM,
+				grid,
+				1,
+				false,
+				true,
+				data);
+
+		auto beta2 = auxillary::BasicFunctions::inverse_temperature( 5.0 );
+		size_t const nM2 = 20;
+		auto secondGrid = auxillary::BasicFunctions::matzubara_frequency_array(nM2,beta2);
+		se.linear_interpolate_frequency(firstGrid,secondGrid);
+
+		//Check if this is a straight line, at least in the inner range
+		typedef typename auxillary::TypeMapComplex<T>::type bT;
+		for ( size_t n = 2 ; n < nM2-2 ;++n)
+		{
+			size_t r = n < nM2/2 ?
+					static_cast<int>(n)+nM2/2
+					:static_cast<int>(n)-static_cast<int>(nM2/2);
+			bT ref = nM/2*(bT(n)-bT(nM2/2))/bT(nM2/2)-0.25;
+			if ( std::abs( ref-std::real(se(0,r,0,0)) ) > 0.00001 )
+			{
+				//error_handling::Error("Check failed, linear interpolation self-energy");
+				std::cout << ref << '\t' << std::real(se(0,r,0,0)) <<std::endl;
+			}
+		}
+	}
 }
 
 } /* namespace test */

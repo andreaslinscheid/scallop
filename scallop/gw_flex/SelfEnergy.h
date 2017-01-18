@@ -44,7 +44,7 @@ public:
 			GreensFunctionOrbital<T> const& gf,
 			GeneralizedSusceptibility<T> const& sf);
 
-	void linear_interpolate_time( VbT const & previousGrid, VbT const & presentGrid );
+	void linear_interpolate_frequency( V const & previousGrid, V const & presentGrid );
 
 private:
 
