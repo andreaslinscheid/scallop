@@ -113,6 +113,7 @@ void ObservableStatistics<T>::print_statistics( output::TerminalOut & msg,
 	{
 		auto lowestMFreqs = Sigma.read_data_ptr_block(ik,0);
 		for ( size_t l1 = 0 ; l1 < nO; ++l1)
+		{
 			for ( size_t a1 = 0 ; a1 < 2; ++a1)
 			{
 				for ( size_t s1 = 0 ; s1 < 2; ++s1)
@@ -120,18 +121,86 @@ void ObservableStatistics<T>::print_statistics( output::TerminalOut & msg,
 					kResolvedZ0[l1][ik] += 0.25*std::imag(lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,s1,l1,a1,s1)]);
 					kResolvedX0[l1][ik] += 0.25*(a1==0?1.0:-1.0)*
 							std::real(lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,s1,l1,a1,s1)]);
-					auto a = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,s1,l1,(a1+1)%2,(s1+1)%2)];
-					kResolvedSGap0[l1][ik] += 0.25*(s1==0?1.0:-1.0)*std::abs(a);
 				}
-
-				auto tx = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,0,l1,(a1+1)%2,1)]
-				          +lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,1,l1,(a1+1)%2,0)];
-				auto ty = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,1,l1,(a1+1)%2,1)]
-				          +lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,0,l1,(a1+1)%2,0)];
-				auto tz = lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,0,l1,(a1+1)%2,0)]
-				          -lowestMFreqs[mem.memory_layout_2pt_obj(l1,a1,1,l1,(a1+1)%2,1)];
-				kResolvedTGap0[l1][ik] += 0.25*(std::abs(tx)+std::abs(ty)+std::abs(tz));
 			}
+
+			// compute Tr[ Phi(0) * Sigma ] to obtain the Re part of the singlet channel
+			T sRe = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							sRe += auxillary::BasicFunctions::singlet_Re_channel(a1,s1,a2,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+
+			// compute Tr[ Psi(0) * Sigma ] to obtain the Im part of the singlet channel
+			T sIm = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							sIm += T(0,1)*auxillary::BasicFunctions::pauli_x(a1,a2)*auxillary::BasicFunctions::pauli_y(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+			kResolvedSGap0[l1][ik] = 0.25*std::sqrt(std::abs(sRe*sRe+sIm*sIm));
+
+
+			// compute Tr[ Phi(1) * Sigma ] to obtain the Re part of the triplet ty channel
+			T txRe = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							txRe -= T(0,1)*auxillary::BasicFunctions::pauli_y(a1,a2)*auxillary::BasicFunctions::pauli_z(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+
+			// compute Tr[ Psi(1) * Sigma ] to obtain the Im part of the triplet ty channel
+			T txIm = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							txIm -=  auxillary::BasicFunctions::pauli_x(a1,a2)*auxillary::BasicFunctions::pauli_z(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+
+			// compute Tr[ Phi(2) * Sigma ] to obtain the Re part of the triplet tz channel
+			T tyRe = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							tyRe += auxillary::BasicFunctions::pauli_y(a1,a2)*auxillary::BasicFunctions::pauli_0(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+
+			// compute Tr[ Psi(2) * Sigma ] to obtain the Im part of the triplet tz channel
+			T tyIm = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							tyIm -=  T(0,1)*auxillary::BasicFunctions::pauli_x(a1,a2)*auxillary::BasicFunctions::pauli_0(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+
+			// compute Tr[ Phi(3) * Sigma ] to obtain the Re part of the triplet tz channel
+			T tzRe = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							tzRe += T(0,1)*auxillary::BasicFunctions::pauli_y(a1,a2)*auxillary::BasicFunctions::pauli_x(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+
+			// compute Tr[ Psi(3) * Sigma ] to obtain the Im part of the triplet tz channel
+			T tzIm = T(0);
+			for ( size_t a1 = 0 ; a1 < 2; ++a1)
+				for ( size_t s1 = 0 ; s1 < 2; ++s1)
+					for ( size_t a2 = 0 ; a2 < 2; ++a2)
+						for ( size_t s2 = 0 ; s2 < 2; ++s2)
+							tzIm +=  auxillary::BasicFunctions::pauli_x(a1,a2)*auxillary::BasicFunctions::pauli_x(s1,s2)
+									*lowestMFreqs[mem.memory_layout_2pt_obj(l1,a2,s2,l1,a1,s1)];
+			kResolvedTGap0[l1][ik] += 0.25*(std::sqrt(std::abs(txRe*txRe+txIm*txIm))
+											+std::sqrt(std::abs(tyRe*tyRe+tyIm*tyIm))
+											+std::sqrt(std::abs(tzRe*tzRe+tzIm*tzIm)));
+		}
 	}
 
 	for ( size_t io = 0; io < nO ; ++io)
@@ -150,8 +219,6 @@ void ObservableStatistics<T>::print_statistics( output::TerminalOut & msg,
 		msg << "\tMax Z("<<io<<",ik) = "<< Z << "; Max X("<<io<<",ik) = "<<X
 				<<"; Max DeltaS("<<io<<",ik) = "<<DeltaS <<"; Max DeltaT("<<io<<",ik) = "<<DeltaT ;
 	}
-
-	msg << "\tEstimating gap factor per orbital (lowest Matsubara frequency of Delta):";
 }
 
 } /* namespace output */

@@ -29,7 +29,31 @@ namespace scallop
 namespace auxillary
 {
 
-struct BasicFunctions {
+struct BasicFunctions
+{
+	static std::complex<double> singlet_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> singlet_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> triplet_x_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> triplet_x_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> triplet_y_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> triplet_y_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> triplet_z_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> triplet_z_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2);
+
+	static std::complex<double> pauli_0(size_t i, size_t j);
+
+	static std::complex<double> pauli_x(size_t i, size_t j);
+
+	static std::complex<double> pauli_y(size_t i, size_t j);
+
+	static std::complex<double> pauli_z(size_t i, size_t j);
 
 	template<typename T>
 	static T fermi_funcs(T beta, T energy);

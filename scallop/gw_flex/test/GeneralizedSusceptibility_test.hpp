@@ -95,7 +95,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 		for ( size_t j = 0; j < 4 ; ++j)
 			for ( size_t jp = 0; jp < 4 ; ++jp)
-				assert( std::abs(( (j==jp)? T(-1.0/4.0) : T(0) ) - sust_(0,0,j,jp,0,0)  ) < 0.00000001 );
+				if ( not ( std::abs(( (j==jp)? T(-1.0/4.0) : T(0) ) - sust_(0,0,j,jp,0,0)  ) < 0.00000001 ) )
+					error_handling::Error("Test failed");
 
 		msg << "Testing G =  tau z sigma_x (the spin x channel)";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -110,9 +111,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 		for ( size_t j = 0; j < 4 ; ++j)
 			for ( size_t jp = 0; jp < 4 ; ++jp)
-			{
-				assert( std::abs( -( (j==jp)? j<2? T(1):T(-1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 );
-			}
+				if ( not ( std::abs( -( (j==jp)? j<2? T(1):T(-1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 ) )
+					error_handling::Error("Test failed");
 
 		msg << "Testing G =  tau z  sigma_y (the spin y channel)";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -127,9 +127,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 		for ( size_t j = 0; j < 4 ; ++j)
 			for ( size_t jp = 0; jp < 4 ; ++jp)
-			{
-				assert( std::abs( -( (j==jp)? j%2==0? T(1):T(-1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 );
-			}
+				if ( not ( std::abs( -( (j==jp)? j%2==0? T(1):T(-1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 ) )
+					error_handling::Error("Test failed");
 
 		msg << "Testing G =  tau z  sigma_z (the spin z channel)";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -144,9 +143,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 		for ( size_t j = 0; j < 4 ; ++j)
 			for ( size_t jp = 0; jp < 4 ; ++jp)
-			{
-				assert( std::abs( -( (j==jp)? j==1||j==2? T(-1):T(1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 );
-			}
+				if ( not ( std::abs( -( (j==jp)? j==1||j==2? T(-1):T(1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 ) )
+					error_handling::Error("Test failed");
 
 		msg << "Testing G = i tau y i sigma_y (the SC singlet channel)";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -161,9 +159,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 		for ( size_t j = 0; j < 4 ; ++j)
 			for ( size_t jp = 0; jp < 4 ; ++jp)
-			{
-				assert( std::abs( -( (j==jp)? j==0? T(-1):T(1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 );
-			}
+				if ( not ( std::abs( -( (j==jp)? j==0? T(-1):T(1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 ) )
+					error_handling::Error("Test failed");
 
 		msg << "Testing G = i tau y (- sigma_z) (the SC triplet tx channel)";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -178,9 +175,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 
 		for ( size_t j = 0; j < 4 ; ++j)
 			for ( size_t jp = 0; jp < 4 ; ++jp)
-			{
-				assert( std::abs( -( (j==jp)? j==1? T(-1):T(1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 );
-			}
+				if ( not ( std::abs( -( (j==jp)? j==1? T(-1):T(1) : T(0) )/4.0 - sust_(0,0,j,jp,0,0)  ) < 0.00000001 ) )
+					error_handling::Error("Test failed");
 
 		size_t nOrb = 2;
 		msg << "\nTesting the "<<nOrb<<" orbital case";
@@ -218,7 +214,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 							for ( size_t l4 = 0 ; l4 < nOrb ; ++l4 )
 							{
 								auto v = expectBandsVal(l1,l2,l3,l4);
-								assert( std::abs( -( (j==jp)? v : T(0) )/4.0 - sust_(0,0,j,jp,l1*nOrb+l2,l3*nOrb+l4)  ) < 0.00000001 );
+								if ( not ( std::abs( -( (j==jp)? v : T(0) )/4.0 - sust_(0,0,j,jp,l1*nOrb+l2,l3*nOrb+l4)  ) < 0.00000001 ) )
+									error_handling::Error("Test failed");
 							}
 	}
 
@@ -259,7 +256,8 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 				{
 					T pref = tuple[0]+tuple[1]*grid[0]+1;
 					auto v =  T(0,1.0)*pref*pref;
-					assert( std::abs( -( (j==jp)? v : T(0) )/4.0 - sust_(iR,it,j,jp,0,0)  ) < 0.00000001 );
+					if ( not (std::abs( -( (j==jp)? v : T(0) )/4.0 - sust_(iR,it,j,jp,0,0)  ) < 0.00000001) )
+						error_handling::Error("Test failed");
 				}
 	}
 
@@ -309,8 +307,9 @@ void GeneralizedSusceptibility_test<T>::test_gf_construction()
 		if ( ictotal == mid)
 		{
 			std::cout << "\tValue at Q=(pi,pi):" << sust_(ik,0,0,0,0,0) << std::endl;
-			assert( (std::abs( std::real(sust_(ik,0,0,0,0,0))+0.42994) < 0.00001)
-					and (std::abs( std::imag(sust_(ik,0,0,0,0,0)) ) < 0.00001 ) );
+			if ( not ( (std::abs( std::real(sust_(ik,0,0,0,0,0))+0.42994) < 0.00001)
+					and (std::abs( std::imag(sust_(ik,0,0,0,0,0)) ) < 0.00001 ) ) )
+				error_handling::Error("Test failed");
 		}
 		if ( ictotal == 0 )
 		{

@@ -135,6 +135,35 @@ void MPIModule::abort(int ierr) const
 #endif
 }
 
+void MPIModule::bcast(  std::string & data, size_t proc ) const
+{
+#ifdef MPI_PARALLEL
+	//use the single element version to check if the space is correctly allocated
+	MPIModule const& mpiobj = MPIModule::get_instance();
+
+	size_t sendcount = data.end() - data.begin();
+	size_t rootSize = sendcount;
+	mpiobj.bcast(rootSize,proc);
+	char * buff = new char [ rootSize ];
+
+	if ( mpiobj.get_mpi_me() == proc )
+		std::copy(data.c_str(),data.c_str()+rootSize,buff);
+
+	int ierr = MPI_Bcast(
+			buff,
+			rootSize,
+			MPI_CHAR,
+			proc,
+			MPI_COMM_WORLD);
+
+	if ( ierr != 0 )
+		std::cout << "WARNING: received exit code ierr " << ierr << std::endl;
+
+	if ( mpiobj.get_mpi_me() != proc )
+		data = std::string( buff, rootSize );
+	delete [] buff;
+#endif
+}
 
 } /* namespace parallel */
 } /* namespace scallop */

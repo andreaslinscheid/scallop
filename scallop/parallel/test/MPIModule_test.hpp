@@ -39,12 +39,15 @@ public:
 	void test_all();
 
 	void test_alltoallv();
+
+	void test_stringBcas();
 };
 
 template<typename T>
 void MPIModule_test<T>::test_all()
 {
 	this->test_alltoallv();
+	this->test_stringBcas();
 }
 
 template<typename T>
@@ -85,6 +88,20 @@ void MPIModule_test<T>::test_alltoallv()
 		if ( ! (expect == rec) )
 			error_handling::Error( std::string("Check failed on proc ")+std::to_string(me));
 	}
+}
+
+template<typename T>
+void MPIModule_test<T>::test_stringBcas()
+{
+	MPIModule const& mpi = parallel::MPIModule::get_instance();
+
+	std::string testString = "sync";
+	if ( mpi.ioproc() )
+		testString = "overwrite";
+	mpi.bcast(testString, mpi.ioproc_index() );
+
+	if ( not (testString.compare("overwrite") == 0) )
+		error_handling::Error( std::string("Check failed on proc ")+std::to_string(mpi.get_mpi_me()));
 }
 
 } /* namespace test */

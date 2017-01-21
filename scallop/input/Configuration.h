@@ -129,7 +129,7 @@ public:
 
 	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
 			cmp_zero,
-			"Value below which the gap is considered zero\n"
+			"Value below which a self-energy part is considered zero\n"
 			"Unit is meV",
 			"1e-5",
 			1e-5,
@@ -193,6 +193,15 @@ public:
 			"10",
 			10,
 			size_t);
+
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			f_gap_i,
+			"The file with the starting gap.\n"
+			"If the file is not set, we assume a vanishing SC phase, i.e. the symmetry will not be broken",
+			"",
+			"",
+			std::string);
+
 };
 
 } /* namespace input */

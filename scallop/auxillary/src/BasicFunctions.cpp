@@ -54,5 +54,70 @@ std::string BasicFunctions::get_scallop_path() const
 	return fullFileName = pathToScallop + std::string("/");
 }
 
+std::complex<double> BasicFunctions::singlet_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return -pauli_y(a1,a2)*pauli_y(s1,s2);
+}
+
+std::complex<double> BasicFunctions::singlet_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return pauli_x(a1,a2)*std::complex<double>(0,1)*pauli_y(s1,s2);
+}
+
+std::complex<double> BasicFunctions::triplet_x_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return -std::complex<double>(0,1)*pauli_y(a1,a2)*pauli_z(s1,s2);
+}
+
+std::complex<double> BasicFunctions::triplet_x_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return -pauli_x(a1,a2)*pauli_z(s1,s2);
+}
+
+std::complex<double> BasicFunctions::triplet_y_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return -std::complex<double>(0,1)*pauli_y(a1,a2)*pauli_0(s1,s2);
+}
+
+std::complex<double> BasicFunctions::triplet_y_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return -pauli_x(a1,a2)*pauli_0(s1,s2);
+}
+
+std::complex<double> BasicFunctions::triplet_z_Re_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return std::complex<double>(0,1)*pauli_y(a1,a2)*pauli_x(s1,s2);
+}
+
+std::complex<double> BasicFunctions::triplet_z_Im_channel(size_t a1, size_t s1, size_t a2, size_t s2)
+{
+	return pauli_x(a1,a2)*pauli_x(s1,s2);
+}
+
+std::complex<double> BasicFunctions::pauli_0(size_t i, size_t j)
+{
+	assert( (i < 2) && (j < 2) );
+	return i == j ? std::complex<double>(1.0) : std::complex<double>(0.0);
+}
+
+
+std::complex<double> BasicFunctions::pauli_x(size_t i, size_t j)
+{
+	assert( (i < 2) && (j < 2) );
+	return i != j ? std::complex<double>(1.0) : std::complex<double>(0.0);
+}
+
+std::complex<double> BasicFunctions::pauli_y(size_t i, size_t j)
+{
+	assert( (i < 2) && (j < 2) );
+	return i != j ? std::complex<double>(0.0,1.0)*(j==1?-1.0:1.0) : std::complex<double>(0.0);
+}
+
+std::complex<double> BasicFunctions::pauli_z(size_t i, size_t j)
+{
+	assert( (i < 2) && (j < 2) );
+	return i == j ? std::complex<double>(1.0)*(i==1?-1.0:1.0) : std::complex<double>(0.0);
+}
+
 } /* namespace auxillary */
 } /* namespace scallop */

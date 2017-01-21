@@ -82,6 +82,8 @@ private:
 
 	void initialize_this_T_N( double temp, double & Ne );
 
+	void set_gap_symmetry_breaking( std::string const& filename );
+
 	void prepare_iteration( double temp, bool set_GF_from_KS, bool set_GF_from_SE );
 
 	void shift_chemical_pot( double temp, double Ne );

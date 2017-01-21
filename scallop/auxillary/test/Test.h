@@ -13,16 +13,16 @@
  *  You should have received a copy of the GNU General Public License
  *  along with scallop.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: Oct 28, 2016
- *      Author: alinsch
+ *  Created on: Jan 20, 2017
+ *      Author: A. Linscheid
  */
 
-#ifndef SCALLOP_GW_FLEX_TEST_TEST_H_
-#define SCALLOP_GW_FLEX_TEST_TEST_H_
+#ifndef SCALLOP_AUXILLARY_SRC_TEST_H_
+#define SCALLOP_AUXILLARY_SRC_TEST_H_
 
 namespace scallop
 {
-namespace gw_flex
+namespace auxillary
 {
 namespace test
 {
@@ -30,39 +30,16 @@ namespace test
 class Test
 {
 public:
+
 	void run_test();
 
 private:
 
-	void test_time_freq_Fourier_transform();
-
-	void test_GreensFunctionOrbital();
-
-	void test_GapFileReader();
-
-	void test_FFTBase();
-
-	void test_UnitaryWannierKSBands();
-
-	void test_Susceptibility();
-
-	void test_phonon_gf();
-
-	void test_InteractionMatrix();
-
-	void test_selfEnergy();
-
-	void test_KSBandstructure();
-
-	void test_MandyBodyBandStructure();
-
-	void test_DysonEquation();
-
-	void test_ChemicalPotentialShifting();
+	void test_NambuSpin_decomposition();
 };
 
 } /* namespace test */
-} /* namespace gw_flex */
+} /* namespace auxillary */
 } /* namespace scallop */
 
-#endif /* SCALLOP_GW_FLEX_TEST_TEST_H_ */
+#endif /* SCALLOP_AUXILLARY_SRC_TEST_H_ */

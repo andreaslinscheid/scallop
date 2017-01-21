@@ -274,5 +274,80 @@ void SelfEnergy<T>::linear_interpolate_frequency( V const & previousGrid, V cons
 			newData);
 }
 
+template<typename T>
+template<class G>
+void SelfEnergy<T>::break_u1_symmetry(G const& gap,
+		size_t nO,
+		std::vector<size_t> const& fullGrid,
+		V const& matsubaraGrid)
+{
+	if ( not this->is_init() )
+	{
+		this->initialize( matsubaraGrid.size(),
+				fullGrid,
+				nO,
+				/*in time space*/false,
+				/*in k space */true,
+				typename auxillary::TemplateTypedefs<T>::scallop_vector() );
+	}
+
+	assert( this->is_in_k_space() );
+	assert( not this->is_in_time_space() );
+
+	size_t const nK = this->get_spaceGrid_proc().get_num_k_grid();
+	size_t const nM = this->get_num_time();
+
+	MemoryLayout ml;
+	ml.initialize_layout_2pt_obj(nO);
+
+	auto kgridProc = this->get_spaceGrid_proc().get_grid();
+	for (size_t ik = 0 ; ik < nK ; ++ik)
+	{
+		auto kIndices = this->get_spaceGrid_proc().k_conseq_local_to_xyz_total(ik);
+		std::vector<double> k( kIndices.size() );
+		for ( size_t ikx = 0 ; ikx < k.size(); ++ikx )
+			k[ikx] = double(kIndices[ikx])/double(kgridProc[ikx]);
+		for (size_t iw = 0 ; iw < nM ; ++iw)
+		{
+			auto ptr = this->write_phs_grid_ptr_block(ik,iw);
+			double omegan = double(std::imag(matsubaraGrid[iw]));
+			for ( size_t l1 = 0 ; l1 < nO; ++l1)
+			{
+				//set the Nambu off-diagonal part with the singlet channel
+				for ( size_t a1 = 0 ; a1 < 2; ++a1)
+					for ( size_t s1 = 0 ; s1 < 2; ++s1)
+						for ( size_t a2 = 0 ; a2 < 2; ++a2)
+							for ( size_t s2 = 0 ; s2 < 2; ++s2)
+								ptr[ml.memory_layout_2pt_obj(l1,a1,s1,l1,a2,s2)]
+								    = gap(k,omegan,0,l1)*auxillary::BasicFunctions::singlet_Re_channel(a1,s1,a2,s2);
+
+				//add the Nambu off-diagonal part with the tx channel
+				for ( size_t a1 = 0 ; a1 < 2; ++a1)
+					for ( size_t s1 = 0 ; s1 < 2; ++s1)
+						for ( size_t a2 = 0 ; a2 < 2; ++a2)
+							for ( size_t s2 = 0 ; s2 < 2; ++s2)
+								ptr[ml.memory_layout_2pt_obj(l1,a1,s1,l1,a2,s2)]
+								    += gap(k,omegan,1,l1)*auxillary::BasicFunctions::triplet_x_Re_channel(a1,s1,a2,s2);
+
+				//add the Nambu off-diagonal part with the ty channel
+				for ( size_t a1 = 0 ; a1 < 2; ++a1)
+					for ( size_t s1 = 0 ; s1 < 2; ++s1)
+						for ( size_t a2 = 0 ; a2 < 2; ++a2)
+							for ( size_t s2 = 0 ; s2 < 2; ++s2)
+								ptr[ml.memory_layout_2pt_obj(l1,a1,s1,l1,a2,s2)]
+								    += gap(k,omegan,2,l1)*auxillary::BasicFunctions::triplet_y_Re_channel(a1,s1,a2,s2);
+
+				//set the Nambu off-diagonal part with the tz channel
+				for ( size_t a1 = 0 ; a1 < 2; ++a1)
+					for ( size_t s1 = 0 ; s1 < 2; ++s1)
+						for ( size_t a2 = 0 ; a2 < 2; ++a2)
+							for ( size_t s2 = 0 ; s2 < 2; ++s2)
+								ptr[ml.memory_layout_2pt_obj(l1,a1,s1,l1,a2,s2)]
+								    += gap(k,omegan,3,l1)*auxillary::BasicFunctions::triplet_z_Re_channel(a1,s1,a2,s2);
+			}
+		}
+	}
+}
+
 } /* namespace gw_flex */
 } /* namespace scallop */

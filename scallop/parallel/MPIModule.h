@@ -118,6 +118,8 @@ public:
 	template<typename T>
 	void bcast(  T & data, size_t proc = 0 ) const;
 
+	void bcast(  std::string & data, size_t proc = 0 ) const;
+
 	//Determine the maximal value among processors and overwrite every individual value with it.
 	//Sets proc to the processor that owned the maximal value
 	template<typename T>

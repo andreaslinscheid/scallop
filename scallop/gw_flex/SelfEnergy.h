@@ -46,6 +46,23 @@ public:
 
 	void linear_interpolate_frequency( V const & previousGrid, V const & presentGrid );
 
+	/**
+ 	 *	Use the functor gap to set the Nambu-off diagonal components to a finite value.
+	 *
+	 * @param gap			Evaluate at each k point and frequency to obtain a complex value that breaks U(1) symmetry
+	 * 						Must implement the operator() (std::vector<bT> const& k, bT omegan, size_t component) const
+	 * 						representing the k vector of appropriate dimension, the frequency on the imaginary axis and
+	 * 						the singlet (0), or three triplet (x=1,y=2,z=3) components
+	 * @param nO			The number of orbtials.
+	 * @param fullGrid		The full grid in space.
+	 * @param matsubaraGrid	The Matsubara frequencies.
+	 */
+	template<class G>
+	void break_u1_symmetry(G const& gap,
+			size_t nO,
+			std::vector<size_t> const& fullGrid,
+			V const& matsubaraGrid);
+
 private:
 
 	void v_matrix(size_t j, size_t a1, size_t s1, size_t a2, size_t s2, T & prefactor) const;

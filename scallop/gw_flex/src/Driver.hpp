@@ -24,6 +24,7 @@
 #include "scallop/gw_flex/ProjectOutBandStructure.h"
 #include "scallop/gw_flex/ManyBodyBandStructure.h"
 #include "scallop/output/ObservableStatistics.h"
+#include "scallop/gw_flex/GapFileReader.h"
 
 namespace scallop
 {
@@ -43,7 +44,6 @@ void Driver<T>::initialize_this_T_N( double temp, double & Ne)
 
 	auto beta = auxillary::BasicFunctions::inverse_temperature( temp );
 
-	elstr_.initialize_from_file( config_.get_grid() , config_.get_f_elstr() );
 	if ( Ne > 0 )
 	{
 		elstr_.adjust_filling( Ne, beta );
@@ -91,7 +91,12 @@ void Driver<T>::converge()
 		Ic_.init_file( config_.get_f_c() );
 	}
 
+	elstr_.initialize_from_file( config_.get_grid() , config_.get_f_elstr() );
+
+	//Set some flags
 	bool initialize_GF_from_KS = true;
+	bool break_U1_symmetry = (not config_.get_f_gap_i().empty());
+
 	for ( auto Ne : config_.get_nelec() )
 	{
 		for ( auto temp : config_.get_temp() )
@@ -116,6 +121,16 @@ void Driver<T>::converge()
 				{
 					msgDetailed << "\tAdjusting the chemical potential ...";
 					this->shift_chemical_pot(temp,Ne);
+				}
+
+				//In at the point where we start the iteration, we break the U(1)
+				//symmetry. This means, we construct a self-energy component, so
+				//initialize_GF_from_SE must be set true
+				if ( break_U1_symmetry )
+				{
+					break_U1_symmetry = false;
+					this->set_gap_symmetry_breaking( config_.get_f_gap_i() );
+					initialize_GF_from_SE = true;
 				}
 
 				//We start each iteration in real space and frequency
@@ -188,6 +203,14 @@ void Driver<T>::shift_chemical_pot( double temp, double Ne  )
 }
 
 template<typename T>
+void Driver<T>::set_gap_symmetry_breaking( std::string const& filename )
+{
+	GapFileReader gap;
+	gap.read_file( filename );
+	se_.break_u1_symmetry( gap, elstr_.get_nOrb(), config_.get_grid(), matsFreq_ );
+}
+
+template<typename T>
 void Driver<T>::prepare_iteration( double temp, bool set_GF_from_KS, bool set_GF_from_SE )
 {
 	spinAdiabaticScale_.set(
@@ -235,11 +258,14 @@ void Driver<T>::prepare_iteration( double temp, bool set_GF_from_KS, bool set_GF
 	//Here, we solve the Dyson equation to transform this
 	// information into the GF. The self-energy is set to 0 later.
 	// We do keep the interpolated SE for convergence checks, though.
-	if ( set_GF_from_SE)
+	if ( set_GF_from_SE )
 	{
-		//We possibly need to interpolate in frequency
+		//We possibly need to interpolate in frequency. This is done only if
+		//there is a previous Matsubara grid. Otherwise, this self-energy comes
+		//from somewhere else, e.g. file
 		assert( se_.is_init() );
-		se_.linear_interpolate_frequency(prevMatsFreq_,matsFreq_);
+		if ( (prevMatsFreq_.size() > 0) )
+			se_.linear_interpolate_frequency(prevMatsFreq_,matsFreq_);
 		seL_ = se_;
 		seL_.transform_itime_Mfreq( beta );
 		seL_.perform_space_fft();

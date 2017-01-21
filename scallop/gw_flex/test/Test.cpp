@@ -30,14 +30,19 @@
 #include "scallop/gw_flex/test/ManyBodyBandStructure_test.hpp"
 #include "scallop/gw_flex/test/ChemicalPotentialShifting_test.hpp"
 #include "scallop/gw_flex/test/DysonEquation_test.hpp"
+#include "scallop/gw_flex/test/GapFileReader_test.hpp"
 #include <complex>
 
-namespace scallop {
-namespace gw_flex {
-namespace test {
+namespace scallop
+{
+namespace gw_flex
+{
+namespace test
+{
 
 void Test::run_test()
 {
+	test_GapFileReader();
 	test_selfEnergy();
 	test_DysonEquation();
 	test_phonon_gf();
@@ -50,6 +55,12 @@ void Test::run_test()
 	test_KSBandstructure();
 	test_MandyBodyBandStructure();
 	test_ChemicalPotentialShifting();
+}
+
+void Test::test_GapFileReader()
+{
+	GapFileReader_test g;
+	g.test_all();
 }
 
 void Test::test_GreensFunctionOrbital()
