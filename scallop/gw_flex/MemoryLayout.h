@@ -36,7 +36,7 @@ public:
 
 	void initialize_layout_2pt_obj( size_t numOrbitals );
 
-	void initialize_layout_4pt_scalar_obj( size_t numOrbitals, size_t spinChargeChannels = 4 );
+	void initialize_layout_4pt_scalar_obj( size_t numOrbitals, size_t spinChargeChannels);
 
 	void initialize_layout_phonon_prop( size_t numModes );
 
@@ -64,6 +64,8 @@ private:
 	size_t numOrbitals_ = 0;
 
 	size_t spinChargeChannels_ = 0;
+
+	size_t channel_offset_ = 0;
 };
 
 } /* namespace gw_flex */

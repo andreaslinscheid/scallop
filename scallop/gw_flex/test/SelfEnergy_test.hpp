@@ -69,7 +69,7 @@ void SelfEnergy_test<T>::creation_test()
 	if ( mpi.get_nproc() == 1 )
 	{
 		std::vector<size_t> grid = {1,1};
-		msg << "Testing basic construction of the self-energy at a single point in space and time";
+		msg << "Testing basic construction in Nambu and spin space of the self-energy at a single point in space and time";
 		GreensFunctionOrbital<T> gf;
 		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
 		gf.initialize(1,grid,1,true,false,data);
@@ -90,7 +90,15 @@ void SelfEnergy_test<T>::creation_test()
 			for ( size_t s1 = 0 ; s1 < 2 ; ++s1 )
 				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
-						assert( std::abs(( ( (a1==a2) && (s1==s2) )? a1 ==0? T(-1.0):T(1.0) : T(0) ) + se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
+					{
+						auto a =  ( (a1==a2) && (s1==s2) )? a1 ==0? T(-3.0):T(3.0) : T(0) ;
+						auto numeric = se(0,0,0,a1,s1,0,a2,s2);
+						if ( not ( std::abs(a - numeric ) < 0.00000001 ) )
+						{
+							msg << "analytic ="<< a << "\tnumeric =" << numeric;
+							error_handling::Error("Test failed");
+						}
+					}
 
 		msg << "\t singlet SC+charge+mz green's function (without recomputing the susceptibility):";
 		for ( size_t a1 = 0 ; a1 < 2 ; ++a1 )
@@ -98,7 +106,7 @@ void SelfEnergy_test<T>::creation_test()
 				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 						gf(0,0,0,a1,s1,0,a2,s2) = 1.0 * pauli_z(a1,a2) * pauli_0(s1,s2)
-													-0.1*pauli_y(a1,a2) * pauli_y(s1,s2)
+													-0.1*pauli_0(a1,a2) * pauli_y(s1,s2)
 													+0.01*pauli_z(a1,a2) * pauli_z(s1,s2);
 
 		se.set_to_zero();
@@ -108,9 +116,22 @@ void SelfEnergy_test<T>::creation_test()
 				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 					{
-						T val = ( (a1==a2) && (s1==s2) )? a1 ==0? T(-1.0):T(1.0) : T(0) ;
-						val = -1.0*(( (a1!=a2) && (s1!=s2) )? s2+a2 == s1+a1? T(0.05):T(-0.05) : val );
-						assert( std::abs(val - se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
+						T a = 0;
+						if ( a1 == a2 )
+						{
+							if ( (s1 == s2) and (s1 == 0) )
+								a = (a1==0?T(-2.99):T(2.99));
+							if ( (s1 == s2) and (s1 == 1) )
+								a = (a1==0?T(-3.01):T(3.01));
+							if (s1 != s2)
+								a = (s1 == 0 ? T(0,-0.1):T(0,0.1));
+						}
+						auto numeric = se(0,0,0,a1,s1,0,a2,s2);
+						if ( not ( std::abs(a - numeric ) < 0.00000001 ) )
+						{
+							msg << "analytic"<< a << "\tnumeric" << numeric;
+							error_handling::Error("Test failed");
+						}
 					}
 
 		msg << "\tFrequency part of the green's function:";
@@ -126,8 +147,13 @@ void SelfEnergy_test<T>::creation_test()
 				for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
 					for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 					{
-						T val = -1.0*(( (a1==a2) && (s1==s2) )? -T(1.0) : T(0) );
-						assert( std::abs(val - se(0,0,0,a1,s1,0,a2,s2)  ) < 0.00000001 );
+						T val = 3.0*(( (a1==a2) && (s1==s2) )? -T(1.0) : T(0) );
+						auto numeric = se(0,0,0,a1,s1,0,a2,s2);
+						if ( not ( std::abs(val - numeric ) < 0.00000001 ) )
+						{
+							msg << "analytic"<< val << "\tnumeric" << numeric;
+							error_handling::Error("Test failed");
+						}
 					}
 
 		size_t nO = 2;
@@ -146,8 +172,8 @@ void SelfEnergy_test<T>::creation_test()
 		sust.set_uninitialized();
 		sust.compute_from_gf( gf );
 
-		for ( size_t j = 0 ; j < 4 ; ++j )
-			for ( size_t jp = 0 ; jp < 4 ; ++jp )
+		for ( size_t j = 0 ; j < sust.get_nChnls() ; ++j )
+			for ( size_t jp = 0 ; jp < sust.get_nChnls() ; ++jp )
 				for ( size_t l1 = 0 ; l1 < nO ; ++l1 )
 					for ( size_t l2 = 0 ; l2 < nO ; ++l2 )
 						for ( size_t l3 = 0 ; l3 < nO ; ++l3 )
@@ -164,9 +190,16 @@ void SelfEnergy_test<T>::creation_test()
 						for ( size_t a2 = 0 ; a2 < 2 ; ++a2 )
 							for ( size_t s2 = 0 ; s2 < 2 ; ++s2 )
 							{
-								T val = ( l1 == l2?1.0:0.0 );
-								val *= (gf(0,0,0,a1,s1,0,a2,s2)+gf(0,0,1,a1,s1,1,a2,s2));
-								assert( std::abs(val - se(0,0,l1,a1,s1,l2,a2,s2)  ) < 0.00000001 );
+								T val = T( l1 == l2?T(3.0/4.0)+T(0,3.0/2.0):0.0 );
+								val *= (a1==a2?1.0:0.0);
+								val *= (s1==s2?1.0:0.0);
+								val *= (a1==0?-1.0:1.0);
+								auto numeric = se(0,0,l1,a1,s1,l2,a2,s2);
+								if ( not ( std::abs(val - numeric ) < 0.00000001 ) )
+								{
+									msg << "analytic"<< val << "\tnumeric" << numeric;
+									error_handling::Error("Test failed");
+								}
 							}
 	}
 
@@ -183,18 +216,15 @@ void SelfEnergy_test<T>::one_loop_z_test()
 	auxillary::BasicFunctions bf;
 	auto scallopPath = bf.get_scallop_path();
 	std::string const filenameModel = scallopPath+"examples/oneBndCosine/model_test.dat";
-	std::string const filenameInter = scallopPath+"examples/oneBndCosine/input_data/Isf.dat";
+	std::string const filenameInter = scallopPath+"examples/oneBndCosine/input_data/Ic.dat";
 	if ( mpi.ioproc() )
 	{
 		std::ofstream file( filenameModel.c_str() );
 		file << "model OneBandCosine\nt=290\ntp=-37.5";
 		file.close();
 		file.open( filenameInter.c_str() );
-		file << "1 4\n"
-				"0\t0\t0\t0\t0\t0\t200.0\t0.0\n"
-				"1\t1\t0\t0\t0\t0\t200.0\t0.0\n"
-				"2\t2\t0\t0\t0\t0\t200.0\t0.0\n"
-				"3\t3\t0\t0\t0\t0\t200.0\t0.0\n";
+		file << "1 1\n"
+				"0\t0\t0\t0\t0\t0\t20.0\t0.0\n";
 		file.close();
 	}
 
@@ -214,33 +244,64 @@ void SelfEnergy_test<T>::one_loop_z_test()
 	ksGF.set_from_KS_bandstructure(true,nM,beta,ksBnd);
 	ksGF.perform_space_fft( );
 
-	InteractionMatrix<T> Isf;
-	Isf.init_file( filenameInter );
+	InteractionMatrix<T> Ic;
+	Ic.init_file( filenameInter );
 
-	SpinSusceptibility<T> suscSF,enhSF;
+	ChargeSusceptibility<T> suscSF,enhSF;
 	suscSF.compute_from_gf( ksGF );
 	suscSF.transform_itime_Mfreq( beta );
 	suscSF.perform_space_fft( );
 	enhSF = suscSF;
-	suscSF.spin_RPA_enhancement( Isf );
-	enhSF.spin_RPA_enhancement( Isf, true );
-	std::ofstream fileBla(scallopPath+"examples/oneBndCosine/output_data/bla.dat");
+	enhSF.charge_RPA_enhancement( Ic );
+
+	std::ofstream fileSus(scallopPath+"examples/oneBndCosine/output_data/spinsust_RPA.dat");
+	fileSus << "#grid points x, y,  Re[xi(k), Im[xi(k)] " <<std::endl;
 	for (size_t ik = 0 ; ik < suscSF.get_spaceGrid_proc().get_num_k_grid(); ++ik)
 	{
 		auto tuple = suscSF.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
-		fileBla << bT(tuple[0])/bT(grid[0]) << '\t' << bT(tuple[1])/bT(grid[0]) << '\t' << std::real(enhSF(ik,0,0,0,0,0))
-			<< '\t' << std::real(enhSF(ik,0,1,1,0,0))
-			<< '\t' << std::real(enhSF(ik,0,2,2,0,0))
-			<< '\t' << std::real(enhSF(ik,0,3,3,0,0))<< std::endl;
+		fileSus << bT(tuple[0])/bT(grid[0]) << '\t' << bT(tuple[1])/bT(grid[0]) << '\t' << std::real(enhSF(ik,0,0,0,0,0))
+			<< '\t' << std::imag(enhSF(ik,0,0,0,0,0))<< std::endl;
 		if ( tuple[1]==grid[1]-1 )
-			fileBla  << std::endl;
+			fileSus  << std::endl;
 	}
-	fileBla.close();
-	suscSF.transform_itime_Mfreq( beta );
-	suscSF.perform_space_fft( );
+	fileSus.close();
+
+	size_t mid = grid[1]*(grid[0]/2)+0;
+	std::ofstream fileSusFreq(scallopPath+"examples/oneBndCosine/output_data/spinsust_RPA_freq_pi.dat");
+	for (size_t iw = 0 ; iw < nM; ++iw)
+		fileSusFreq << std::imag(auxillary::BasicFunctions::matzubara_bose_frequency_of_index(iw,nM,beta))
+			<< '\t' << std::real(enhSF(mid,iw,0,0,0,0))
+			<< '\t' << std::imag(enhSF(mid,iw,0,0,0,0))
+			<< '\t' << std::real(suscSF(mid,iw,0,0,0,0))
+			<< '\t' << std::imag(suscSF(mid,iw,0,0,0,0))<< std::endl;
+	fileSusFreq.close();
+
+	enhSF.transform_itime_Mfreq( beta );
+	enhSF.perform_space_fft( );
 
 	SelfEnergy<T> se;
-	se.add_electronic_selfenergy(ksGF,suscSF);
+	se.add_electronic_selfenergy(ksGF,enhSF);
+
+	std::ofstream fileSigmaTau(scallopPath+"examples/oneBndCosine/output_data/se_tau.dat");
+	for (size_t ik = 0 ; ik < se.get_spaceGrid_proc().get_num_k_grid(); ++ik)
+	{
+		MemoryLayout m;
+		m.initialize_layout_2pt_obj( se.get_nOrb() );
+		auto tuple = se.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
+		size_t ictotal = se.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
+		if ( ictotal == 0 )
+			for (size_t iw = 0 ; iw < nM; ++iw)
+			{
+				auto ptr = se.read_phs_grid_ptr_block(ik,iw);
+				T se = T(0);
+				for (size_t ns = 0 ; ns < 4; ++ns)
+					se += 0.25*ptr[m.memory_layout_2pt_obj_nsc(0,ns,0,ns)];
+				fileSigmaTau << iw/bT(nM) << '\t'
+						<< std::real(se)<<'\t' << std::imag(se)<<std::endl;
+			}
+	}
+	fileSigmaTau.close();
+
 	se.transform_itime_Mfreq( beta );
 	se.perform_space_fft( );
 
@@ -248,39 +309,49 @@ void SelfEnergy_test<T>::one_loop_z_test()
 	assert( not se.is_in_time_space() );
 
 	//Check Gamma and pi 0
-	size_t mid = grid[1]*(grid[0]/2)+0;
+	std::ofstream fileSigmaGamma(scallopPath+"examples/oneBndCosine/output_data/se_gamma.dat");
+	std::ofstream fileSigma(scallopPath+"examples/oneBndCosine/output_data/se_pi.dat");
 	std::ofstream fileGamma(scallopPath+"examples/oneBndCosine/output_data/z_gamma.dat");
 	std::ofstream filePiPi(scallopPath+"examples/oneBndCosine/output_data/z_pi.dat");
 	for (size_t ik = 0 ; ik < se.get_spaceGrid_proc().get_num_k_grid(); ++ik)
 	{
+		MemoryLayout m;
+		m.initialize_layout_2pt_obj( se.get_nOrb() );
 		auto tuple = se.get_spaceGrid_proc().k_conseq_local_to_xyz_total( ik );
 		size_t ictotal = se.get_spaceGrid_proc().k_xyz_to_conseq( tuple );
 		if ( ictotal == 0 )
 			for (size_t iw = 0 ; iw < nM; ++iw)
 			{
 				auto ptr = se.read_phs_grid_ptr_block(ik,iw);
-				T z = T(0);
+				T se = T(0);
+				T z = se;
 				for (size_t ns = 0 ; ns < 4; ++ns)
-					z += 0.25*ptr[ns*4+ns];
-				z = bT(1.0)+T(0,1.0)*std::imag(z)/auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta);
+					z += 0.25*ptr[m.memory_layout_2pt_obj_nsc(0,ns,0,ns)];
+				//se += 0.5*(ptr[m.memory_layout_2pt_obj(0,0,0,0,0,0)]+ptr[m.memory_layout_2pt_obj(0,1,0,0,1,0)]);
+				se += 0.5*(ptr[m.memory_layout_2pt_obj(0,0,0,0,0,0)]-ptr[m.memory_layout_2pt_obj(0,1,0,0,1,0)]);
+				z = bT(1.0)-z/auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta);
 				fileGamma << std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta)) << '\t'
-						<< std::real(z) <<std::endl;
+						<< std::real(z)<<'\t' << std::imag(z)<<std::endl;
+				fileSigmaGamma << std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta)) << '\t'
+						<< std::real(se)<<'\t' << std::imag(se)<<std::endl;
 			}
 		if ( ictotal == mid )
 			for (size_t iw = 0 ; iw < nM; ++iw)
 			{
 				auto ptr = se.read_phs_grid_ptr_block(ik,iw);
-				T z = T(0);
+				T se = T(0);
 				for (size_t ns = 0 ; ns < 4; ++ns)
-					z += 0.25*ptr[ns*4+ns];
-				z = bT(1.0)+T(0,1.0)*std::imag(z)/auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta);
+					se += 0.25*ptr[m.memory_layout_2pt_obj_nsc(0,ns,0,ns)];
+				T z = se;
+				z = bT(1.0)-z/auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta);
 				filePiPi << std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta)) << '\t'
-						<< std::real(z) <<std::endl;
+						<< std::real(z)<<'\t' << std::imag(z)<<std::endl;
+				fileSigma << std::imag(auxillary::BasicFunctions::matzubara_frequency_of_index(iw,nM,beta)) << '\t'
+						<< std::real(se)<<'\t' << std::imag(se)<<std::endl;
 			}
 	}
 	fileGamma.close();
 	filePiPi.close();
-
 }
 
 template<typename T>

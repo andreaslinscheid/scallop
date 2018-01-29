@@ -31,12 +31,14 @@ void KohnShamGreensFunctionOrbital<T>::set_from_wanHam(
 		size_t timeOrFreqDim,
 		bT invTemp,
 		std::vector<size_t> grid,
-		std::string const& fileWannierHamiltonian)
+		std::string const& fileWannierHamiltonian,
+		bT nElectrons)
 {
 	KohnShamBandStructure<T> bands;
 	bands.initialize_from_file( grid, fileWannierHamiltonian );
+	bands.adjust_filling(nElectrons,invTemp);
 
-	this->set_from_KS_bandstructure( timeOrFreqDim, invTemp, timeSpace, bands);
+	this->set_from_KS_bandstructure( timeSpace, timeOrFreqDim, invTemp, bands);
 }
 
 template<typename T>
@@ -132,9 +134,9 @@ void KohnShamGreensFunctionOrbital<T>::set_in_both_spaces(
 				for ( size_t iMKSB = 0 ; iMKSB < nO*4 ; ++iMKSB)
 				{
 					bT e = ksBands[ik*nO*4+iMKSB];
-					auto iomegan = auxillary::BasicFunctions::matzubara_frequency_of_index(it,nM,invTemp);
+					auto iomegan = T(auxillary::BasicFunctions::matzubara_frequency_of_index(it,nM,invTemp));
 
-					bareGF[iMKSB] = 1.0 / (iomegan - e);
+					bareGF[iMKSB] = T(1.0) / (iomegan - e);
 				}
 			}
 			auto unitaryThisK = unitary.read_phs_grid_ptr_block(ik);

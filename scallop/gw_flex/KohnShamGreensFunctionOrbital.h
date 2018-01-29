@@ -41,7 +41,8 @@ public:
 			size_t timeOrFreqDim,
 			bT invTemp,
 			std::vector<size_t> grid,
-			std::string const& fileWannierHamiltonian);
+			std::string const& fileWannierHamiltonian,
+			bT nElectrons);
 
 	void set_from_KS_bandstructure(
 			bool timeSpace,

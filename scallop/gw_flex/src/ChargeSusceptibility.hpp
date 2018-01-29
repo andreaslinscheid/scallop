@@ -28,7 +28,7 @@ namespace gw_flex
 template<typename T>
 void ChargeSusceptibility<T>::compute_from_gf( GreensFunctionOrbital<T> const & GF )
 {
-	GeneralizedSusceptibility<T>::compute_from_gf(GF,1);
+	GeneralizedSusceptibility<T>::compute_from_gf(GF,/*nChannels=*/1,/*offset*/0);
 }
 
 template<typename T>
@@ -43,6 +43,7 @@ void ChargeSusceptibility<T>::copy_charge_part( GeneralizedSusceptibility<T> con
 	assert( this->get_spaceGrid_proc().get_grid() ==  gsust.get_spaceGrid_proc().get_grid() );
 	assert( not (this->is_in_time_space() xor gsust.is_in_time_space()) );
 	assert( not (this->is_in_k_space() xor gsust.is_in_k_space()) );
+	assert( gsust.has_charge_part() );
 
 	size_t nG = this->is_in_k_space() ?
 			this->get_spaceGrid_proc().get_num_k_grid() : this->get_spaceGrid_proc().get_num_R_grid();
@@ -60,19 +61,24 @@ void ChargeSusceptibility<T>::copy_charge_part( GeneralizedSusceptibility<T> con
 }
 
 template<typename T>
-void ChargeSusceptibility<T>::charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
-		bool pure_sust)
+void ChargeSusceptibility<T>::charge_RPA_enhancement(
+		InteractionMatrix<T> const& interMat)
 {
-	typename GeneralizedSusceptibility<T>::AdiabaticUpscale a;
-	this->RPA_enhancement(interMat,a,pure_sust);
+	GeneralizedSusceptibility<T>::RPA_enhancement(interMat);
 }
 
 template<typename T>
-void ChargeSusceptibility<T>::charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
+void ChargeSusceptibility<T>::charge_effective_interaction(
+		InteractionMatrix<T> const& interMat,
 		typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
-		bool pure_sust)
+		output::DataPlotter & plotter)
 {
-	this->RPA_enhancement(interMat,a,pure_sust);
+	if ( plotter.get_susc_plotter().do_plot_static() )
+	{
+		output::TerminalOut msg;
+		msg << "Plotting largest eigenvalue of the static charge susceptibility ...";
+	}
+	GeneralizedSusceptibility<T>::RPA_enhancement(interMat,a,plotter);
 }
 
 template<typename T>

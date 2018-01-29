@@ -124,5 +124,103 @@ FFTBase< std::complex<double> >::plan_space_fft()
 	delete [] onembed;
 }
 
+template<>
+void
+FFTBase< std::complex<float> >::plan_time_fft()
+{
+	//We assume that the buffer were properly filled with the time and block data for each grid point
+	int * n = new int [1];
+	n[0] = dimTimeFT_;
+	int * inembed =NULL;
+	int * onembed = NULL;
+	int howmany = static_cast<int>( blockSize_ );
+	int idist = static_cast<int>(dimTimeFT_);
+	int odist = static_cast<int>(dimTimeFT_);
+	int istride = 1;
+	int ostride = 1;
+
+	fftw3PlanTimeFwd_ = fftw_plan_many_dft(
+			1,n,howmany,
+			FFTBuffer_, inembed,istride, idist,
+			FFTBuffer_, onembed,ostride, odist,
+			-1,FFTW_PATIENT);
+
+	fftw3PlanTimeBkwd_ = fftw_plan_many_dft(
+			1,n,howmany,
+			FFTBuffer_, inembed,istride, idist,
+			FFTBuffer_, onembed,ostride, odist,
+			1,FFTW_PATIENT);
+
+	delete [] n;
+	delete [] inembed;
+	delete [] onembed;
+}
+
+
+template<>
+void
+FFTBase< std::complex<float> >::plan_space_fft()
+{
+	//We do the first k to R space transform; we do all FFT for the blockSize_ at once
+	//We assume that the buffer is properly filled with the non-parallel space dims and block data for each grid point
+	//Note that k is parallelized in the k direction. Thus our first space FFT is the y (and possibly z)
+	//The assumed layout in the buffer is blocksize_ [space dim-1] dimensional block of data values for a given block and time index
+	int dim = spaceGrid_.get_dim()-1;
+	int * n = new int [ dim ];
+	for ( int id = 0 ; id < dim; ++id)
+		n[id] = spaceGrid_.get_k_grid()[id+1];
+	int dblock = 1;
+	for ( int id = 0 ; id < dim; ++id)
+		dblock*=n[id];
+	int * inembed =NULL;
+	int * onembed = NULL;
+	int howmany = static_cast<int>( blockSize_ );
+	int idist = dblock;
+	int odist = dblock;
+	int istride = 1;
+	int ostride = 1;
+
+	fftw3PlanGridParaBkwd_ = fftw_plan_many_dft(
+			dim,n,howmany,
+			FFTBuffer_, inembed,istride, idist,
+			FFTBuffer_, onembed,ostride, odist,
+			1,FFTW_PATIENT);
+
+	//Check the second k to R space transform; we do all FFT for the blockSize_ at once
+	//Our second FFT is the x direction
+	//The assumed layout in the buffer is filled with
+	// blocksize_ [first total space dim] dimensional block of data values for a given block and time index
+	int n1d = spaceGrid_.get_grid().front();
+	idist = odist = n1d;
+	fftw3PlanGridSingleBkwd_ = fftw_plan_many_dft(
+			1,&n1d,howmany,
+			FFTBuffer_, inembed,istride, idist,
+			FFTBuffer_, onembed,ostride, odist,
+			1,FFTW_PATIENT);
+
+	//We plan the first R to k space transform; we do all FFT for the blockSize_ at once
+	//This plan is for the Rx dimension
+	fftw3PlanGridSingleFwd_ = fftw_plan_many_dft(
+			1,&n1d,howmany,
+			FFTBuffer_, inembed,istride, idist,
+			FFTBuffer_, onembed,ostride, odist,
+			-1,FFTW_PATIENT);
+
+	//We plan the second R to k space transform; we do all FFT for the blockSize_ at once
+	//Note that R is parallelized in the last direction.
+	idist = odist = dblock;
+	fftw3PlanGridParaFwd_ = fftw_plan_many_dft(
+			dim,n,howmany,
+			FFTBuffer_, inembed,istride, idist,
+			FFTBuffer_, onembed,ostride, odist,
+			-1,FFTW_PATIENT);
+
+
+	delete [] n;
+	delete [] inembed;
+	delete [] onembed;
+}
+
+
 } /* namespace gw_flex */
 } /* namespace scallop */

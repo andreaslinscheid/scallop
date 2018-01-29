@@ -71,6 +71,11 @@ void PhononGreensFunction_test<T>::test_with_Einstein_mode()
 			int frequencyIndex =
 					(iw < nM/2 ? static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
 
+			if ( (nM%2 == 0) and (frequencyIndex == -static_cast<int>(nM/2)) )
+			{
+				pgf(iq,iw,0,0) = 0;
+			}
+
 			pgf(iq,iw,0,0) = 2*modeEnergy / ( std::pow(2*M_PI*frequencyIndex/beta ,2) + std::pow(modeEnergy ,2) );
 		}
 	}
@@ -111,7 +116,6 @@ void PhononGreensFunction_test<T>::test_with_Einstein_mode()
 					(iw < nM/2 ? static_cast<int>(iw) : static_cast<int>(iw)-static_cast<int>(nM) );
 
 			T analytic = 2*modeEnergy / ( std::pow(2*M_PI*frequencyIndex/beta ,2) + std::pow(modeEnergy ,2) );
-
 			diff += std::abs(std::real(pgf(iq,iw,0,0))-std::real(analytic));
 			diff += T(0,std::abs(std::imag(pgf(iq,iw,0,0))-std::imag(analytic)));
 		}

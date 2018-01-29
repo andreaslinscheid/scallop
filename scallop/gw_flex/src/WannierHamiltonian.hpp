@@ -112,7 +112,10 @@ void WannierHamiltonian<T>::compute_at_k( VbT kpts, size_t nkpts, V & unitary, V
 			std::complex<double> phase = std::exp( std::complex<double>( 0, 2*M_PI*dprod ) );
 			for ( size_t mu = 0 ; mu < nOrb_ ; ++mu)
 				for ( size_t nu = 0 ; nu < nOrb_ ; ++nu)
-					hamltonianAtK[(ik*nOrb_+mu)*nOrb_+nu] += wanHam_[(iR*nOrb_+nu)*nOrb_+mu]/weights_[iR]*phase;
+				{
+					hamltonianAtK[(ik*nOrb_+mu)*nOrb_+nu] +=
+							std::complex<double>(wanHam_[(iR*nOrb_+nu)*nOrb_+mu]/weights_[iR])*phase;
+				}
 		}
 	}
 
@@ -121,6 +124,7 @@ void WannierHamiltonian<T>::compute_at_k( VbT kpts, size_t nkpts, V & unitary, V
 
 	auxillary::LinearAlgebraInterface<std::complex<double> > linAlgebra;
 	auxillary::TemplateTypedefs<double>::scallop_vector ev( nOrb_ );
+	typename auxillary::TemplateTypedefs<T>::scallop_vector magn( nOrb_ );
 	for ( size_t ik = 0 ; ik < nkpts; ++ik)
 	{
 		linAlgebra.hermitian_eigensystem(true,true,&(hamltonianAtK[ik*nOrb_*nOrb_]),nOrb_,ev.data());
@@ -132,6 +136,28 @@ void WannierHamiltonian<T>::compute_at_k( VbT kpts, size_t nkpts, V & unitary, V
 				energyEV[ik*4*nOrb_ + meml.memory_layout_2pt_diagonal(mu,a,s)]
 				         = 1000.0*//eV to meV
 				         	 (a == 0 ? 1.0 : -1.0 )*static_cast<bT>(ev[mu]);
+
+		//Here we ensure a well-defined phase convention on the eigenvectors
+		//we pick the phase of the largest element by magnitude and apply its inverse
+		//to the entire eigenvector
+		auto cmp = [] (T v1, T v2) {
+			if ( std::abs(std::abs(v1) - std::abs(v2)) > 1e-8 )//compare to order 1.0
+				return std::abs(v1) < std::abs(v2);
+			if ( std::abs(std::real(v1) - std::real(v2)) > 1e-8 )//compare to order 1.0
+				return std::real(v1) < std::real(v2);
+			return std::imag(v1) < std::imag(v2);
+		};
+
+		for ( size_t mu = 0 ; mu < nOrb_; ++mu)
+		{
+			for ( size_t nu = 0 ; nu < nOrb_; ++nu)
+				magn[nu] = hamltonianAtK[(ik*nOrb_+nu)*nOrb_+mu];
+
+			auto it = std::max_element(magn.begin(),magn.end(),cmp);
+			T phase = -std::arg(*it);
+			for ( size_t nu = 0 ; nu < nOrb_; ++nu)
+				hamltonianAtK[(ik*nOrb_+nu)*nOrb_+mu] *= phase;
+		}
 
 		auto it = &( unitary[ik*nOrb_*nOrb_*16] );
 		std::fill(it,it+nOrb_*nOrb_*16,typename V::value_type(0));

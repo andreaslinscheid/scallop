@@ -19,6 +19,8 @@
 
 #include "scallop/error_handling/Error.h"
 #include "scallop/gw_flex/InteractionMatrix.h"
+#include <string>
+#include <fstream>
 
 namespace scallop
 {
@@ -66,8 +68,8 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 		std::istringstream ish(line);
 		ish >> nOrb >> channels;
 
-		if ( ! ((channels==1) || (channels==4)) )
-			error_handling::Error( std::string("Cannot handle channel numbers other than 1 and 4 in file ")+filename,5);
+		if ( ! ((channels==1) || (channels==3) || (channels==4)) )
+			error_handling::Error( std::string("Cannot handle channel numbers other than 1, 3 or 4 in file ")+filename,5);
 
 		std::set<matel> elements;
 		while (std::getline(file, line))
@@ -117,8 +119,16 @@ void InteractionMatrix<T>::init_file( std::string const& filename )
 }
 
 template<typename T>
+T InteractionMatrix<T>::operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const
+{
+	assert( this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4) < data_.size() );
+	return *(this->read_ptr() + this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
+}
+
+template<typename T>
 T & InteractionMatrix<T>::operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4)
 {
+	assert( this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4) < data_.size() );
 	return *(this->write_ptr() + this->memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4));
 }
 

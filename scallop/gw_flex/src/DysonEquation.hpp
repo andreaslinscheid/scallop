@@ -83,10 +83,11 @@ void DysonEquation::solve_by_inversion(
 		linalg.matrix_times_diagonal_matrix( unitaryk, nOns, bnd.data(), tmp.data() );
 		linalg.matrix_times_matrix( conjUnitary.data(), nOns, tmp.data(), KSHamOrb.data() );
 
+		//This constructs the inverse Green's function and inverts the matrix in orbital space
+		// G = (1 - H^KS - Simga)^-1
 		for ( size_t iw = 0 ; iw < nM; ++iw)
 		{
 			auto sePtr = sigma.read_phs_grid_ptr_block(ik,iw);
-
 			for ( size_t l1 = 0 ;l1 < nO; ++l1)
 				for ( size_t ns1 = 0 ;ns1 < 4; ++ns1)
 					for ( size_t l2 = 0 ;l2 < nO; ++l2)
@@ -100,7 +101,6 @@ void DysonEquation::solve_by_inversion(
 			auto gPtr = g.write_phs_grid_ptr_block(ik,iw);
 			std::copy(tmp.begin(),tmp.end(),gPtr);
 		}
-
 	}
 }
 

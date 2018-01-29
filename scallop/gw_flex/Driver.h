@@ -28,6 +28,7 @@
 #include "scallop/gw_flex/InteractionMatrix.h"
 #include "scallop/gw_flex/SpinSusceptibility.h"
 #include "scallop/gw_flex/ChargeSusceptibility.h"
+#include "scallop/output/DataPlotter.h"
 
 namespace scallop
 {
@@ -42,6 +43,14 @@ public:
 	Driver(input::Configuration config);
 
 	void converge();
+
+	SelfEnergy<T> const & get_self_energy() const;
+
+	GreensFunctionOrbital<T> const & get_greensfunction() const;
+
+	SpinSusceptibility<T> const & get_spin_susc() const;
+
+	ChargeSusceptibility<T> const & get_charge_susc() const;
 
 private:
 
@@ -78,6 +87,8 @@ private:
 
 	SelfEnergy<T> seL_;
 
+	output::DataPlotter dataPlotter_;
+
 	typename GeneralizedSusceptibility<T>::AdiabaticUpscale spinAdiabaticScale_;
 
 	void initialize_this_T_N( double temp, double & Ne );
@@ -101,6 +112,8 @@ private:
 	void report( bT beta ) const;
 
 	void post_process();
+
+	void per_iteration_output();
 };
 
 } /* namespace gw_flex */

@@ -24,6 +24,7 @@
 #include "scallop/gw_flex/GreensFunctionOrbital.h"
 #include "scallop/gw_flex/MemoryLayout.h"
 #include "scallop/gw_flex/InteractionMatrix.h"
+#include "scallop/output/SusceptibilityPlotter.h"
 
 namespace scallop
 {
@@ -96,8 +97,13 @@ public:
 
 	GeneralizedSusceptibility();
 
-	void compute_from_gf(GreensFunctionOrbital<T> const & GF,
-			size_t channels = 4);
+	void compute_from_gf(
+			GreensFunctionOrbital<T> const & GF,
+			size_t channels,
+			size_t channel_offset);
+
+	void plot_static(
+			output::SusceptibilityPlotter & plotter) const;
 
 	void initialize_zero(
 			size_t nM,
@@ -109,14 +115,27 @@ public:
 
 	auxillary::LinearAlgebraInterface<T> const& get_linAlg_module() const;
 
-
-protected:
-
 	void RPA_enhancement(
 			InteractionMatrix<T> const& interMat,
 			AdiabaticUpscale & a,
-			bool pure_sust = false);
+			output::SusceptibilityPlotter & plotter );
 
+	void RPA_enhancement(
+			InteractionMatrix<T> const& interMat,
+			AdiabaticUpscale & a );
+
+	void RPA_enhancement(
+			InteractionMatrix<T> const& interMat,
+			output::SusceptibilityPlotter & plotter );
+
+	void RPA_enhancement(
+			InteractionMatrix<T> const& interMat);
+
+	bool has_charge_part() const;
+
+	size_t channels_offset() const;
+
+protected:
 	T operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2) const;
 
 	T & operator() (size_t ik, size_t iw, size_t j, size_t jp, size_t m1,  size_t m2);
@@ -135,6 +154,9 @@ private:
 
 	///We keep a linear algebra module so that it keeps its buffers allocated
 	auxillary::LinearAlgebraInterface<T> linAlgModule_;
+
+	///Determines if we compute the pure charge and spin+charge (0) or the pure spin suceptibility (1)
+	size_t channelsOffset_ = 0;
 
 	void v_matrix_multiplication(
 			size_t j, size_t l1, size_t a1, size_t s1, size_t l2,  size_t a2, size_t s2,

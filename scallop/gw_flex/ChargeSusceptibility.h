@@ -22,6 +22,7 @@
 
 #include "scallop/auxillary/TypeMapComplex.h"
 #include "scallop/gw_flex/GeneralizedSusceptibility.h"
+#include "scallop/output/DataPlotter.h"
 
 namespace scallop
 {
@@ -38,12 +39,15 @@ public:
 
 	void copy_charge_part( GeneralizedSusceptibility<T> const& gsust );
 
-	void charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
-			bool pure_sust = false);
+	void charge_RPA_enhancement(InteractionMatrix<T> const& interMat);
 
 	void charge_RPA_enhancement(InteractionMatrix<T> const& interMat,
+			typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a);
+
+	void charge_effective_interaction(
+			InteractionMatrix<T> const& interMat,
 			typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
-			bool pure_sust = false);
+			output::DataPlotter & plotter);
 
 	T operator() (size_t ik, size_t iw, size_t m1,  size_t m2) const;
 

@@ -27,25 +27,28 @@ namespace gw_flex
 template<typename T>
 void SpinSusceptibility<T>::compute_from_gf( GreensFunctionOrbital<T> const & GF)
 {
-	GeneralizedSusceptibility<T>::compute_from_gf(GF,4);
+	GeneralizedSusceptibility<T>::compute_from_gf(GF,nChannels_,/*offset=*/1);
 }
 
 template<typename T>
 void SpinSusceptibility<T>::spin_RPA_enhancement(
-		InteractionMatrix<T> const& interMat,
-		bool pure_sust)
+		InteractionMatrix<T> const& interMat)
 {
-	typename GeneralizedSusceptibility<T>::AdiabaticUpscale a;
-	this->RPA_enhancement(interMat,a,pure_sust);
+	GeneralizedSusceptibility<T>::RPA_enhancement(interMat);
 }
 
 template<typename T>
-void SpinSusceptibility<T>::spin_RPA_enhancement(
+void SpinSusceptibility<T>::spin_effective_interaction(
 		InteractionMatrix<T> const& interMat,
 		typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
-		bool pure_sust)
+		output::DataPlotter & plotter)
 {
-	this->RPA_enhancement(interMat,a,pure_sust);
+	if ( plotter.get_susc_plotter().do_plot_static() )
+	{
+		output::TerminalOut msg;
+		msg << "Plotting largest eigenvalue of the static spin susceptibility ...";
+	}
+	GeneralizedSusceptibility<T>::RPA_enhancement(interMat,a,plotter);
 }
 
 } /* namespace gw_flex */

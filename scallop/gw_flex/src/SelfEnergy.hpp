@@ -18,6 +18,7 @@
  */
 
 #include "scallop/gw_flex/SelfEnergy.h"
+#include "scallop/auxillary/BasicFunctions.h"
 
 namespace scallop
 {
@@ -77,7 +78,9 @@ void SelfEnergy<T>::add_electronic_selfenergy(
 			for ( size_t j = 0 ; j < nC; ++j )
 				for ( size_t jp = 0 ; jp < nC; ++jp )
 				{
-					this->transform_2pto_v(j,jp,nO,gf_layout,blockPtrGF,bufferGF.data());
+					size_t nsIndex = j + sf.channels_offset();
+					size_t nspIndex = jp + sf.channels_offset();
+					this->transform_2pto_v(nsIndex,nspIndex,nO,gf_layout,blockPtrGF,bufferGF.data());
 
 					for ( size_t a1 = 0 ; a1 < 2; ++a1 )
 						for ( size_t s1 = 0 ; s1 < 2; ++s1 )
@@ -91,7 +94,7 @@ void SelfEnergy<T>::add_electronic_selfenergy(
 													size_t SEIndex = gf_layout.memory_layout_2pt_obj(l1,a1,s1,l2,a2,s2);
 													size_t GFIndex = gf_layout.memory_layout_2pt_obj(l3,a1,s1,l4,a2,s2);
 													size_t SustIndex = sf_layout.memory_layout_4pt_scalar_obj(j,jp,l1,l3,l2,l4);
-													blockPtrSE[SEIndex] += (nC == 4 ? -1.0:1.0)*blockPtrSust[SustIndex]*bufferGF[GFIndex];
+													blockPtrSE[SEIndex] += blockPtrSust[SustIndex]*bufferGF[GFIndex];
 												}
 				}
 		}

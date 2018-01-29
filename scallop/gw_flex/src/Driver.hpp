@@ -25,6 +25,7 @@
 #include "scallop/gw_flex/ManyBodyBandStructure.h"
 #include "scallop/output/ObservableStatistics.h"
 #include "scallop/gw_flex/GapFileReader.h"
+#include "scallop/output/PlotDataProcessing.h"
 
 namespace scallop
 {
@@ -32,7 +33,8 @@ namespace gw_flex
 {
 
 template<typename T>
-Driver<T>::Driver(input::Configuration config) : config_(std::move(config))
+Driver<T>::Driver(input::Configuration config) : config_(std::move(config)),
+	dataPlotter_(config_)
 {
 
 }
@@ -159,7 +161,6 @@ void Driver<T>::converge()
 				se_.perform_space_fft( );
 				this->solve_Dyson();
 
-
 				assert( (! G_.is_in_time_space()) && (  G_.is_in_k_space()) );
 				G_.perform_space_fft();
 				this->report( beta );
@@ -177,6 +178,8 @@ void Driver<T>::converge()
 					msg << "===============================================";
 					break;
 				}
+
+				this->per_iteration_output();
 			}
 
 			this->post_process();
@@ -293,18 +296,9 @@ void Driver<T>::compute_eff_interactions( bT beta )
 	if ( not Isf_.empty() )
 	{
 		suscSF_.compute_from_gf( G_ );
-		if ( not Ic_.empty() )
-		{
-			suscC_.copy_charge_part( suscSF_ );
-			suscC_.transform_itime_Mfreq( beta );
-			suscC_.perform_space_fft( );
-			suscC_.charge_RPA_enhancement( Ic_ );
-			suscC_.transform_itime_Mfreq( beta );
-			suscC_.perform_space_fft( );
-		}
 		suscSF_.transform_itime_Mfreq( beta );
 		suscSF_.perform_space_fft( );
-		suscSF_.spin_RPA_enhancement( Isf_, spinAdiabaticScale_ );
+		suscSF_.RPA_enhancement( Isf_, spinAdiabaticScale_, dataPlotter_.get_susc_plotter() );
 		while ( spinAdiabaticScale_.is_soft() )
 		{
 			suscSF_.set_uninitialized();
@@ -313,7 +307,7 @@ void Driver<T>::compute_eff_interactions( bT beta )
 			suscSF_.compute_from_gf( G_ );
 			suscSF_.transform_itime_Mfreq( beta );
 			suscSF_.perform_space_fft( );
-			suscSF_.spin_RPA_enhancement( Isf_, spinAdiabaticScale_ );
+			suscSF_.RPA_enhancement( Isf_, spinAdiabaticScale_ , dataPlotter_.get_susc_plotter() );
 
 			if ( spinAdiabaticScale_.is_soft() and not spinAdiabaticScale_.steps_ok() )
 			{
@@ -327,17 +321,15 @@ void Driver<T>::compute_eff_interactions( bT beta )
 		suscSF_.transform_itime_Mfreq( beta );
 		suscSF_.perform_space_fft( );
 	}
-	else
+
+	if ( not Ic_.empty() )
 	{
-		if ( not Ic_.empty() )
-		{
-			suscC_.compute_from_gf( G_ );
-			suscC_.transform_itime_Mfreq( beta );
-			suscC_.perform_space_fft( );
-			suscC_.charge_RPA_enhancement( Ic_ );
-			suscC_.transform_itime_Mfreq( beta );
-			suscC_.perform_space_fft( );
-		}
+		suscC_.compute_from_gf( G_ );
+		suscC_.transform_itime_Mfreq( beta );
+		suscC_.perform_space_fft( );
+		suscC_.RPA_enhancement( Ic_, dataPlotter_.get_susc_plotter() );
+		suscC_.transform_itime_Mfreq( beta );
+		suscC_.perform_space_fft( );
 	}
 
 	assert( (suscC_.is_in_time_space() and (not suscC_.is_in_k_space())) );
@@ -407,6 +399,9 @@ template<typename T>
 void Driver<T>::post_process()
 {
 	output::TerminalOut msg( auxillary::globals::VerbosityLvl::medium );
+
+	output::PlotDataProcessing<T> plotprocess( this );
+	dataPlotter_.plot_end_of_iterations( msg, plotprocess );
 
 	input::KPath<bT> path;
 	if ( not config_.get_f_kpath().empty() )
@@ -479,6 +474,43 @@ void Driver<T>::post_process()
 		msg << "\tdone. Data and plotscript at "<<
 				config_.get_f_spec() << ".dat, and "<<config_.get_f_spec()<<".gp, respectively";
 	}
+}
+
+template<typename T>
+void Driver<T>::per_iteration_output()
+{
+	output::TerminalOut msg( auxillary::globals::VerbosityLvl::medium );
+
+	output::PlotDataProcessing<T> plotprocess( this );
+	dataPlotter_.plot_per_iteration( msg, plotprocess );
+}
+
+template<typename T>
+SelfEnergy<T> const &
+Driver<T>::get_self_energy() const
+{
+	return se_;
+}
+
+template<typename T>
+GreensFunctionOrbital<T> const &
+Driver<T>::get_greensfunction() const
+{
+	return G_;
+}
+
+template<typename T>
+SpinSusceptibility<T> const &
+Driver<T>::get_spin_susc() const
+{
+	return suscSF_;
+}
+
+template<typename T>
+ChargeSusceptibility<T> const &
+Driver<T>::get_charge_susc() const
+{
+	return suscC_;
 }
 
 } /* namespace gw_flex */

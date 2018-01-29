@@ -65,6 +65,9 @@ struct BasicFunctions
 	static std::complex<T> matzubara_frequency_of_index(size_t i, size_t nM, T beta);
 
 	template<typename T>
+	static std::complex<T> matzubara_bose_frequency_of_index(size_t i, size_t nM, T beta);
+
+	template<typename T>
 	static typename TemplateTypedefs< std::complex<T> >::scallop_vector
 	matzubara_frequency_array( size_t nM, T beta);
 

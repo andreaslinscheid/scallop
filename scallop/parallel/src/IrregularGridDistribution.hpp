@@ -278,8 +278,8 @@ F IrregularGridDistribution<T>::trilinear_interpol(
 		F f000, F f100, F f110, F f010, F f001, F f101, F f111, F f011) const
 {
 	typedef typename auxillary::TypeMapComplex<F>::type real_t;
-	F e = this->bilinear_interpol(x, y, f000, f100, f110, f100);
-	F f = this->bilinear_interpol(x, y, f001, f101, f111, f101);
+	F e = this->bilinear_interpol(x, y, f000, f100, f110, f010);
+	F f = this->bilinear_interpol(x, y, f001, f101, f111, f011);
 	return e * real_t( 1. - z) + f * real_t(z);
 }
 

@@ -36,6 +36,7 @@ public:
 	typedef typename auxillary::TypeMapComplex<T>::type bT;
 
 	using MemoryLayout::get_nOrb;
+	using MemoryLayout::get_nChnls;
 
 	void init_file( std::string const& filename );
 
@@ -44,6 +45,8 @@ public:
 	T const * read_ptr() const;
 
 	T & operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4);
+
+	T operator() (size_t j, size_t jp, size_t l1, size_t l2, size_t l3, size_t l4) const;
 
 	bool empty() const;
 private:

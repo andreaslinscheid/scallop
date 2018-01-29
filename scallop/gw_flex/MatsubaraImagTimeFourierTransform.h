@@ -65,23 +65,26 @@ private:
 	///If set true, it will call the time Fourier transform for Fermions, otherwise the one for Bosons
 	bool isFermi_;
 
-	///Buffer for the weight factors W(n) for the transform it->w_n
-	///independent on T, this needs to be double at least
-	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector WN_;
-
-	///Endpoint corrections for the transform it->w_n
-	///independent on T, this needs to be double at least
-	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector aN0_;
-	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector aN1_;
-	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector bN0_;
-	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector bN1_;
-
-	std::vector<T> buffF0_;
-	std::vector<T> buffF1_;
-	std::vector<T> buffFNMm1_;
-	std::vector<T> buffFNMm2_;
-
-	void initialize_corrections();
+	//PLEASE NOTE:
+	//The interpolation scheme has proven to be buggy and it appears that one gets consistently better
+	//results if we just use the FFT in time. Thus, for the time being this functionality is switched off!
+//	///Buffer for the weight factors W(n) for the transform it->w_n
+//	///independent on T, this needs to be double at least
+//	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector WN_;
+//
+//	///Endpoint corrections for the transform it->w_n
+//	///independent on T, this needs to be double at least
+//	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector aN0_;
+//	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector aN1_;
+//	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector bN0_;
+//	typename auxillary::TemplateTypedefs< std::complex<double> >::scallop_vector bN1_;
+//
+//	std::vector<T> buffF0_;
+//	std::vector<T> buffF1_;
+//	std::vector<T> buffFNMm1_;
+//	std::vector<T> buffFNMm2_;
+//
+//	void initialize_corrections();
 };
 
 } /* namespace gw_flex */

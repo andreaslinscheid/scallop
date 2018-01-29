@@ -21,6 +21,7 @@
 #define SCALLOP_GW_FLEX_SPINSUSCEPTIBILITY_H_
 
 #include "scallop/gw_flex/GeneralizedSusceptibility.h"
+#include "scallop/output/DataPlotter.h"
 
 namespace scallop
 {
@@ -37,13 +38,19 @@ public:
 	using GeneralizedSusceptibility<T>::operator();
 
 	void spin_RPA_enhancement(
-			InteractionMatrix<T> const& interMat,
-			bool pure_sust = false);
+			InteractionMatrix<T> const& interMat);
 
 	void spin_RPA_enhancement(
 			InteractionMatrix<T> const& interMat,
+			typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a);
+
+	void spin_effective_interaction(
+			InteractionMatrix<T> const& interMat,
 			typename GeneralizedSusceptibility<T>::AdiabaticUpscale & a,
-			bool pure_sust = false);
+			output::DataPlotter & plotter);
+private:
+
+	size_t nChannels_ = 3;
 };
 
 } /* namespace gw_flex */

@@ -234,8 +234,8 @@ void FFTBase<T>::copy_or_fill_buffer_time_FFT( size_t indexBeginDataArray, bool 
 {
 	auto time_FFT_layout = [&] ( size_t itime, size_t ib )
 		{
-			T * bufferAsCmplxArray = reinterpret_cast<T*>(FFTBuffer_);
-			T * thisLocation = bufferAsCmplxArray + (ib*dimTimeFT_ + itime);
+			std::complex<double> * bufferAsCmplxArray = reinterpret_cast<std::complex<double>*>(FFTBuffer_);
+			std::complex<double> * thisLocation = bufferAsCmplxArray + (ib*dimTimeFT_ + itime);
 			return thisLocation;
 		};
 
@@ -333,8 +333,8 @@ void FFTBase<T>::copy_or_fill_buffer_first_FFT(size_t ikx, size_t indexTime, boo
 {
 	auto FFT_layout = [&] ( size_t igpts, size_t ptsFFT, size_t ib )
 	{
-		T * bufferAsCmplxArray = reinterpret_cast<T*>(FFTBuffer_);
-		T * thisLocation = bufferAsCmplxArray + ib*ptsFFT + igpts;
+		std::complex<double> * bufferAsCmplxArray = reinterpret_cast<std::complex<double>*>(FFTBuffer_);
+		std::complex<double> * thisLocation = bufferAsCmplxArray + ib*ptsFFT + igpts;
 		return thisLocation;
 	};
 
@@ -373,8 +373,8 @@ void FFTBase<T>::copy_or_fill_buffer_second_FFT(size_t iyz, size_t indexTime, bo
 {
 	auto FFT_layout = [&] ( size_t igpts, size_t ptsFFT, size_t ib )
 	{
-		T * bufferAsCmplxArray = reinterpret_cast<T*>(FFTBuffer_);
-		T * thisLocation = bufferAsCmplxArray+ib*ptsFFT + igpts;
+		std::complex<double> * bufferAsCmplxArray = reinterpret_cast<std::complex<double>*>(FFTBuffer_);
+		std::complex<double> * thisLocation = bufferAsCmplxArray+ib*ptsFFT + igpts;
 		return thisLocation;
 	};
 
@@ -443,7 +443,7 @@ void FFTBase<T>::perform_k_to_R_fft()
 
 	//Normalization
 	for ( auto &d : data_ )
-		d *= 1.0/spaceGrid_.get_num_grid();
+		d *= 1.0/(spaceGrid_.get_num_grid());
 
 #ifndef NDEBUG
 	//In debug mode, we check for NaNs

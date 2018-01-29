@@ -42,16 +42,16 @@ namespace test
 
 void Test::run_test()
 {
-	test_GapFileReader();
 	test_selfEnergy();
-	test_DysonEquation();
+	test_Susceptibility();
 	test_phonon_gf();
+	test_GapFileReader();
+	test_DysonEquation();
 	test_InteractionMatrix();
 	test_FFTBase();
 	test_time_freq_Fourier_transform();
 	test_UnitaryWannierKSBands();
 	test_GreensFunctionOrbital();
-	test_Susceptibility();
 	test_KSBandstructure();
 	test_MandyBodyBandStructure();
 	test_ChemicalPotentialShifting();

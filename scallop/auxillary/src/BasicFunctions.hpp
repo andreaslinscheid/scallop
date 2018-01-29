@@ -45,6 +45,14 @@ BasicFunctions::matzubara_frequency_of_index(size_t i, size_t nM, T beta) {
 }
 
 template<typename T>
+std::complex<T>
+BasicFunctions::matzubara_bose_frequency_of_index(size_t i, size_t nM, T beta) {
+	int frequencyIndex =
+			(i < nM/2 ? static_cast<int>(i) : static_cast<int>(i)-static_cast<int>(nM) );
+	return std::complex<T>(0,M_PI*2*frequencyIndex/beta);
+}
+
+template<typename T>
 typename TemplateTypedefs< std::complex<T> >::scallop_vector
 BasicFunctions::matzubara_frequency_array( size_t nM, T beta)
 {

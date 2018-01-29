@@ -43,12 +43,47 @@ public:
 
 private:
 
+	void test_single_spacetime_pt();
+
 	void test_zero_se();
 };
 
 void DysonEquation_test::test_all()
 {
 	this->test_zero_se();
+}
+
+void DysonEquation_test::test_single_spacetime_pt()
+{
+	typedef std::complex<double> T;
+	parallel::MPIModule const & mpi = parallel::MPIModule::get_instance();
+	if ( mpi.get_nproc() == 1 )
+	{
+		const double temp = 10;
+		const size_t nM = 1;
+		const double beta = auxillary::BasicFunctions::inverse_temperature( temp );
+		std::vector<size_t> grid = {1, 1};
+
+		output::TerminalOut msg;
+		msg << "Testing the Dyson equation module on a single space and time point with two bands.";
+
+		KohnShamBandStructure<T> ksbnd;
+		GreensFunctionOrbital<T> g;
+		SelfEnergy<T> se;
+
+		const std::string filename = "/tmp/2bndcos.dat";
+		KohnShamBandStructure_test<T> ksBndTest;
+		ksBndTest.write_test_input_file( filename );
+		ksbnd.initialize_from_file(grid , filename);
+
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data;
+		se.initialize( nM, grid, g.get_nOrb(), false, true, data, ksbnd.get_chem_pot() );
+
+		auto m = auxillary::BasicFunctions::matzubara_frequency_array(nM,beta);
+		DysonEquation d;
+		d.solve_by_inversion(g,m ,ksbnd, se);
+
+	}
 }
 
 void DysonEquation_test::test_zero_se()

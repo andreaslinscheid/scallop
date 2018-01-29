@@ -49,20 +49,56 @@ void GeneralizedSusceptibility<T>::initialize_zero(
 
 	// initialize an object with data being zero
 	this->initialize( nM, grid, blocksize, intimeSpace, inKSpace, data );
-	bufferQ1_ = bufferQ2_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( 4*nO*nO* nC*nC );
+	bufferQ1_ = bufferQ2_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( nC*nO*nO* 16 );
 	bufferSBlock_ = typename auxillary::TemplateTypedefs<T>::scallop_vector( nC*nC*std::pow(nO,4) );
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::plot_static(
+		output::SusceptibilityPlotter & plotter) const
+{
+	assert( this->is_in_k_space() );
+	assert( not this->is_in_time_space() );
+
+	size_t channels =  this->get_nChnls();
+	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
+	int blockDim = static_cast<int>( std::pow(this->get_nOrb(),2) * channels );
+
+	bool plotSpin = (channels > 1) or (channelsOffset_ > 0);
+	bool plotCharge = not plotSpin;
+	if ( (plotSpin and plotter.do_plot_spin() ) or (plotCharge and plotter.do_plot_charge() ) )
+	{
+		plotter.set_buffer( this->get_spaceGrid_proc().get_k_grid(),
+				this->get_nOrb(),blockDim*blockDim*nK,channels);
+	}
+
+	for ( size_t ik = 0 ; ik < nK; ++ik)
+	{
+		auto susct_d_begin = this->read_phs_grid_ptr_block(ik,/*iw=*/0);
+		auto susct_d_end = this->read_phs_grid_ptr_block(ik,/*iw=*/1);
+		typename auxillary::TemplateTypedefs<T>::scallop_vector data(susct_d_begin,susct_d_end);
+		plotter.append_data_to_buffer(data);
+	}
+
+	if ( (plotSpin and plotter.do_plot_spin() ) or (plotCharge and plotter.do_plot_charge() ) )
+	{
+		plotter.plot_static_k();
+	}
 }
 
 template<typename T>
 void GeneralizedSusceptibility<T>::compute_from_gf(
 		GreensFunctionOrbital<T> const & GF,
-		size_t channels)
+		size_t channels,
+		size_t channel_offset)
 {
 	//check if we need to update, or initialize
 	if ( ! this->is_init() )
 		this->initialize_zero(
 				GF.get_num_time(), GF.get_nOrb(), channels, GF.get_spaceGrid_proc().get_grid(),
 				/*In time space=*/ true, /*In k space=*/ false );
+
+	channelsOffset_ = channel_offset;
 
 	size_t nO = this->get_nOrb();
 	size_t nC = this->get_nChnls();
@@ -75,6 +111,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 
 	MemoryLayout gf_layout;
 	gf_layout.initialize_layout_2pt_obj( nO );
+
 	/*
 	 * NOTE: (TODO)
 	 *
@@ -107,7 +144,7 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 									{
 										T prefactorG1;
 										size_t gf1_index_NS_transpose = 0;
-										this->v_matrix_multiplication( j, l1, a2, s2, l2, a1, s1,
+										this->v_matrix_multiplication( j+channelsOffset_, l1, a2, s2, l2, a1, s1,
 												gf_layout,gf1_index_NS_transpose ,prefactorG1);
 
 										size_t Q1_index = (((((j*nO+l1)*nO+l2)*2+a1)*2+s1)*2+a2)*2+s2;
@@ -116,18 +153,18 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 
 										T prefactorG2;
 										size_t gf2_index_NS = 0;
-										this->v_matrix_multiplication( j, l1, a1, s1, l2, a2, s2,
+										this->v_matrix_multiplication( j+channelsOffset_, l1, a1, s1, l2, a2, s2,
 												gf_layout,gf2_index_NS ,prefactorG2);
 
-										size_t Q2_index = (((((a1*2+s1)*2+a2)*2+s2)*4+j)*nO+l1)*nO+l2;
+										size_t Q2_index = (((((a1*2+s1)*2+a2)*2+s2)*nC+j)*nO+l1)*nO+l2;
 										assert( Q2_index < bufferQ2_.size() );
 										bufferQ2_[Q2_index] =  prefactorG2*blockPtrG2[ gf2_index_NS ];
 									}
 
-			int dimSust = static_cast<int>(4*nO*nO);
+			int dimSust = static_cast<int>(nC*nO*nO);
 			linAlgModule_.call_gemm(false, false,
 					dimSust,dimSust,16,
-					T(-1.0/16.0),	bufferQ1_.data(), 16,
+					T(-1.0/4.0),	bufferQ1_.data(), 16,
 								bufferQ2_.data(), dimSust,
 		            T(0.0),bufferSBlock_.data(),dimSust);
 
@@ -141,8 +178,8 @@ void GeneralizedSusceptibility<T>::compute_from_gf(
 							for ( size_t l4 = 0 ; l4 < nO; ++l4 )
 								for ( size_t l2 = 0 ; l2 < nO; ++l2 )
 								{
-									size_t bufferIndex = ((((j*nO+l1)*nO+l3)*4+jp)*nO+l4)*nO+l2;
-									size_t susctIndex = ((((j*4+jp)*nO+l1)*nO+l2)*nO+l3)*nO+l4;
+									size_t bufferIndex = ((((j*nO+l1)*nO+l3)*nC+jp)*nO+l4)*nO+l2;
+									size_t susctIndex = ((((j*nC+jp)*nO+l1)*nO+l2)*nO+l3)*nO+l4;
 									blockPtrSusct[susctIndex] = bufferSBlock_[bufferIndex];
 								}
 		}
@@ -181,17 +218,55 @@ void GeneralizedSusceptibility<T>::v_matrix_multiplication(
 
 template<typename T>
 void GeneralizedSusceptibility<T>::RPA_enhancement(
+		InteractionMatrix<T> const& interMat)
+{
+	AdiabaticUpscale a;
+	this->RPA_enhancement(interMat,a);
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::RPA_enhancement(
+		InteractionMatrix<T> const& interMat,
+		AdiabaticUpscale & a )
+{
+	output::SusceptibilityPlotter p;
+	this->RPA_enhancement(interMat,a,p);
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::RPA_enhancement(
+		InteractionMatrix<T> const& interMat,
+		output::SusceptibilityPlotter & plotter)
+{
+	AdiabaticUpscale a;
+	this->RPA_enhancement(interMat,a,plotter);
+}
+
+template<typename T>
+void GeneralizedSusceptibility<T>::RPA_enhancement(
 		InteractionMatrix<T> const& interMat,
 		AdiabaticUpscale & a,
-		bool pure_sust)
+		output::SusceptibilityPlotter & plotter)
 {
 	assert( this->get_nOrb() == interMat.get_nOrb() );
+	assert( this->get_nChnls() == interMat.get_nChnls() );
 	assert( this->is_in_k_space() );
 	assert( not this->is_in_time_space() );
 
 	size_t channels =  this->get_nChnls();
 	size_t nK = this->get_spaceGrid_proc().get_num_k_grid();
-	int blockDim = static_cast<int>( std::pow(this->get_nOrb(),2) * channels );
+	size_t nO = this->get_nOrb();
+	int blockDim = static_cast<int>( std::pow(nO,2) * channels );
+
+	bool plotSpin = (channels > 1) or (channelsOffset_ > 0);
+	bool plotCharge = not plotSpin;
+	bool recordData = false;
+	if ( (plotSpin and plotter.do_plot_spin() ) or (plotCharge and plotter.do_plot_charge() ) )
+	{
+		plotter.set_buffer( this->get_spaceGrid_proc().get_k_grid(),
+				this->get_nOrb(),blockDim*blockDim*nK,channels);
+		recordData = true;
+	}
 
 	typename auxillary::TemplateTypedefs<T>::scallop_vector chiTimesI(blockDim*blockDim,T(0));
 	auto IdPlusChiTimesI = chiTimesI;
@@ -205,25 +280,33 @@ void GeneralizedSusceptibility<T>::RPA_enhancement(
 	std::vector<size_t> unstableK;
 	std::vector<bT> unstableMinEV;
 
-	auto interaction = interMat.read_ptr();
+	gw_flex::MemoryLayout ml_inter;
+	ml_inter.initialize_layout_4pt_scalar_obj(nO,channels);
+
 	for ( size_t ik = 0 ; ik < nK; ++ik)
 	{
 		for ( size_t iw = 0 ; iw < this->get_num_time(); ++iw)
 		{
 			auto susct = this->write_phs_grid_ptr_block(ik,iw);
-			for ( int i = 0 ; i < blockDim*blockDim; ++i )
-				interactionScaled[i] = interaction[i]*a.get_scaling();
+			for ( size_t j = 0 ; j < channels; ++j )
+				for ( size_t jp = 0 ; jp < channels; ++jp )
+					for ( size_t l1 = 0 ; l1 < nO; ++l1 )
+						for ( size_t l2 = 0 ; l2 < nO; ++l2 )
+							for ( size_t l3 = 0 ; l3 < nO; ++l3 )
+								for ( size_t l4 = 0 ; l4 < nO; ++l4 )
+									interactionScaled[ml_inter.memory_layout_4pt_scalar_obj(j,jp,l1,l2,l3,l4)]
+									                  = interMat(j,jp,l1,l2,l3,l4)*a.get_scaling();
 
-			T pref = (channels==4 ? T(4.0) : T(-16.0) );
 			linAlgModule_.call_gemm(false, false,
 					blockDim,blockDim,blockDim,
-					pref,susct, blockDim,
+					T(4.0),susct, blockDim,
 							interactionScaled.data(), blockDim,
 		            T(0.0),chiTimesI.data(),blockDim);
 
 			std::copy(chiTimesI.data(), chiTimesI.data()+chiTimesI.size(), IdPlusChiTimesI.data() );
 			for ( int i = 0 ; i < blockDim; ++i)
-				IdPlusChiTimesI[i*blockDim+i] = 1.0+IdPlusChiTimesI[i*blockDim+i];
+				for ( int j = 0 ; j < blockDim; ++j)
+					IdPlusChiTimesI[i*blockDim+j] = T(i==j?1.0:0.0)-IdPlusChiTimesI[i*blockDim+j];
 
 			this->get_linAlg_module().check_definite_invert_hermitian_matrix(
 					IdPlusChiTimesI,IdPlusChiTimesIInv, positiveDefinite, eigenvalues );
@@ -236,34 +319,34 @@ void GeneralizedSusceptibility<T>::RPA_enhancement(
 				unstableMinEV.push_back( (*itmin) );
 			}
 
-			if ( not pure_sust )
+			//Record the data in case we want to plot it
+			if ( recordData and (iw == 0) )
 			{
-				//double counting correction
-				for ( int i = 0 ; i < blockDim; ++i)
-					IdPlusChiTimesIInv[i*blockDim+i] -= 1.0;
-
-				this->get_linAlg_module().matrix_times_matrix(
-						IdPlusChiTimesIInv.data(),blockDim,
-						chiTimesI.data(),
-						enhChiTimesI.data() );
-
-				//The spin channel gets an extra minus.
-				T pref = (channels==4 ? T(1.0) : T(-16.0) );
-				linAlgModule_.call_gemm(false, false,
-						blockDim,blockDim,blockDim,
-						pref,interactionScaled.data(), blockDim,
-								enhChiTimesI.data(), blockDim,
-			            T(0.0),susct,blockDim);
-			}
-			else
-			{
-				std::copy(susct,susct+blockDim*blockDim, enhChiTimesI.data() );
-
+				//IdPlusChiTimesI serves as a buffer here that is temporarily overwritten
+				//with the RPA susceptibility.
+				std::copy(susct,susct+blockDim*blockDim, IdPlusChiTimesI.data() );
 				this->get_linAlg_module().matrix_times_matrix(
 						IdPlusChiTimesIInv.data(),blockDim,
 						enhChiTimesI.data(),
-						susct );
+						IdPlusChiTimesI.data() );
+				plotter.append_data_to_buffer(IdPlusChiTimesI);
 			}
+
+			//double counting correction
+			for ( int i = 0 ; i < blockDim; ++i)
+				IdPlusChiTimesIInv[i*blockDim+i] -= 0.5;
+
+			this->get_linAlg_module().matrix_times_matrix(
+					IdPlusChiTimesIInv.data(),blockDim,
+					chiTimesI.data(),
+					enhChiTimesI.data() );
+
+			//Currently, we include a factor of two that comes from the ladder series
+			linAlgModule_.call_gemm(false, false,
+					blockDim,blockDim,blockDim,
+					T(-8.0),interactionScaled.data(), blockDim,
+							enhChiTimesI.data(), blockDim,
+					T(0.0),susct,blockDim);
 		}
 	}
 
@@ -310,6 +393,9 @@ void GeneralizedSusceptibility<T>::RPA_enhancement(
 		if ( a.is_soft() )
 			a.set_stable();
 	}
+
+	if ( (plotSpin and plotter.do_plot_spin() ) or (plotCharge and plotter.do_plot_charge() ) )
+		plotter.plot_static_k();
 }
 
 template<typename T>
@@ -412,6 +498,18 @@ template<typename T>
 bool GeneralizedSusceptibility<T>::AdiabaticUpscale_::steps_ok() const
 {
 	return (nscaleResolutionSteps_ < maxScaleResolutionSteps_) && (nscale_ < maxNScale_);
+}
+
+template<typename T>
+bool GeneralizedSusceptibility<T>::has_charge_part() const
+{
+	return channelsOffset_ == 0;
+}
+
+template<typename T>
+size_t GeneralizedSusceptibility<T>::channels_offset() const
+{
+	return channelsOffset_;
 }
 
 } /* namespace gw_flex */

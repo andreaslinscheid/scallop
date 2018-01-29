@@ -202,6 +202,24 @@ public:
 			"",
 			std::string);
 
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			f_gap_s,
+			"If set, plot the singlet part of the pairing at the lowest Matsubara frequency as a function of momentum.\n"
+			"This is a file stub; the data will be in <f_gap_s>.dat and contain Norb^2 columns ordered as 0,0 0,1 ... 1,0 1,1 ...\n"
+			"The script to plot the data will be in <f_gap_s>.gp in 2D",
+			"",
+			"",
+			std::string);
+
+	INPUTBASE_INPUT_OPTION_MACRO_WITH_DEFAULT(
+			f_spin_sust_stat,
+			"If set, plot the largest eigenvalue of the static part of the spin suceptiblity.\n"
+			"This is a file stub; the data will be in <f_spin_sust_stat>.dat\n"
+			"The script to plot the data will be in <f_spin_sust_stat>.gp in 2D",
+			"",
+			"",
+			std::string);
+
 };
 
 } /* namespace input */
